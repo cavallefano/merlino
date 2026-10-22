@@ -28,15 +28,6 @@ function onKey(e: KeyboardEvent) {
       />
       <span class="muted count">{{ repo.history.total }} commit</span>
     </div>
-    <div
-      v-if="repo.changeCount"
-      class="working-row"
-      :class="{ selected: repo.view === 'working' }"
-      data-testid="working-row"
-      @click="repo.selectWorking()"
-    >
-      <span class="dot">●</span> Modifiche locali <span class="muted">({{ repo.changeCount }})</span>
-    </div>
     <CommitList :root="root" />
   </section>
 </template>
@@ -46,10 +37,4 @@ function onKey(e: KeyboardEvent) {
 .search { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
 .search input { flex: 1; min-width: 0; }
 .count { font-size: 12px; white-space: nowrap; }
-.working-row { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border-bottom: 1px solid var(--border); cursor: default; font-weight: 600; }
-.working-row:hover { background: var(--bg-hover); }
-.working-row.selected { background: var(--accent); color: var(--accent-fg); }
-.working-row.selected .muted { color: inherit; }
-.dot { color: #bf8700; }
-.working-row.selected .dot { color: inherit; }
 </style>

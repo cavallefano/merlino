@@ -14,6 +14,10 @@
   --del-bg: #ffebe9;
   --add-mark: #abf2bc;
   --del-mark: #ffc0c0;
+  --selected-bg: hsl(170 70% 32% / 0.14);
+  --ref-tag-bg: #f6c343;
+  --ref-tag-fg: #3a2c00;
+  --ref-remote-bg: #e3e6ea;
   --syn-comment: #6a737d;
   --syn-keyword: #d73a49;
   --syn-string: #032f62;
@@ -39,6 +43,10 @@
     --del-bg: rgb(248 81 73 / 0.15);
     --add-mark: rgb(46 160 67 / 0.4);
     --del-mark: rgb(248 81 73 / 0.4);
+    --selected-bg: hsl(170 55% 50% / 0.18);
+    --ref-tag-bg: #b8901f;
+    --ref-tag-fg: #1b1500;
+    --ref-remote-bg: #353a42;
     --syn-comment: #8b949e;
     --syn-keyword: #ff7b72;
     --syn-string: #a5d6ff;

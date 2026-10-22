@@ -20,6 +20,10 @@ test('storia: grafo, etichette, ricerca e aggiornamento automatico', async () =>
   const { app, page } = await launch([repo])
   const rows = page.getByTestId('commit-row')
   await expect(rows).toHaveCount(3)
+  await expect(page.getByTestId('working-row')).toContainText('Nessuna modifica')
+  // il merge conta i file rispetto al primo genitore: solo file1.txt
+  await expect(rows.first().getByTestId('commit-files')).toHaveText('1')
+  await expect(rows.filter({ hasText: 'modifica su feature' }).getByTestId('commit-files')).toHaveText('1')
   await expect(rows.first()).toContainText('merge feature')
   await expect(rows.first()).toContainText('main')
   await expect(rows.first()).toContainText('v1.0')

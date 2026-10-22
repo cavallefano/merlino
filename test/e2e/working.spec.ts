@@ -19,7 +19,7 @@ test('stage di un file e commit con ⌘↩, poi amend', async () => {
   await page.getByTestId('commit-subject').fill('primo commit dalla ui')
   await page.keyboard.press(`${mod}+Enter`)
   await expect(page.getByTestId('commit-row').first()).toContainText('primo commit dalla ui')
-  await expect(page.getByTestId('working-row')).toBeHidden()
+  await expect(page.getByTestId('working-row')).toContainText('Nessuna modifica')
 
   writeFileSync(join(repo, 'file1.txt'), 'ancora\n')
   await page.getByTestId('working-row').click()
@@ -73,11 +73,12 @@ test('ignora un file non tracciato, stash e pop dalla sidebar', async () => {
   await page.getByTestId('stash-create').click()
   await expect(page.getByTestId('stash-item')).toContainText('lavoro a metà')
   // lo stash -u porta via anche il .gitignore appena creato: debug.log torna non tracciato
-  await expect(page.getByTestId('working-row')).toContainText('(1)')
+  await expect(page.getByTestId('working-files')).toHaveText('1')
 
   await page.getByTestId('stash-pop').click()
   await expect(page.getByTestId('stash-item')).toHaveCount(0)
-  await expect(page.getByTestId('working-row')).toBeVisible()
+  // tornano .gitignore (non tracciato) e file1.txt (modificato); debug.log ora è ignorato
+  await expect(page.getByTestId('working-files')).toHaveText('2')
   expect(readFileSync(join(repo, 'file1.txt'), 'utf8')).toBe('da mettere da parte\n')
   await app.close()
 })

@@ -49,6 +49,9 @@ function define(root: string) {
     const pagesTick = ref(0)
     let pages = new Map<number, HistoryPage>()
     const loading = new Set<string>()
+    // Numero di file cambiati per SHA: arriva dopo le pagine, countsTick fa ridisegnare le righe
+    const countsTick = ref(0)
+    const fileCounts = new Map<string, number>()
 
     const view = ref<'commit' | 'working'>('commit')
     const selected = ref<string | null>(null)
@@ -139,11 +142,24 @@ function define(root: string) {
             if (r.ok && r.value.version === version && history.value.version === version) {
               pages.set(p, r.value)
               pagesTick.value++
+              void loadFileCounts(p)
             }
           }),
         )
       }
       await Promise.all(requests)
+    }
+
+    async function loadFileCounts(p: number) {
+      const r = await window.api.historyFileCounts(root, p * PAGE_SIZE, PAGE_SIZE)
+      if (!r.ok) return
+      for (const [sha, n] of Object.entries(r.value)) fileCounts.set(sha, n)
+      countsTick.value++
+    }
+
+    function fileCountOf(sha: string): number | undefined {
+      void countsTick.value
+      return fileCounts.get(sha)
     }
 
     function commitAt(i: number): Commit | undefined {
@@ -349,7 +365,7 @@ function define(root: string) {
 
     return {
       root, info, error, refresh,
-      history, query, pagesTick, loadHistory, ensureRows, commitAt, rowAt, search, move,
+      history, query, pagesTick, loadHistory, ensureRows, commitAt, rowAt, fileCountOf, search, move,
       view, selected, selectedIndex, detail, selectedFile, diff, diffOptions, select, selectFile, loadDiff, toggleSplit, toggleWhitespace,
       status, stashes, working, workingDiff, selectedLines, subject, body, amend, changeCount, canCommit,
       selectWorking, selectWorkingFile, stage, unstage, discard, stageEverything, unstageEverything, ignore,
