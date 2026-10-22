@@ -496,7 +496,8 @@ describe('modifiche locali', () => {
   })
 
   it('parseStashList', () => {
-    expect(parseStashList('stash@{0}\0abc\0100\0On main: x\0')).toEqual([{ ref: 'stash@{0}', sha: 'abc', time: 100, message: 'On main: x' }])
+    // join: in un letterale '\0100' verrebbe letto come escape ottale
+    expect(parseStashList(['stash@{0}', 'abc', '100', 'On main: x', ''].join('\0'))).toEqual([{ ref: 'stash@{0}', sha: 'abc', time: 100, message: 'On main: x' }])
   })
 
   it('aggiunge un percorso al .gitignore con i caratteri speciali protetti', () => {
@@ -540,7 +541,8 @@ describe('stage e scarto di righe e blocchi con git vero', () => {
     expect(diff.hunks).toHaveLength(2)
     const addLine = diff.hunks[0].lines.findIndex((l) => l.type === 'add')
     await applyPatch(runner, buildPatch(diff, new Set([lineKey(0, addLine)]), false)!, 'stage')
-    expect(git(repo, 'diff', '--cached', '-U0')).toContain('@@ -2,0 +3 @@\n+DUE\n')
+    // git aggiunge all'intestazione il contesto della funzione: "@@ -2,0 +3 @@ riga 2"
+    expect(git(repo, 'diff', '--cached', '-U0')).toMatch(/@@ -2,0 \+3 @@.*\n\+DUE\n/)
     expect(git(repo, 'diff', '--cached', '-U0')).not.toContain('DICIOTTO')
   })
 

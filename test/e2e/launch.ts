@@ -1,3 +1,4 @@
+import '../setup-env'
 import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
