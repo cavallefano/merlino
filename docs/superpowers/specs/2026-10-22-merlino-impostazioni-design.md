@@ -183,7 +183,7 @@ Non viene copiata in Merlino: si legge e si scrive con `git config --global`, qu
   - tiene `settings` (preferenze, template, predefiniti), caricate all'avvio con `getSettings`;
   - ha `updatePreferences`, `saveTemplates` (con i 400 ms di pausa) e `setDefaultTemplate`;
   - `settingsSection: 'general' | 'commit' | 'diff' | 'integrations' | 'git' | null` dice se la schermata è aperta e su quale sezione.
-- **Variabili CSS**: `--code-size` e `--tab-size` stanno su `document.documentElement` e si aggiornano a ogni cambio. Sostituiscono i `font-size: 12px` del codice in `DiffView.vue`, `StageDiff.vue` e `styles.css`.
+- **Variabili CSS**: `--code-size` e `--tab-size` stanno su `document.documentElement` e si aggiornano a ogni cambio. Sostituiscono i `font-size: 12px` del codice dei diff in `DiffView.vue` e `StageDiff.vue`. La regola globale `code, pre, kbd` di `styles.css` resta com'è, perché serve anche alle scorciatoie nei pulsanti.
 - **Store di ogni repo**:
   - `diffOptions` parte da `diffSplit` e `diffIgnoreWhitespace`;
   - il contesto e l'algoritmo partono dalle preferenze correnti a ogni richiesta;
