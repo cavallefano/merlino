@@ -1,0 +1,24 @@
+appId: dev.merlino.app
+productName: Merlino
+directories:
+  output: dist
+files:
+  - out/**/*
+# Il modulo nativo del watcher non può stare dentro l'asar
+asarUnpack:
+  - node_modules/@parcel/watcher*/**
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.developer-tools
+  # Build non firmate (vedi spec, sezione Distribuzione)
+  identity: null
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+linux:
+  target: [AppImage, deb]
+  category: Development
+publish: null

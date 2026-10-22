@@ -2689,11 +2689,13 @@ Expected: PASS, 3 test. L'app impacchettata carica il watcher (il branch si aggi
 Run: `npm run dist -- --mac`
 Expected: in `dist/` compaiono `Merlino-0.1.0-arm64.dmg` e `Merlino-0.1.0.dmg`.
 
-Controlla che anche la build x64 contenga il binario del watcher per la sua architettura:
+Controlla che ogni build contenga il binario del watcher per la sua architettura:
 ```bash
-ls dist/mac/Merlino.app/Contents/Resources/app.asar.unpacked/node_modules/@parcel/
+for d in dist/mac dist/mac-arm64; do file $d/Merlino.app/Contents/Resources/app.asar.unpacked/node_modules/@parcel/watcher/build/Release/watcher.node; done
 ```
-Expected: `watcher` e `watcher-darwin-x64`. Se `watcher-darwin-x64` manca, il binario nativo non è stato incluso: su Mac Intel l'app funzionerebbe senza aggiornamento automatico. In quel caso si tiene solo `arm64` nel target mac e la build x64 si fa su una macchina x64.
+Expected: `x86_64` per `dist/mac` e `arm64` per `dist/mac-arm64`. Il pacchetto `@parcel/watcher-darwin-<arch>` c'è solo per l'architettura della macchina su cui si fa la build. Per l'altra, `@electron/rebuild` (eseguito da electron-builder) mette un `build/Release/watcher.node` compilato per l'architettura di destinazione, e `@parcel/watcher` lo usa quando il pacchetto della piattaforma manca. Verificato creando la build arm64 su un Mac Intel.
+
+Nota: per le prove senza binario, l'app impacchettata va copiata **fuori** dalla cartella del progetto. Altrimenti la ricerca dei moduli di Node sale fino a `merlino/node_modules` e trova comunque il binario.
 
 - [ ] **Step 4: Crea la CI di GitLab**
 
