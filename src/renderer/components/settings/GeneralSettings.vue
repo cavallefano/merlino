@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ThemePreference } from '../../../shared/types'
 import { useAppStore } from '../../stores/app'
+import PrefNumber from './PrefNumber.vue'
 
 const app = useAppStore()
 const THEMES: { value: ThemePreference; label: string }[] = [
@@ -23,6 +24,23 @@ const checked = (e: Event) => (e.target as HTMLInputElement).checked
     >
       <option v-for="t in THEMES" :key="t.value" :value="t.value">{{ t.label }}</option>
     </select>
+
+    <h2>Fetch</h2>
+    <label for="pref-autoFetchMinutes">Fetch automatico</label>
+    <div class="row">
+      <PrefNumber id="pref-autoFetchMinutes" field="autoFetchMinutes" :min="0" :max="60" />
+      <span class="muted">minuti (0 = spento)</span>
+    </div>
+    <span />
+    <label class="check">
+      <input
+        type="checkbox"
+        data-testid="pref-fetchPrune"
+        :checked="app.preferences.fetchPrune"
+        @change="app.updatePreferences({ fetchPrune: checked($event) })"
+      />
+      Togli i branch remoti cancellati sul server (--prune)
+    </label>
 
     <h2>Avvio</h2>
     <span />

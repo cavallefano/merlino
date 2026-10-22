@@ -3,7 +3,8 @@ import { statSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { Channels, type Result } from '../shared/ipc'
 import type { CommandLogEntry, GitErrorInfo, PatchMode, Preferences, RepoInfo, WorkingArea } from '../shared/types'
-import { clone, rebaseRange, runCommand } from './git/branches'
+import { AutoFetch } from './auto-fetch'
+import { clone, fetch as gitFetch, rebaseRange, runCommand } from './git/branches'
 import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
 import { readCommitFileDiff } from './git/diff'
@@ -113,9 +114,16 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
     }
   }
 
-  /** Effetti delle preferenze nel main: il tema (che segue anche il CSS con prefers-color-scheme). */
+  // In silenzio: nessun avanzamento al renderer, gli errori (es. credenziali) restano nel log dei comandi
+  const autoFetch = new AutoFetch(() => {
+    const prune = settings.get().preferences.fetchPrune
+    for (const s of sessions.values()) gitFetch(s.runner, () => {}, prune).catch(() => {})
+  })
+
+  /** Effetti delle preferenze nel main: il tema (che segue anche il CSS con prefers-color-scheme) e il fetch automatico. */
   function applyPreferences(p: Preferences): void {
     nativeTheme.themeSource = p.theme
+    autoFetch.schedule(p.autoFetchMinutes)
   }
   applyPreferences(settings.get().preferences)
 
@@ -230,7 +238,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   const progress = (root: string) => (line: string) => send(Channels.progress, { root, line })
   ipcMain.handle(Channels.refs, (_e, root: unknown) => withSession(root, (s) => readRefs(s.runner)))
   ipcMain.handle(Channels.command, (_e, root: unknown, command: unknown) =>
-    withSession(root, (s) => runCommand(s.runner, repoCommand(command), progress(s.root))),
+    withSession(root, (s) => runCommand(s.runner, repoCommand(command), progress(s.root), settings.get().preferences.fetchPrune)),
   )
   ipcMain.handle(Channels.rebaseRange, (_e, root: unknown, commit: unknown) => withSession(root, (s) => rebaseRange(s.runner, sha(commit))))
   ipcMain.handle(Channels.clone, async (_e, url: unknown, parent: unknown) => {
@@ -268,6 +276,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
 
   return {
     async disposeAll(): Promise<void> {
+      autoFetch.stop()
       await Promise.all([...sessions.values()].map((s) => s.dispose()))
       sessions.clear()
     },
