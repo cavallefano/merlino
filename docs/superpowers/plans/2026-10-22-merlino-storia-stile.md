@@ -839,3 +839,13 @@ git commit -m "feat: lista dei commit a due linee con grafo a quadrati, etichett
   - il numero di file;
   - la data sulle righe senza etichette.
 - [ ] **Step 4:** annota l'esito in fondo a questo piano e committa.
+
+**Note dall'esecuzione:**
+- **Task 1**:
+  - dei 4 test nuovi del layout ne fallivano 3; quello del repo vuoto passava già, perché senza genitori non c'è linea, e resta come guardia;
+  - il test esistente "repo senza commit" ora si aspetta `lanes: 1`: la colonna della riga delle modifiche locali c'è anche senza commit.
+- **Task 2–3**: come da piano. Prima del codice, i test modificati fallivano per i motivi attesi.
+- **Task 4**:
+  - lint, typecheck, unit (109, più 1 saltato) ed E2E (19): tutto verde;
+  - screenshot su una copia di `demo-backend`, in tema chiaro e scuro. Ci sono tutti gli elementi della spec: quadrati pieni e vuoti, tratteggio fino a HEAD, testo a scaletta, etichette piene a destra con la barretta del colore della corsia sui remote, numero di file, data sulle righe senza etichette, grassetto sul commit di HEAD.
+  - `history-perf` (100k commit, con lo pseudo-commit nel layout): passa, quindi `load` resta sotto i 2000 ms.
