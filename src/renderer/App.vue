@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { registerBuiltinActions, registry } from './actions/builtin'
 import { registerHistoryActions } from './actions/history'
+import { registerWorkingActions } from './actions/working'
 import CommandPalette from './components/CommandPalette.vue'
 import GitMissing from './components/GitMissing.vue'
 import OutputPanel from './components/OutputPanel.vue'
@@ -13,6 +14,7 @@ import { useAppStore } from './stores/app'
 const app = useAppStore()
 registerBuiltinActions()
 registerHistoryActions()
+registerWorkingActions()
 
 function onKey(e: KeyboardEvent) {
   const action = registry.match(e)

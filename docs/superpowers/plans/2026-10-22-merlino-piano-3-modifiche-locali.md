@@ -38,7 +38,7 @@ src/main/ipc-handlers.ts      + handler e validazione
 src/preload/index.ts          + operazioni
 src/renderer/stores/repo.ts   + stato locale, vista, selezione delle righe, commit, stash
 src/renderer/actions/working.ts  azioni della palette
-src/renderer/components/      Sidebar, WorkingView, StageDiff; HistoryView (riga "Modifiche locali"); RepoView (3 colonne)
+src/renderer/components/      RepoSidebar, WorkingView, StageDiff; HistoryView (riga "Modifiche locali"); RepoView (3 colonne)
 test/unit/                    status, patch
 test/integration/             working, patch-apply
 test/e2e/                     working.spec.ts
@@ -1028,7 +1028,8 @@ test('ignora un file non tracciato, stash e pop dalla sidebar', async () => {
   await page.getByTestId('stash-untracked').check()
   await page.getByTestId('stash-create').click()
   await expect(page.getByTestId('stash-item')).toContainText('lavoro a metà')
-  await expect(page.getByTestId('working-row')).toBeHidden()
+  // lo stash -u porta via anche il .gitignore appena creato: debug.log torna non tracciato
+  await expect(page.getByTestId('working-row')).toContainText('(1)')
 
   await page.getByTestId('stash-pop').click()
   await expect(page.getByTestId('stash-item')).toHaveCount(0)
@@ -1064,3 +1065,8 @@ git commit -m "feat: vista delle modifiche locali con stage di file, blocchi e r
 
 - [ ] **Step 1:** su una copia di `demo-backend` (`git clone --local` in una cartella temporanea), modifica due file con uno script Playwright temporaneo. Poi fai stage di una riga, commit, screenshot della vista delle modifiche locali e controlla il risultato con `git log -1 -p`.
 - [ ] **Step 2:** `npm run lint && npm run typecheck && npm test && npm run test:e2e`, tutto verde.
+
+**Note dall'esecuzione:**
+- `Sidebar.vue` è diventato `RepoSidebar.vue`: la regola `vue/multi-word-component-names` vuole nomi composti.
+- I pulsanti degli stash si mostrano con l'opacità, non con `display: none`. Restano raggiungibili da tastiera (`:focus-within`) e cliccabili nei test.
+- Bug trovato da un test E2E instabile: la selezione automatica del primo commit, alla fine del primo caricamento della storia, riportava la vista su "commit" anche se l'utente aveva già aperto le modifiche locali. Ora `select(sha, index, show = false)` carica il dettaglio senza cambiare vista.

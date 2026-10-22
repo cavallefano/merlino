@@ -98,7 +98,7 @@ function select(i: number) {
         v-for="{ i, commit } in visible"
         :key="i"
         class="row"
-        :class="{ selected: commit && commit.sha === repo.selected }"
+        :class="{ selected: commit && repo.view === 'commit' && commit.sha === repo.selected }"
         :style="{ top: `${i * ROW_HEIGHT}px`, paddingLeft: `${graphWidth + 8}px` }"
         data-testid="commit-row"
         @click="select(i)"
