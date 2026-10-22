@@ -1,16 +1,38 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
+import { registerBuiltinActions, registry } from './actions/builtin'
+import CommandPalette from './components/CommandPalette.vue'
 import GitMissing from './components/GitMissing.vue'
+import OutputPanel from './components/OutputPanel.vue'
 import RepoView from './components/RepoView.vue'
 import TabBar from './components/TabBar.vue'
 import WelcomeScreen from './components/WelcomeScreen.vue'
 import { useAppStore } from './stores/app'
 
 const app = useAppStore()
+registerBuiltinActions()
+
+function onKey(e: KeyboardEvent) {
+  const action = registry.match(e)
+  if (!action) return
+  e.preventDefault()
+  registry.run(action.id)
+}
 
 function onDrop(e: DragEvent) {
   const file = e.dataTransfer?.files[0]
   if (file) void app.open(window.api.pathForFile(file))
 }
+
+let offMenu: () => void = () => {}
+onMounted(() => {
+  window.addEventListener('keydown', onKey)
+  offMenu = window.api.onMenuAction((id) => registry.run(id))
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKey)
+  offMenu()
+})
 </script>
 
 <template>
@@ -28,6 +50,8 @@ function onDrop(e: DragEvent) {
         <WelcomeScreen v-else />
       </main>
     </template>
+    <OutputPanel v-if="app.outputOpen" />
+    <CommandPalette v-if="app.paletteOpen" />
   </div>
 </template>
 
