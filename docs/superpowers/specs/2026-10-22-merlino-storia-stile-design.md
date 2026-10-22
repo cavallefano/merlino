@@ -63,6 +63,7 @@ Il pallino dentro alcuni nodi del riferimento non viene replicato.
 
 - `History.reload` passa a `layoutGraph`, prima dei commit, uno pseudo-commit `{ sha: '', parents: [HEAD], dashed: true }`, senza genitori se HEAD non esiste. Poi scarta la sua riga, che è sempre `{ lane: 0, up: [] }`.
 - `layoutGraph` accetta per ogni commit un `dashed` facoltativo. Le corsie aperte da quel commit sono tratteggiate e restano tali finché esistono. I loro segmenti escono con `dashed: true`.
+- Il genitore di un commit vero non si unisce mai a una corsia tratteggiata. Esempio: un commit di un altro branch che ha HEAD come genitore apre una sua corsia piena, che confluisce in HEAD accanto a quella tratteggiata. Senza questa regola il suo legame con HEAD verrebbe disegnato tratteggiato.
 - `GraphEdge` prende un campo facoltativo `dashed?: boolean`.
 
 Effetto voluto: la linea di HEAD occupa sempre la corsia 0. L'instradamento attraverso gli altri branch lo fa l'algoritmo delle corsie, senza casi speciali nel disegno.
