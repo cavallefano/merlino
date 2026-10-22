@@ -1,0 +1,44 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fbfbfc;
+  --bg-alt: #f0f1f3;
+  --bg-hover: #e6e8eb;
+  --fg: #24272b;
+  --fg-muted: #6b7280;
+  --border: #dcdfe4;
+  --accent: hsl(170 70% 32%);
+  --accent-fg: #fff;
+  --danger: #b3261e;
+  --danger-bg: #fdecea;
+  font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1d21;
+    --bg-alt: #24272c;
+    --bg-hover: #2e3238;
+    --fg: #e3e5e8;
+    --fg-muted: #9aa0a8;
+    --border: #33373e;
+    --accent: hsl(170 55% 50%);
+    --accent-fg: #0d1f1c;
+    --danger: #f28b82;
+    --danger-bg: #3b1f1d;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; background: var(--bg); color: var(--fg); }
+button { font: inherit; color: inherit; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 5px; padding: 4px 10px; cursor: pointer; }
+button:hover { background: var(--bg-hover); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button:disabled { opacity: 0.5; cursor: default; }
+input { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 5px 8px; }
+input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+a { color: var(--accent); }
+code, pre, kbd { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; }
+.muted { color: var(--fg-muted); }
+.error { color: var(--danger); }
+.center { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; text-align: center; }
+.spacer { flex: 1; }
