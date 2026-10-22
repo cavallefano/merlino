@@ -1029,5 +1029,5 @@ git commit -m "feat: drag & drop di branch, commit, file e stash, con etichetta 
 ### Task 5: Verifica
 
 - [ ] **Step 1:** `npm run lint && npm run typecheck && npm test && npm run test:e2e`, con la finestra nascosta. Expected: tutto verde.
-- [ ] **Step 2:** Screenshot con la finestra nascosta, su una copia di `demo-backend`: una destinazione evidenziata e l'etichetta durante un drag simulato (`dragover` creato nella pagina), in tema chiaro e scuro.
+- [ ] **Step 2:** Screenshot con la finestra nascosta, su un repo di prova generato al momento, con nomi fittizi (branch, remote, tag e autori inventati): una destinazione evidenziata e l'etichetta durante un drag simulato (`dragover` creato nella pagina), in tema chiaro e scuro.
 - [ ] **Step 3:** Annota l'esito in fondo a questo piano, insieme alla prova a mano che resta all'utente: un file trascinato davvero nel Finder o in un editor. Commit.
