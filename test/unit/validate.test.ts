@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { diffFlags } from '../../src/main/git/diff'
-import { diffOptions, gitConfigEntry, gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
+import { commitTemplates, diffOptions, gitConfigEntry, gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
 import { DEFAULT_PREFERENCES } from '../../src/shared/preferences'
 
 describe('validazione degli argomenti dal renderer', () => {
@@ -78,5 +78,23 @@ describe('config globale di git', () => {
       ['commit.gpgsign', 'yes'],
       ['init.defaultBranch', 'a b'],
     ]) expect(() => gitConfigEntry(k, v)).toThrow()
+  })
+})
+
+describe('template di commit', () => {
+  const t = { id: 'a1', name: ' Feature ', subject: 'feat: ', body: '' }
+  it('nome con trim, campi in più scartati, elenco vuoto ammesso', () => {
+    expect(commitTemplates([{ ...t, extra: 1 }])).toEqual([{ id: 'a1', name: 'Feature', subject: 'feat: ', body: '' }])
+    expect(commitTemplates([])).toEqual([])
+  })
+  it('rifiuta id non validi o doppi, nomi vuoti, testi troppo lunghi, troppi template', () => {
+    for (const bad of [
+      [{ ...t, id: 'a b' }],
+      [t, t],
+      [{ ...t, name: '  ' }],
+      [{ ...t, subject: 'x'.repeat(501) }],
+      Array.from({ length: 201 }, (_, i) => ({ ...t, id: `t${i}` })),
+      'nope',
+    ]) expect(() => commitTemplates(bad)).toThrow()
   })
 })

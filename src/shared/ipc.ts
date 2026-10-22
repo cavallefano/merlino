@@ -3,6 +3,7 @@ import type {
   CommandLogEntry,
   Commit,
   CommitDetail,
+  CommitTemplate,
   DiffOptions,
   FileDiff,
   GitCheck,
@@ -28,6 +29,9 @@ export const Channels = {
   updatePreferences: 'settings:update-preferences',
   gitGlobalConfig: 'git:global-config',
   pickApp: 'app:pick-app',
+  saveCommitTemplates: 'settings:save-templates',
+  setDefaultTemplate: 'settings:set-default-template',
+  gitCommitTemplate: 'repo:git-commit-template',
   openInTerminal: 'repo:open-in-terminal',
   setGitGlobalConfig: 'git:set-global-config',
   checkGit: 'git:check',
@@ -79,6 +83,12 @@ export interface Api {
   getSettings(): Promise<AppSettings>
   /** Salva le preferenze (validate nel main) e ne applica gli effetti; restituisce le impostazioni aggiornate. */
   updatePreferences(patch: Partial<Preferences>): Promise<Result<AppSettings>>
+  /** Salva la libreria dei template (validata nel main); i predefiniti dei template eliminati se ne vanno. */
+  saveCommitTemplates(templates: CommitTemplate[]): Promise<Result<AppSettings>>
+  /** Template predefinito di un repo; null lo toglie. */
+  setDefaultTemplate(root: string, id: string | null): Promise<Result<AppSettings>>
+  /** Il commit.template di git del repo (o globale); null se non c'è. */
+  gitCommitTemplate(root: string): Promise<Result<{ path: string; text: string } | null>>
   /** Chiavi della config globale di git gestite dalle Impostazioni; '' = non impostata. */
   gitGlobalConfig(): Promise<Result<Record<GitConfigKey, string>>>
   /** '' toglie la chiave. */

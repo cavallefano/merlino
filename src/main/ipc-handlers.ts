@@ -8,6 +8,7 @@ import { AutoFetch } from './auto-fetch'
 import { clone, fetch as gitFetch, rebaseRange, runCommand } from './git/branches'
 import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
+import { readGitCommitTemplate } from './git/commit-template'
 import { readCommitFileDiff } from './git/diff'
 import { readGlobalConfig, setGlobalConfig } from './git/global-config'
 import { readRefs } from './git/refs'
@@ -33,6 +34,7 @@ import { editorLaunch, startApp, terminalLaunch } from './open-app'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
 import {
+  commitTemplates as validateTemplates,
   diffOptions,
   fileRequest,
   gitConfigEntry,
@@ -155,6 +157,30 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
     const r = w ? await dialog.showOpenDialog(w, options) : await dialog.showOpenDialog(options)
     return r.canceled ? null : (r.filePaths[0] ?? null)
   })
+  ipcMain.handle(Channels.saveCommitTemplates, (_e, value: unknown) =>
+    attempt(() => {
+      const commitTemplates = validateTemplates(value)
+      const ids = new Set(commitTemplates.map((t) => t.id))
+      // I predefiniti dei template eliminati se ne vanno con loro
+      const defaultTemplates = Object.fromEntries(Object.entries(settings.get().defaultTemplates).filter(([, id]) => ids.has(id)))
+      return settings.update({ commitTemplates, defaultTemplates })
+    }),
+  )
+  ipcMain.handle(Channels.setDefaultTemplate, (_e, root: unknown, id: unknown) =>
+    attempt(() => {
+      const repo = str(root, 'root')
+      const { commitTemplates, defaultTemplates } = settings.get()
+      if (id === null) {
+        delete defaultTemplates[repo]
+      } else {
+        const t = str(id, 'id')
+        if (!commitTemplates.some((x) => x.id === t)) throw new TypeError('Template non trovato')
+        defaultTemplates[repo] = t
+      }
+      return settings.update({ defaultTemplates })
+    }),
+  )
+  ipcMain.handle(Channels.gitCommitTemplate, (_e, root: unknown) => withSession(root, (s) => readGitCommitTemplate(s.runner)))
   ipcMain.handle(Channels.gitGlobalConfig, () => attempt(() => readGlobalConfig(globalRunner)))
   ipcMain.handle(Channels.setGitGlobalConfig, (_e, key: unknown, value: unknown) =>
     attempt(() => {

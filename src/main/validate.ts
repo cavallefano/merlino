@@ -1,6 +1,6 @@
 import { isAbsolute } from 'node:path'
 import { DIFF_ALGORITHMS } from '../shared/preferences'
-import type { DiffOptions, GitConfigKey, Operation, Preferences, RebaseStep, RepoCommand } from '../shared/types'
+import type { CommitTemplate, DiffOptions, GitConfigKey, Operation, Preferences, RebaseStep, RepoCommand } from '../shared/types'
 import type { DiffRequest } from './git/diff'
 import { GIT_CONFIG_KEYS } from './git/global-config'
 
@@ -220,4 +220,22 @@ export function gitConfigEntry(key: unknown, value: unknown): [GitConfigKey, str
     default:
       return [k, v]
   }
+}
+
+/** La libreria dei template: id unici, nomi con trim, testi entro i limiti. */
+export function commitTemplates(value: unknown): CommitTemplate[] {
+  if (!Array.isArray(value) || value.length > 200) throw new TypeError('elenco dei template non valido')
+  const ids = new Set<string>()
+  return value.map((raw) => {
+    const t = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
+    const id = str(t.id, 'id')
+    if (!/^[\w-]{1,64}$/.test(id) || ids.has(id)) throw new TypeError(`id del template non valido: ${id}`)
+    ids.add(id)
+    const name = typeof t.name === 'string' ? t.name.trim() : ''
+    if (!name || name.length > 100) throw new TypeError('Il nome di un template deve avere da 1 a 100 caratteri')
+    const subject = text(t.subject, 'oggetto')
+    const body = text(t.body, 'descrizione')
+    if (subject.length > 500 || body.length > 20_000) throw new TypeError(`Il template "${name}" è troppo lungo`)
+    return { id, name, subject, body }
+  })
 }
