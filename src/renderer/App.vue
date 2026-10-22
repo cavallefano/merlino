@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { registerBranchActions } from './actions/branches'
 import { registerBuiltinActions, registry } from './actions/builtin'
 import { registerHistoryActions } from './actions/history'
@@ -19,6 +19,13 @@ registerBuiltinActions()
 registerHistoryActions()
 registerWorkingActions()
 registerBranchActions()
+
+// Carattere e tab del codice nei diff, dalle preferenze
+watchEffect(() => {
+  const root = document.documentElement.style
+  root.setProperty('--code-size', `${app.preferences.codeFontSize}px`)
+  root.setProperty('--tab-size', String(app.preferences.tabSize))
+})
 
 function onKey(e: KeyboardEvent) {
   const action = registry.match(e)

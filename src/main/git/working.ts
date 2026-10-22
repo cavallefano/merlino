@@ -1,13 +1,13 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { DiffOptions, FileDiff, PatchMode, StashEntry, WorkingArea } from '../../shared/types'
-import { type DiffRequest, limitedDiff } from './diff'
+import { diffFlags, type DiffRequest, limitedDiff } from './diff'
 import type { GitRunner } from './runner'
 
 const write = { write: true }
 
 export async function readWorkingDiff(runner: GitRunner, file: DiffRequest, area: WorkingArea, options: DiffOptions): Promise<FileDiff> {
-  const base = ['--no-color', '--no-ext-diff', '-U3', ...(options.ignoreWhitespace ? ['-w'] : [])]
+  const base = ['--no-color', '--no-ext-diff', ...diffFlags(options)]
   const paths = file.oldPath ? [file.oldPath, file.path] : [file.path]
   // Il file non tracciato si confronta con un file vuoto: git esce con 1 quando c'è una differenza.
   // Quello in conflitto con HEAD: senza, git dà un diff combinato (diff --cc) e i marcatori non si vedrebbero.

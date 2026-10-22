@@ -2,9 +2,11 @@ import { defineStore, getActivePinia } from 'pinia'
 import { computed, reactive, ref, shallowRef } from 'vue'
 import type { Result } from '../../shared/ipc'
 import { buildPatch, lineKey } from '../../shared/patch'
+import { useAppStore } from './app'
 import type {
   Commit,
   CommitDetail,
+  DiffOptions,
   FileChange,
   FileDiff,
   GraphRow,
@@ -59,7 +61,14 @@ function define(root: string) {
     const detail = shallowRef<CommitDetail | null>(null)
     const selectedFile = shallowRef<FileChange | null>(null)
     const diff = shallowRef<FileDiff | null>(null)
-    const diffOptions = reactive({ split: false, ignoreWhitespace: false })
+    const prefs = () => useAppStore().preferences
+    const diffOptions = reactive({ split: prefs().diffSplit, ignoreWhitespace: prefs().diffIgnoreWhitespace })
+    const diffOptionsFor = (force: boolean): DiffOptions => ({
+      ignoreWhitespace: diffOptions.ignoreWhitespace,
+      force,
+      context: prefs().diffContext,
+      algorithm: prefs().diffAlgorithm,
+    })
     let detailRequest = 0
     let diffRequest = 0
 
@@ -209,7 +218,7 @@ function define(root: string) {
         return
       }
       const target = file.oldPath ? { path: file.path, oldPath: file.oldPath } : { path: file.path }
-      const r = await window.api.commitFileDiff(root, sha, target, { ignoreWhitespace: diffOptions.ignoreWhitespace, force })
+      const r = await window.api.commitFileDiff(root, sha, target, diffOptionsFor(force))
       if (request !== diffRequest) return
       if (r.ok) diff.value = r.value
       else error.value = r.error.message
@@ -267,7 +276,7 @@ function define(root: string) {
         return
       }
       const target = w.file.oldPath ? { path: w.file.path, oldPath: w.file.oldPath } : { path: w.file.path }
-      const r = await window.api.workingDiff(root, target, w.area, { ignoreWhitespace: diffOptions.ignoreWhitespace, force: false })
+      const r = await window.api.workingDiff(root, target, w.area, diffOptionsFor(false))
       if (request !== workingRequest) return
       if (r.ok) workingDiff.value = r.value
       else error.value = r.error.message

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
+import { diffFlags } from '../../src/main/git/diff'
+import { diffOptions, gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
 import { DEFAULT_PREFERENCES } from '../../src/shared/preferences'
 
 describe('validazione degli argomenti dal renderer', () => {
@@ -48,5 +49,18 @@ describe('preferenze', () => {
       { subjectLimit: 40 }, // sotto subjectWarn (50)
     ]) expect(() => preferences(DEFAULT_PREFERENCES, bad)).toThrow()
     expect(() => preferences({ ...DEFAULT_PREFERENCES, subjectLimit: 60 }, { subjectWarn: 70 })).toThrow()
+  })
+})
+
+describe('opzioni del diff', () => {
+  it('default 3 righe e algoritmo di git; valori fuori intervallo rifiutati', () => {
+    expect(diffOptions({ ignoreWhitespace: true })).toEqual({ ignoreWhitespace: true, force: false, context: 3, algorithm: 'default' })
+    expect(() => diffOptions({ context: 0 })).toThrow()
+    expect(() => diffOptions({ algorithm: '--output=x' })).toThrow()
+  })
+
+  it('argomenti per git', () => {
+    expect(diffFlags({ ignoreWhitespace: false, force: false })).toEqual(['-U3'])
+    expect(diffFlags({ ignoreWhitespace: true, force: false, context: 1, algorithm: 'patience' })).toEqual(['-U1', '--diff-algorithm=patience', '-w'])
   })
 })

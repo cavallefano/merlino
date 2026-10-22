@@ -187,6 +187,10 @@ export interface DiffOptions {
   ignoreWhitespace: boolean
   /** Mostra anche se supera i limiti. */
   force: boolean
+  /** Righe di contesto (-U); default 3. */
+  context?: number
+  /** 'default' o assente: diff.algorithm della config di git. */
+  algorithm?: DiffAlgorithm
 }
 
 export type WorkingArea = 'staged' | 'unstaged' | 'untracked' | 'conflicted'

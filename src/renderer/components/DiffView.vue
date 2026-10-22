@@ -58,7 +58,7 @@ const sign = (line: DiffLine) => (line.type === 'add' ? '+' : line.type === 'del
 </template>
 
 <style scoped>
-.diff { flex: 1; min-height: 0; overflow: auto; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; }
+.diff { flex: 1; min-height: 0; overflow: auto; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: var(--code-size, 12px); tab-size: var(--tab-size, 4); }
 .note { padding: 12px; font-family: system-ui, sans-serif; }
 .hunk { padding: 2px 8px; color: var(--fg-muted); background: var(--bg-alt); }
 .line { display: grid; grid-template-columns: 44px 44px 16px 1fr; line-height: 18px; content-visibility: auto; contain-intrinsic-size: auto 18px; }

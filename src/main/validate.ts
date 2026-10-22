@@ -29,7 +29,12 @@ export function fileRequest(value: unknown): DiffRequest {
 
 export function diffOptions(value: unknown): DiffOptions {
   const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
-  return { ignoreWhitespace: v.ignoreWhitespace === true, force: v.force === true }
+  return {
+    ignoreWhitespace: v.ignoreWhitespace === true,
+    force: v.force === true,
+    context: v.context === undefined ? 3 : intIn(v.context, 'Righe di contesto', 1, 20),
+    algorithm: v.algorithm === undefined ? 'default' : oneOf(v.algorithm, DIFF_ALGORITHMS, 'Algoritmo del diff'),
+  }
 }
 
 const MAX_TEXT = 50 * 1024 * 1024

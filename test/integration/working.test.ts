@@ -78,6 +78,19 @@ describe('modifiche locali', () => {
     expect(diff.hunks[0].lines.filter((l) => l.type === 'add').map((l) => l.text)).toContain('<<<<<<< HEAD')
   })
 
+  it('diff con 1 riga di contesto e algoritmo patience', async () => {
+    const calls: string[][] = []
+    const repo = makeRepo(0)
+    writeFileSync(join(repo, 'f.txt'), '1\n2\n3\n4\n5\n6\n7\n8\n9\n')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-q', '-m', 'base')
+    writeFileSync(join(repo, 'f.txt'), '1\n2\n3\n4\ncinque\n6\n7\n8\n9\n')
+    const runner = new GitRunner(() => 'git', repo, (e) => calls.push(e.args))
+    const diff = await readWorkingDiff(runner, { path: 'f.txt' }, 'unstaged', { ...options, context: 1, algorithm: 'patience' })
+    expect(diff.hunks[0].lines.map((l) => l.text)).toEqual(['4', '5', 'cinque', '6'])
+    expect(calls.at(-1)).toContain('--diff-algorithm=patience')
+  })
+
   it('commit con messaggio da stdin e amend', async () => {
     const { repo, runner } = setup()
     writeFileSync(join(repo, 'file1.txt'), 'cambiato\n')

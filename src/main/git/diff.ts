@@ -74,9 +74,17 @@ function countLines(text: string): number {
   return n
 }
 
+/** Opzioni comuni a tutti i diff: righe di contesto, algoritmo, spazi. */
+export function diffFlags(options: DiffOptions): string[] {
+  return [
+    `-U${options.context ?? 3}`,
+    ...(options.algorithm && options.algorithm !== 'default' ? [`--diff-algorithm=${options.algorithm}`] : []),
+    ...(options.ignoreWhitespace ? ['-w'] : []),
+  ]
+}
+
 export async function readCommitFileDiff(runner: GitRunner, sha: string, file: DiffRequest, options: DiffOptions): Promise<FileDiff> {
-  const args = ['show', '--format=', '--no-color', '--no-ext-diff', '--diff-merges=first-parent', '-M', '-U3']
-  if (options.ignoreWhitespace) args.push('-w')
+  const args = ['show', '--format=', '--no-color', '--no-ext-diff', '--diff-merges=first-parent', '-M', ...diffFlags(options)]
   // Con la rinomina servono entrambi i percorsi, altrimenti git vede un file nuovo
   args.push(sha, '--', ...(file.oldPath ? [file.oldPath, file.path] : [file.path]))
   return limitedDiff((await runner.run(args)).stdout, file, options.force)
