@@ -16,7 +16,8 @@ export async function launch(
   const app = await electron.launch({
     executablePath,
     args: executablePath ? args : ['.', ...args],
-    env: { ...process.env, MERLINO_USER_DATA: userData, ...env } as Record<string, string>,
+    // MERLINO_E2E: finestra nascosta, l'app non va in primo piano mentre si lavora al computer
+    env: { ...process.env, MERLINO_USER_DATA: userData, MERLINO_E2E: '1', ...env } as Record<string, string>,
   })
   // Se la finestra non arriva, l'errore riporta cosa ha scritto il processo (avvii bloccati rari, finora senza causa nota)
   let output = ''
