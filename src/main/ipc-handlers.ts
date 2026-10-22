@@ -1,5 +1,6 @@
 import { BrowserWindow, dialog, ipcMain, Menu, type MenuItemConstructorOptions, nativeTheme, shell } from 'electron'
 import { statSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { Channels, type Result } from '../shared/ipc'
 import type { CommandLogEntry, GitErrorInfo, PatchMode, Preferences, RepoInfo, WorkingArea } from '../shared/types'
@@ -8,6 +9,7 @@ import { clone, fetch as gitFetch, rebaseRange, runCommand } from './git/branche
 import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
 import { readCommitFileDiff } from './git/diff'
+import { readGlobalConfig, setGlobalConfig } from './git/global-config'
 import { readRefs } from './git/refs'
 import { readRepoInfo } from './git/repo-info'
 import { GitError, GitRunner } from './git/runner'
@@ -32,6 +34,7 @@ import { addRecent, type SettingsStore } from './settings'
 import {
   diffOptions,
   fileRequest,
+  gitConfigEntry,
   gitUrl,
   int,
   list,
@@ -74,6 +77,8 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
     if (log.length > MAX_LOG) log.shift()
     send(Channels.commandLogged, entry)
   }
+  // Per la config globale: una cartella qualsiasi va bene, e le scritture vanno in coda fra loro
+  const globalRunner = new GitRunner(gitPath, homedir(), onLog)
 
   async function open(path: string): Promise<Result<RepoInfo>> {
     try {
@@ -140,12 +145,22 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
     settings.update({ gitPath: str(path, 'path') })
     return checkGit(gitPath())
   })
-  ipcMain.handle(Channels.pickRepoFolder, async () => {
-    const options: Electron.OpenDialogOptions = { properties: ['openDirectory', 'createDirectory'] }
+  ipcMain.handle(Channels.pickRepoFolder, async (_e, defaultPath: unknown) => {
+    const options: Electron.OpenDialogOptions = {
+      properties: ['openDirectory', 'createDirectory'],
+      ...(typeof defaultPath === 'string' && isAbsolute(defaultPath) ? { defaultPath } : {}),
+    }
     const w = win()
     const r = w ? await dialog.showOpenDialog(w, options) : await dialog.showOpenDialog(options)
     return r.canceled ? null : (r.filePaths[0] ?? null)
   })
+  ipcMain.handle(Channels.gitGlobalConfig, () => attempt(() => readGlobalConfig(globalRunner)))
+  ipcMain.handle(Channels.setGitGlobalConfig, (_e, key: unknown, value: unknown) =>
+    attempt(() => {
+      const [k, v] = gitConfigEntry(key, value)
+      return setGlobalConfig(globalRunner, k, v)
+    }),
+  )
   ipcMain.handle(Channels.takeInitialPath, () => {
     const path = pendingPath
     pendingPath = null

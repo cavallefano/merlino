@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { makeRepo } from '../helpers/repo'
-import { launch } from './launch'
+import { launch, tempUserData } from './launch'
 
 const mod = process.platform === 'darwin' ? 'Meta' : 'Control'
 
@@ -24,4 +27,21 @@ test('Impostazioni: ⌘, apre, il tema arriva a nativeTheme, Esc chiude; senza "
   await expect(again.page.getByTestId('tab')).toHaveCount(0)
   expect(await again.app.evaluate(({ nativeTheme }) => nativeTheme.themeSource)).toBe('dark')
   await again.app.close()
+})
+
+test('sezione Git: nome ed email finiscono nella config globale (temporanea)', async () => {
+  const global = join(mkdtempSync(join(tmpdir(), 'merlino-gc-')), 'gitconfig')
+  writeFileSync(global, '')
+  const { app, page } = await launch([], tempUserData(), { GIT_CONFIG_GLOBAL: global })
+  // Prima che l'app abbia finito l'avvio la scorciatoia non è ancora registrata
+  await expect(page.getByRole('button', { name: 'Apri repository…' })).toBeVisible()
+  await page.keyboard.press(`${mod}+Comma`)
+  await page.getByTestId('settings-git').click()
+  await page.getByTestId('git-user.name').fill('Ada Lovelace')
+  await page.getByTestId('git-user.name').press('Tab')
+  await page.getByTestId('git-user.email').fill('ada@example.com')
+  await page.getByTestId('git-user.email').press('Tab')
+  await expect.poll(() => readFileSync(global, 'utf8')).toContain('name = Ada Lovelace')
+  await expect.poll(() => readFileSync(global, 'utf8')).toContain('email = ada@example.com')
+  await app.close()
 })

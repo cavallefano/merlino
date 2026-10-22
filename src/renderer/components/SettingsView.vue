@@ -3,11 +3,13 @@ import { type Component, computed, onMounted, onUnmounted } from 'vue'
 import { type SettingsSection, useAppStore } from '../stores/app'
 import DiffSettings from './settings/DiffSettings.vue'
 import GeneralSettings from './settings/GeneralSettings.vue'
+import GitSettings from './settings/GitSettings.vue'
 
 const app = useAppStore()
 const SECTIONS: { id: SettingsSection; title: string; component: Component }[] = [
   { id: 'general', title: 'Generale', component: GeneralSettings },
   { id: 'diff', title: 'Diff', component: DiffSettings },
+  { id: 'git', title: 'Git', component: GitSettings },
 ]
 const current = computed(() => SECTIONS.find((s) => s.id === app.settingsSection) ?? SECTIONS[0])
 

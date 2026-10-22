@@ -146,7 +146,7 @@ export const useAppStore = defineStore('app', () => {
     const values = await prompt({ title: 'Clona repository', fields: [{ key: 'url', label: 'URL' }], confirm: 'Scegli la cartella…' })
     const url = String(values?.url ?? '').trim()
     if (!url) return
-    const parent = await window.api.pickRepoFolder()
+    const parent = await window.api.pickRepoFolder(preferences.value.cloneFolder ?? undefined)
     if (!parent) return
     cloneParent = parent
     cloneProgress.value = 'Clone in corso…'

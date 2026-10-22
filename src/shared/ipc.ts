@@ -6,6 +6,7 @@ import type {
   DiffOptions,
   FileDiff,
   GitCheck,
+  GitConfigKey,
   GitErrorInfo,
   HistoryPage,
   HistorySummary,
@@ -25,6 +26,8 @@ export type Result<T> = { ok: true; value: T } | { ok: false; error: GitErrorInf
 export const Channels = {
   getSettings: 'settings:get',
   updatePreferences: 'settings:update-preferences',
+  gitGlobalConfig: 'git:global-config',
+  setGitGlobalConfig: 'git:set-global-config',
   checkGit: 'git:check',
   setGitPath: 'git:set-path',
   pickRepoFolder: 'repo:pick-folder',
@@ -74,10 +77,14 @@ export interface Api {
   getSettings(): Promise<AppSettings>
   /** Salva le preferenze (validate nel main) e ne applica gli effetti; restituisce le impostazioni aggiornate. */
   updatePreferences(patch: Partial<Preferences>): Promise<Result<AppSettings>>
+  /** Chiavi della config globale di git gestite dalle Impostazioni; '' = non impostata. */
+  gitGlobalConfig(): Promise<Result<Record<GitConfigKey, string>>>
+  /** '' toglie la chiave. */
+  setGitGlobalConfig(key: GitConfigKey, value: string): Promise<Result<void>>
   checkGit(): Promise<GitCheck>
   setGitPath(path: string): Promise<GitCheck>
   /** Dialog di scelta cartella; null se annullato. */
-  pickRepoFolder(): Promise<string | null>
+  pickRepoFolder(defaultPath?: string): Promise<string | null>
   /** Cartella passata da riga di comando all'avvio; la restituisce una volta sola. */
   takeInitialPath(): Promise<string | null>
   openRepo(path: string): Promise<Result<RepoInfo>>

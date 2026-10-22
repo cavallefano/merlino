@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { diffFlags } from '../../src/main/git/diff'
-import { diffOptions, gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
+import { diffOptions, gitConfigEntry, gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
 import { DEFAULT_PREFERENCES } from '../../src/shared/preferences'
 
 describe('validazione degli argomenti dal renderer', () => {
@@ -62,5 +62,21 @@ describe('opzioni del diff', () => {
   it('argomenti per git', () => {
     expect(diffFlags({ ignoreWhitespace: false, force: false })).toEqual(['-U3'])
     expect(diffFlags({ ignoreWhitespace: true, force: false, context: 1, algorithm: 'patience' })).toEqual(['-U1', '--diff-algorithm=patience', '-w'])
+  })
+})
+
+describe('config globale di git', () => {
+  it('solo le chiavi gestite, con i valori ammessi', () => {
+    expect(gitConfigEntry('user.name', '  Ada  ')).toEqual(['user.name', 'Ada'])
+    expect(gitConfigEntry('pull.rebase', '')).toEqual(['pull.rebase', ''])
+    expect(gitConfigEntry('gpg.format', 'ssh')).toEqual(['gpg.format', 'ssh'])
+    for (const [k, v] of [
+      ['core.editor', 'vim'],
+      ['user.name', '--global'],
+      ['user.name', 'a\nb'],
+      ['gpg.format', 'pgp'],
+      ['commit.gpgsign', 'yes'],
+      ['init.defaultBranch', 'a b'],
+    ]) expect(() => gitConfigEntry(k, v)).toThrow()
   })
 })
