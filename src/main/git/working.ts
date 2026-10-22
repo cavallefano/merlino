@@ -9,11 +9,13 @@ const write = { write: true }
 export async function readWorkingDiff(runner: GitRunner, file: DiffRequest, area: WorkingArea, options: DiffOptions): Promise<FileDiff> {
   const base = ['--no-color', '--no-ext-diff', '-U3', ...(options.ignoreWhitespace ? ['-w'] : [])]
   const paths = file.oldPath ? [file.oldPath, file.path] : [file.path]
-  // Il file non tracciato si confronta con un file vuoto: git esce con 1 quando c'è una differenza
+  // Il file non tracciato si confronta con un file vuoto: git esce con 1 quando c'è una differenza.
+  // Quello in conflitto con HEAD: senza, git dà un diff combinato (diff --cc) e i marcatori non si vedrebbero.
+  const against = area === 'staged' ? ['--cached', '-M'] : area === 'conflicted' ? ['HEAD'] : []
   const out =
     area === 'untracked'
       ? await runner.run(['diff', ...base, '--no-index', '--', '/dev/null', file.path], { okCodes: [0, 1] })
-      : await runner.run(['diff', ...(area === 'staged' ? ['--cached', '-M'] : []), ...base, '--', ...paths])
+      : await runner.run(['diff', ...against, ...base, '--', ...paths])
   return limitedDiff(out.stdout, file, options.force)
 }
 

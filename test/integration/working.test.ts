@@ -65,6 +65,19 @@ describe('modifiche locali', () => {
     expect(untracked.hunks[0].lines.map((l) => l.text)).toEqual(['x', 'y'])
   })
 
+  it('diff di un file in conflitto: i marcatori come righe aggiunte rispetto a HEAD', async () => {
+    const { repo, runner } = setup()
+    git(repo, 'switch', '-q', '-c', 'altro')
+    writeFileSync(join(repo, 'file1.txt'), 'altro\n')
+    git(repo, 'commit', '-q', '-am', 'su altro')
+    git(repo, 'switch', '-q', 'main')
+    writeFileSync(join(repo, 'file1.txt'), 'main\n')
+    git(repo, 'commit', '-q', '-am', 'su main')
+    expect(() => git(repo, 'merge', 'altro')).toThrow()
+    const diff = await readWorkingDiff(runner, { path: 'file1.txt' }, 'conflicted', options)
+    expect(diff.hunks[0].lines.filter((l) => l.type === 'add').map((l) => l.text)).toContain('<<<<<<< HEAD')
+  })
+
   it('commit con messaggio da stdin e amend', async () => {
     const { repo, runner } = setup()
     writeFileSync(join(repo, 'file1.txt'), 'cambiato\n')
