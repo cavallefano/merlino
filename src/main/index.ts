@@ -1,10 +1,35 @@
-import { app, BrowserWindow } from 'electron'
-import { join } from 'node:path'
+import { app, BrowserWindow, shell } from 'electron'
+import { appendFileSync, mkdirSync, statSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { Channels } from '../shared/ipc'
+import { pathFromArgv } from './argv'
+import { registerIpc } from './ipc-handlers'
+import { SettingsStore } from './settings'
 
 if (process.env.MERLINO_USER_DATA) app.setPath('userData', process.env.MERLINO_USER_DATA)
 
+// Gli errori non gestiti finiscono in un file di log e l'app resta aperta
+const logFile = join(app.getPath('userData'), 'logs', 'main.log')
+function logError(err: unknown): void {
+  mkdirSync(dirname(logFile), { recursive: true })
+  appendFileSync(logFile, `${new Date().toISOString()} ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`)
+}
+process.on('uncaughtException', logError)
+process.on('unhandledRejection', logError)
+
+function isDir(path: string): boolean {
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
+}
+const argvPath = (argv: string[], cwd: string) => pathFromArgv(argv, cwd, app.getAppPath(), isDir)
+
+let win: BrowserWindow | null = null
+
 function createWindow(): BrowserWindow {
-  const win = new BrowserWindow({
+  const w = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 800,
@@ -18,11 +43,38 @@ function createWindow(): BrowserWindow {
       nodeIntegration: false,
     },
   })
-  win.once('ready-to-show', () => win.show())
-  if (process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
-  else void win.loadFile(join(__dirname, '../renderer/index.html'))
-  return win
+  w.once('ready-to-show', () => w.show())
+  w.on('closed', () => {
+    win = null
+  })
+  w.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//.test(url)) void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  // Una cartella trascinata fuori dalla zona di drop farebbe navigare la finestra verso file://
+  w.webContents.on('will-navigate', (e) => e.preventDefault())
+  if (process.env.ELECTRON_RENDERER_URL) void w.loadURL(process.env.ELECTRON_RENDERER_URL)
+  else void w.loadFile(join(__dirname, '../renderer/index.html'))
+  return w
 }
 
-void app.whenReady().then(createWindow)
-app.on('window-all-closed', () => app.quit())
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', (_e, argv, cwd) => {
+    if (!win) return
+    if (win.isMinimized()) win.restore()
+    win.focus()
+    const path = argvPath(argv, cwd)
+    if (path) win.webContents.send(Channels.openPath, path)
+  })
+
+  void app.whenReady().then(() => {
+    const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'))
+    const ipc = registerIpc(() => win, settings, argvPath(process.argv, process.cwd()))
+    win = createWindow()
+    app.on('before-quit', () => void ipc.disposeAll())
+  })
+
+  app.on('window-all-closed', () => app.quit())
+}
