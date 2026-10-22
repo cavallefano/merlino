@@ -28,6 +28,24 @@ describe('History', () => {
     expect(page.commits[0].refs).toEqual([{ kind: 'branch', name: 'main', current: true }])
   })
 
+  it('linea tratteggiata dalle modifiche locali a HEAD, nella corsia 0', async () => {
+    const repo = makeRepo(2)
+    git(repo, 'switch', '-q', '-c', 'altro')
+    writeFileSync(join(repo, 'y.txt'), 'y\n')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-q', '-m', 'su altro')
+    git(repo, 'switch', '-q', 'main')
+    const h = history(repo)
+    await h.load('')
+    const { commits, rows } = h.page(0, 3)
+    expect(commits.map((c) => c.subject)).toEqual(['su altro', 'commit 2', 'commit 1'])
+    expect(rows).toEqual([
+      { lane: 1, up: [{ from: 0, to: 0, dashed: true }] },
+      { lane: 0, up: [{ from: 0, to: 0, dashed: true }, { from: 1, to: 0 }] },
+      { lane: 0, up: [{ from: 0, to: 0 }] },
+    ])
+  })
+
   it('ricerca per messaggio, percorso, autore e contenuto, senza grafo', async () => {
     const h = history(makeRepo(3))
     expect((await h.load('message:"commit 2"')).total).toBe(1)
@@ -45,6 +63,7 @@ describe('History', () => {
   })
 
   it('repo senza commit', async () => {
-    expect(await history(makeRepo(0)).load('')).toMatchObject({ total: 0, lanes: 0 })
+    // Una colonna c'è comunque: quella della riga delle modifiche locali
+    expect(await history(makeRepo(0)).load('')).toMatchObject({ total: 0, lanes: 1 })
   })
 })

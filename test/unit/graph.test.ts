@@ -42,6 +42,38 @@ describe('layoutGraph', () => {
     expect(rows[1].up).toEqual([{ from: 0, to: 0 }])
   })
 
+  it('pseudo-commit tratteggiato: la linea arriva a HEAD nella corsia 0', () => {
+    const { rows } = layoutGraph([{ sha: 'W', parents: ['C'], dashed: true }, c('C', 'B'), c('B')])
+    expect(rows).toEqual([
+      { lane: 0, up: [] },
+      { lane: 0, up: [{ from: 0, to: 0, dashed: true }] },
+      { lane: 0, up: [{ from: 0, to: 0 }] },
+    ])
+  })
+
+  it('HEAD non è il primo commit: il branch più recente non si appoggia alla linea tratteggiata', () => {
+    // X è figlio di H (HEAD) su un altro branch: il suo legame con H resta pieno
+    const { rows } = layoutGraph([{ sha: 'W', parents: ['H'], dashed: true }, c('X', 'H'), c('H', 'A'), c('A')])
+    expect(rows.map((r) => r.lane)).toEqual([0, 1, 0, 0])
+    expect(rows[1].up).toEqual([{ from: 0, to: 0, dashed: true }])
+    expect(rows[2].up).toEqual([{ from: 0, to: 0, dashed: true }, { from: 1, to: 0 }])
+    expect(rows[3].up).toEqual([{ from: 0, to: 0 }])
+  })
+
+  it('pseudo-commit senza HEAD (repo vuoto): nessuna linea', () => {
+    expect(layoutGraph([{ sha: 'W', parents: [], dashed: true }]).rows).toEqual([{ lane: 0, up: [] }])
+  })
+
+  it('su 2000 commit casuali la linea tratteggiata è continua fino a HEAD e poi sparisce', () => {
+    const commits = randomHistory(2000, 7)
+    const head = commits[300]
+    const { rows } = layoutGraph([{ sha: 'W', parents: [head.sha], dashed: true }, ...commits])
+    const headRow = 301
+    expect(rows[headRow].lane).toBe(0)
+    for (let r = 1; r <= headRow; r++) expect(rows[r].up.filter((e) => e.dashed)).toEqual([{ from: 0, to: 0, dashed: true }])
+    for (let r = headRow + 1; r < rows.length; r++) expect(rows[r].up.some((e) => e.dashed)).toBe(false)
+  })
+
   it('invarianti su 2000 commit casuali', () => {
     const commits = randomHistory(2000, 42)
     const { rows, lanes } = layoutGraph(commits)

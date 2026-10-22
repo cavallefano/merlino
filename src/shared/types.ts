@@ -74,6 +74,8 @@ export interface Commit {
 export interface GraphEdge {
   from: number
   to: number
+  /** Linea tratteggiata dalle modifiche locali a HEAD. */
+  dashed?: boolean
 }
 
 export interface GraphRow {

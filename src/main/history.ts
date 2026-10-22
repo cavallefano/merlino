@@ -47,8 +47,11 @@ export class History {
         this.rows = this.commits.map(() => ({ lane: 0, up: [] }))
         this.lanes = 0
       } else {
-        const graph = layoutGraph(this.commits)
-        this.rows = graph.rows
+        // Riga delle modifiche locali: uno pseudo-commit sopra tutti, con la linea tratteggiata fino a HEAD.
+        // La sua riga ({ lane: 0, up: [] }) la ricostruisce il renderer.
+        const headSha = head.stdout.trim()
+        const graph = layoutGraph([{ sha: '', parents: headSha ? [headSha] : [], dashed: true }, ...this.commits])
+        this.rows = graph.rows.slice(1)
         this.lanes = graph.lanes
       }
       this.key = key
