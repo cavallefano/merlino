@@ -27,6 +27,8 @@ export const Channels = {
   getSettings: 'settings:get',
   updatePreferences: 'settings:update-preferences',
   gitGlobalConfig: 'git:global-config',
+  pickApp: 'app:pick-app',
+  openInTerminal: 'repo:open-in-terminal',
   setGitGlobalConfig: 'git:set-global-config',
   checkGit: 'git:check',
   setGitPath: 'git:set-path',
@@ -124,6 +126,10 @@ export interface Api {
   clone(url: string, parent: string): Promise<Result<string>>
   /** Apre un file del repo con l'applicazione predefinita del sistema. */
   openInEditor(root: string, path: string): Promise<Result<void>>
+  /** Dialog di scelta di un'applicazione (.app su macOS, .exe su Windows); null se annullato. */
+  pickApp(): Promise<string | null>
+  /** Apre il terminale scelto nelle Impostazioni (o quello predefinito) nella cartella del repo. */
+  openInTerminal(root: string): Promise<Result<void>>
   /** Menu contestuale nativo; restituisce l'id della voce scelta o null. */
   contextMenu(items: MenuItem[]): Promise<string | null>
   onProgress(cb: (event: { root: string; line: string }) => void): () => void

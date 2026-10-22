@@ -29,6 +29,7 @@ import {
   unstageAll,
   unstageFiles,
 } from './git/working'
+import { editorLaunch, startApp, terminalLaunch } from './open-app'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
 import {
@@ -267,10 +268,27 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   })
   ipcMain.handle(Channels.openInEditor, (_e, root: unknown, path: unknown) =>
     withSession(root, async (s) => {
-      const error = await shell.openPath(join(s.root, relPath(path)))
+      const file = join(s.root, relPath(path))
+      const editor = settings.get().preferences.editorApp
+      if (editor) return startApp(editorLaunch(process.platform, editor, file))
+      const error = await shell.openPath(file)
       if (error) throw new Error(error)
     }),
   )
+  ipcMain.handle(Channels.openInTerminal, (_e, root: unknown) =>
+    withSession(root, (s) => startApp(terminalLaunch(process.platform, settings.get().preferences.terminalApp, s.root))),
+  )
+  ipcMain.handle(Channels.pickApp, async () => {
+    const options: Electron.OpenDialogOptions =
+      process.platform === 'darwin'
+        ? { defaultPath: '/Applications', properties: ['openFile'], filters: [{ name: 'Applicazioni', extensions: ['app'] }] }
+        : process.platform === 'win32'
+          ? { properties: ['openFile'], filters: [{ name: 'Programmi', extensions: ['exe'] }] }
+          : { properties: ['openFile'] }
+    const w = win()
+    const r = w ? await dialog.showOpenDialog(w, options) : await dialog.showOpenDialog(options)
+    return r.canceled ? null : (r.filePaths[0] ?? null)
+  })
   ipcMain.handle(Channels.contextMenu, (e, items: unknown) => {
     const entries = Array.isArray(items) ? items.slice(0, 60) : []
     return new Promise<string | null>((resolve) => {

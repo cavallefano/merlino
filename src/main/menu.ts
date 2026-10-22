@@ -42,6 +42,7 @@ export function buildMenu(run: (actionId: string) => void): void {
         action('Apri repository…', 'repo.open'),
         action('Nuovo repository…', 'repo.init'),
         action('Clona repository…', 'repo.clone'),
+        action('Apri nel terminale', 'repo.openTerminal'),
         { type: 'separator' },
         action('Chiudi tab', 'tab.close'),
         ...(isMac ? [] : [{ type: 'separator' } as MenuItemConstructorOptions, action('Impostazioni…', 'settings.open')]),
