@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { formatDate } from '../history/format'
+import { formatShortDate } from '../history/format'
 import { drawGraph, LANE_WIDTH, MAX_LANES, ROW_HEIGHT } from '../history/graph-draw'
 import { useRepoStore } from '../stores/repo'
 
@@ -22,7 +22,18 @@ const visible = computed(() =>
     return { i, commit: repo.commitAt(i) }
   }),
 )
-const graphWidth = computed(() => (repo.history.lanes ? Math.min(repo.history.lanes, MAX_LANES) * LANE_WIDTH + 8 : 0))
+// Larghezza del grafo dalle sole righe visibili: un punto della storia con molte colonne non allarga tutto il resto
+const graphWidth = computed(() => {
+  if (!repo.history.lanes) return 0
+  let max = 0
+  for (let i = first.value; i <= last.value + 1; i++) {
+    const row = repo.rowAt(i)
+    if (!row) continue
+    max = Math.max(max, row.lane)
+    for (const e of row.up) max = Math.max(max, e.from, e.to)
+  }
+  return Math.min(max + 1, MAX_LANES) * LANE_WIDTH + 8
+})
 
 watch([first, last, () => repo.history.version], () => void repo.ensureRows(first.value, last.value), { immediate: true })
 watch([first, last, () => repo.pagesTick, graphWidth], () => void nextTick(draw))
@@ -101,7 +112,7 @@ function select(i: number) {
           >{{ r.name }}</span>
           <span class="subject">{{ commit.subject }}</span>
           <span class="author">{{ commit.author }}</span>
-          <span class="date">{{ formatDate(commit.authorTime) }}</span>
+          <span class="date">{{ formatShortDate(commit.authorTime) }}</span>
         </template>
       </div>
     </div>
@@ -116,10 +127,11 @@ function select(i: number) {
 .row:hover { background: var(--bg-hover); }
 .row.selected { background: var(--accent); color: var(--accent-fg); }
 .row.selected .author, .row.selected .date { color: inherit; }
-.subject { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-.author { width: 140px; overflow: hidden; text-overflow: ellipsis; color: var(--fg-muted); }
-.date { width: 140px; text-align: right; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
-.ref { padding: 0 6px; border: 1px solid currentColor; border-radius: 9px; font-size: 11px; line-height: 16px; }
+.subject { flex: 1 1 0; min-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.author { flex: 0 0 110px; overflow: hidden; text-overflow: ellipsis; color: var(--fg-muted); }
+.date { flex: 0 0 104px; text-align: right; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+/* Le etichette lunghe si accorciano prima del messaggio */
+.ref { flex: 0 1 auto; min-width: 24px; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; border: 1px solid currentColor; border-radius: 9px; font-size: 11px; line-height: 16px; }
 .ref.branch { color: var(--accent); }
 .row.selected .ref { color: inherit; }
 .ref.remote { color: var(--fg-muted); }

@@ -40,5 +40,5 @@ onMounted(() => {
 .toolbar { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border); }
 .branch { padding: 1px 8px; border-radius: 10px; background: var(--bg-hover); font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; }
 .message { margin: 0; padding: 6px 12px; border-bottom: 1px solid var(--border); }
-.panes { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.panes { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); }
 </style>

@@ -2402,3 +2402,12 @@ Expected: prima riga in meno di 2 secondi dall'apertura della finestra, righe pr
 npm run lint && npm run typecheck && npm test && npm run test:e2e
 ```
 Expected: tutto verde.
+
+**Esito della verifica (22/10/2026, Mac Intel i7-9750H):**
+- `History.load` su 100.000 commit: 1612 ms.
+- Prima riga dall'avvio dell'app, compreso l'avvio di Electron: 3,0 s su 100k commit e 1,8 s su `demo-backend` (2911 commit).
+- Correzioni al layout dopo gli screenshot del repo reale:
+  - date compatte nella lista (`formatShortDate`);
+  - etichette dei ref che si accorciano prima del messaggio;
+  - colonne al 55/45;
+  - larghezza del grafo calcolata sulle righe visibili e non sul massimo dell'intera storia.
