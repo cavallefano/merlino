@@ -1,4 +1,15 @@
-import type { AppSettings, CommandLogEntry, GitCheck, GitErrorInfo, RepoInfo } from './types'
+import type {
+  AppSettings,
+  CommandLogEntry,
+  CommitDetail,
+  DiffOptions,
+  FileDiff,
+  GitCheck,
+  GitErrorInfo,
+  HistoryPage,
+  HistorySummary,
+  RepoInfo,
+} from './types'
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: GitErrorInfo }
 
@@ -14,6 +25,10 @@ export const Channels = {
   setActiveRepo: 'repo:set-active',
   repoInfo: 'repo:info',
   getCommandLog: 'log:get',
+  historyLoad: 'history:load',
+  historyPage: 'history:page',
+  commitDetail: 'commit:detail',
+  commitFileDiff: 'commit:file-diff',
   // eventi dal main al renderer
   repoChanged: 'repo:changed',
   commandLogged: 'log:entry',
@@ -37,6 +52,11 @@ export interface Api {
   setActiveRepo(root: string | null): Promise<void>
   repoInfo(root: string): Promise<Result<RepoInfo>>
   getCommandLog(): Promise<CommandLogEntry[]>
+  /** Carica (o riusa) la storia; version cambia quando cambiano ref, HEAD o ricerca. */
+  historyLoad(root: string, query: string): Promise<Result<HistorySummary>>
+  historyPage(root: string, start: number, count: number): Promise<Result<HistoryPage>>
+  commitDetail(root: string, sha: string): Promise<Result<CommitDetail>>
+  commitFileDiff(root: string, sha: string, file: { path: string; oldPath?: string }, options: DiffOptions): Promise<Result<FileDiff>>
   /** Percorso sul disco di un file o di una cartella trascinati nella finestra. */
   pathForFile(file: File): string
   onRepoChanged(cb: (root: string) => void): () => void

@@ -1,19 +1,45 @@
 import { type BrowserWindow, dialog, ipcMain } from 'electron'
 import { statSync } from 'node:fs'
 import { Channels, type Result } from '../shared/ipc'
-import type { CommandLogEntry, GitErrorInfo, RepoInfo } from '../shared/types'
+import type { CommandLogEntry, DiffOptions, GitErrorInfo, RepoInfo } from '../shared/types'
 import { checkGit } from './git/check'
+import { readCommitDetail } from './git/commit'
+import { type DiffRequest, readCommitFileDiff } from './git/diff'
 import { readRepoInfo } from './git/repo-info'
 import { GitError, GitRunner } from './git/runner'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
 
 const MAX_LOG = 500
+const MAX_PAGE = 5000
 
 /** Gli argomenti arrivano dal renderer: si validano qui. */
 function str(value: unknown, name: string): string {
   if (typeof value !== 'string' || value === '') throw new TypeError(`${name} deve essere una stringa non vuota`)
   return value
+}
+
+/** Uno SHA che non può essere scambiato per un'opzione di git. */
+function sha(value: unknown): string {
+  const s = str(value, 'sha')
+  if (!/^[0-9a-f]{4,64}$/i.test(s)) throw new TypeError('sha non valido')
+  return s
+}
+
+function int(value: unknown, name: string, max: number): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max) throw new TypeError(`${name} non valido`)
+  return value
+}
+
+function fileRequest(value: unknown): DiffRequest {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as { path?: unknown; oldPath?: unknown }
+  const path = str(v.path, 'path')
+  return v.oldPath === undefined ? { path } : { path, oldPath: str(v.oldPath, 'oldPath') }
+}
+
+function diffOptions(value: unknown): DiffOptions {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  return { ignoreWhitespace: v.ignoreWhitespace === true, force: v.force === true }
 }
 
 function fail(e: unknown): { ok: false; error: GitErrorInfo } {
@@ -63,6 +89,16 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
     }
   }
 
+  async function withSession<T>(root: unknown, fn: (session: RepoSession) => Promise<T> | T): Promise<Result<T>> {
+    try {
+      const session = sessions.get(str(root, 'root'))
+      if (!session) throw new Error('Repository non aperto')
+      return { ok: true, value: await fn(session) }
+    } catch (e) {
+      return fail(e)
+    }
+  }
+
   ipcMain.handle(Channels.getSettings, () => settings.get())
   ipcMain.handle(Channels.checkGit, () => checkGit(gitPath()))
   ipcMain.handle(Channels.setGitPath, (_e, path: unknown) => {
@@ -103,16 +139,20 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.handle(Channels.setActiveRepo, (_e, r: unknown) => {
     settings.update({ activeRepo: r === null ? null : str(r, 'root') })
   })
-  ipcMain.handle(Channels.repoInfo, async (_e, r: unknown) => {
-    const session = sessions.get(str(r, 'root'))
-    if (!session) return fail(new Error('Repository non aperto'))
-    try {
-      return { ok: true, value: await readRepoInfo(session.runner) }
-    } catch (e) {
-      return fail(e)
-    }
-  })
+  ipcMain.handle(Channels.repoInfo, (_e, root: unknown) => withSession(root, (s) => readRepoInfo(s.runner)))
   ipcMain.handle(Channels.getCommandLog, () => log)
+  ipcMain.handle(Channels.historyLoad, (_e, root: unknown, query: unknown) =>
+    withSession(root, (s) => s.history.load(typeof query === 'string' ? query.slice(0, 1000) : '')),
+  )
+  ipcMain.handle(Channels.historyPage, (_e, root: unknown, start: unknown, count: unknown) =>
+    withSession(root, (s) => s.history.page(int(start, 'start', Number.MAX_SAFE_INTEGER), int(count, 'count', MAX_PAGE))),
+  )
+  ipcMain.handle(Channels.commitDetail, (_e, root: unknown, commit: unknown) =>
+    withSession(root, (s) => readCommitDetail(s.runner, sha(commit))),
+  )
+  ipcMain.handle(Channels.commitFileDiff, (_e, root: unknown, commit: unknown, file: unknown, options: unknown) =>
+    withSession(root, (s) => readCommitFileDiff(s.runner, sha(commit), fileRequest(file), diffOptions(options))),
+  )
 
   return {
     async disposeAll(): Promise<void> {
