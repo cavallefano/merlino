@@ -57,7 +57,7 @@ onUnmounted(() => {
 
 <style scoped>
 .app { display: flex; flex-direction: column; height: 100%; }
-.main { flex: 1; min-height: 0; overflow: auto; }
+.main { flex: 1; min-height: 0; overflow: hidden; }
 .error-bar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--danger-bg); color: var(--danger); border-bottom: 1px solid var(--border); }
 .error-bar span { flex: 1; }
 </style>
