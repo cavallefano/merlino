@@ -35,6 +35,7 @@ export const Channels = {
   getCommandLog: 'log:get',
   historyLoad: 'history:load',
   historyPage: 'history:page',
+  historyFileCounts: 'history:file-counts',
   commitDetail: 'commit:detail',
   commitFileDiff: 'commit:file-diff',
   workingStatus: 'working:status',
@@ -84,6 +85,8 @@ export interface Api {
   /** Carica (o riusa) la storia; version cambia quando cambiano ref, HEAD o ricerca. */
   historyLoad(root: string, query: string): Promise<Result<HistorySummary>>
   historyPage(root: string, start: number, count: number): Promise<Result<HistoryPage>>
+  /** File cambiati dai commit [start, start + count) della storia caricata, da SHA a numero. */
+  historyFileCounts(root: string, start: number, count: number): Promise<Result<Record<string, number>>>
   commitDetail(root: string, sha: string): Promise<Result<CommitDetail>>
   commitFileDiff(root: string, sha: string, file: { path: string; oldPath?: string }, options: DiffOptions): Promise<Result<FileDiff>>
   workingStatus(root: string): Promise<Result<WorkingStatus>>

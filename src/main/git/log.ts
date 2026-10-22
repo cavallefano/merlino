@@ -45,3 +45,13 @@ function classify(ref: string, current: boolean): CommitRef {
   if (ref.startsWith('refs/tags/')) return { kind: 'tag', name: ref.slice('refs/tags/'.length), current }
   return { kind: 'branch', name: ref, current }
 }
+
+/** Output di log --format=%x00%H --shortstat: da SHA a numero di file cambiati (0 se manca la riga di shortstat). */
+export function parseFileCounts(out: string): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const block of out.split('\0')) {
+    const [sha = '', ...rest] = block.split('\n')
+    if (sha) counts.set(sha, Number(/(\d+) files? changed/.exec(rest.join('\n'))?.[1] ?? 0))
+  }
+  return counts
+}

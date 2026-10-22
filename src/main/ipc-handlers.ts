@@ -138,6 +138,9 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.handle(Channels.historyPage, (_e, root: unknown, start: unknown, count: unknown) =>
     withSession(root, (s) => s.history.page(int(start, 'start', Number.MAX_SAFE_INTEGER), int(count, 'count', MAX_PAGE))),
   )
+  ipcMain.handle(Channels.historyFileCounts, (_e, root: unknown, start: unknown, count: unknown) =>
+    withSession(root, (s) => s.history.fileCounts(int(start, 'start', Number.MAX_SAFE_INTEGER), int(count, 'count', MAX_PAGE))),
+  )
   ipcMain.handle(Channels.commitDetail, (_e, root: unknown, commit: unknown) =>
     withSession(root, (s) => readCommitDetail(s.runner, sha(commit))),
   )

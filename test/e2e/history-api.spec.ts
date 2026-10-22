@@ -19,6 +19,11 @@ test('window.api: storia, dettaglio, diff e SHA non validi', async () => {
   if (!history.ok) throw new Error(history.error.message)
   expect(history.value.commits.map((c) => c.subject)).toEqual(['commit 2', 'commit 1'])
 
+  const counts = await page.evaluate((x) => (globalThis as unknown as Win).api.historyFileCounts(x.repo, 0, 10), a)
+  expect(counts).toMatchObject({ ok: true, value: { [history.value.commits[0].sha]: 1, [history.value.commits[1].sha]: 1 } })
+  const badCount = await page.evaluate((x) => (globalThis as unknown as Win).api.historyFileCounts(x.repo, -1, 10), a)
+  expect(badCount.ok).toBe(false)
+
   const detail = await page.evaluate((x) => (globalThis as unknown as Win).api.commitDetail(x.repo, x.sha), a)
   expect(detail).toMatchObject({ ok: true, value: { files: [{ path: 'file2.txt', status: 'A' }] } })
 

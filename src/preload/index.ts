@@ -24,6 +24,7 @@ const api: Api = {
   getCommandLog: () => ipcRenderer.invoke(Channels.getCommandLog),
   historyLoad: (root, query) => ipcRenderer.invoke(Channels.historyLoad, root, query),
   historyPage: (root, start, count) => ipcRenderer.invoke(Channels.historyPage, root, start, count),
+  historyFileCounts: (root, start, count) => ipcRenderer.invoke(Channels.historyFileCounts, root, start, count),
   commitDetail: (root, sha) => ipcRenderer.invoke(Channels.commitDetail, root, sha),
   commitFileDiff: (root, sha, file, options) => ipcRenderer.invoke(Channels.commitFileDiff, root, sha, file, options),
   workingStatus: (root) => ipcRenderer.invoke(Channels.workingStatus, root),

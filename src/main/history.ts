@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { Commit, GraphRow, HistoryPage, HistorySummary } from '../shared/types'
 import { layoutGraph } from './git/graph'
-import { LOG_FORMAT, parseLog } from './git/log'
+import { LOG_FORMAT, parseFileCounts, parseLog } from './git/log'
 import type { GitRunner } from './git/runner'
 import { searchArgs } from './git/search'
 
@@ -13,6 +13,8 @@ export class History {
   private rows: GraphRow[] = []
   private lanes = 0
   private queue: Promise<unknown> = Promise.resolve()
+  /** Il numero di file di uno SHA non cambia: la cache non scade. */
+  private readonly fileCountCache = new Map<string, number>()
 
   constructor(private readonly runner: GitRunner) {}
 
@@ -29,6 +31,20 @@ export class History {
       commits: this.commits.slice(start, start + count),
       rows: this.rows.slice(start, start + count),
     }
+  }
+
+  /** File cambiati dai commit [start, start + count), per i merge rispetto al primo genitore; da SHA a numero. */
+  async fileCounts(start: number, count: number): Promise<Record<string, number>> {
+    const shas = this.commits.slice(start, start + count).map((c) => c.sha)
+    const missing = shas.filter((sha) => !this.fileCountCache.has(sha))
+    if (missing.length) {
+      const out = await this.runner.run(
+        ['log', '--stdin', '--no-walk=unsorted', '--format=%x00%H', '--shortstat', '--diff-merges=first-parent'],
+        { stdin: `${missing.join('\n')}\n` },
+      )
+      for (const [sha, n] of parseFileCounts(out.stdout)) this.fileCountCache.set(sha, n)
+    }
+    return Object.fromEntries(shas.map((sha) => [sha, this.fileCountCache.get(sha) ?? 0]))
   }
 
   private async reload(query: string): Promise<HistorySummary> {

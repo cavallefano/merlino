@@ -46,6 +46,34 @@ describe('History', () => {
     ])
   })
 
+  it('numero di file: commit normale, merge sul primo genitore, merge vuoto; la seconda volta dalla cache', async () => {
+    const repo = makeRepo(1)
+    git(repo, 'switch', '-q', '-c', 'f')
+    writeFileSync(join(repo, 'a.txt'), 'a\n')
+    writeFileSync(join(repo, 'b.txt'), 'b\n')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-q', '-m', 'due file')
+    git(repo, 'switch', '-q', 'main')
+    git(repo, 'merge', '-q', '--no-ff', 'f', '-m', 'merge con modifiche')
+    git(repo, 'switch', '-q', '-c', 'g')
+    writeFileSync(join(repo, 'c.txt'), 'c\n')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-q', '-m', 'su g')
+    git(repo, 'switch', '-q', 'main')
+    git(repo, 'merge', '-q', '--no-ff', '-s', 'ours', 'g', '-m', 'merge vuoto')
+
+    const calls: string[][] = []
+    const h = new History(new GitRunner(() => 'git', repo, (e) => calls.push(e.args)))
+    const { total } = await h.load('')
+    const counts = await h.fileCounts(0, total)
+    const bySubject = Object.fromEntries(h.page(0, total).commits.map((c) => [c.subject, counts[c.sha]]))
+    expect(bySubject).toEqual({ 'merge vuoto': 0, 'su g': 1, 'merge con modifiche': 2, 'due file': 2, 'commit 1': 1 })
+
+    const before = calls.length
+    expect(await h.fileCounts(0, total)).toEqual(counts)
+    expect(calls.length).toBe(before)
+  })
+
   it('ricerca per messaggio, percorso, autore e contenuto, senza grafo', async () => {
     const h = history(makeRepo(3))
     expect((await h.load('message:"commit 2"')).total).toBe(1)

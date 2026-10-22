@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseDecoration, parseLog } from '../../src/main/git/log'
+import { parseDecoration, parseFileCounts, parseLog } from '../../src/main/git/log'
 
 const record = (...fields: string[]) => fields.join('\0')
 
@@ -39,5 +39,12 @@ describe('parseDecoration', () => {
       { kind: 'branch', name: 'feature/x', current: false },
     ])
     expect(parseDecoration('HEAD')).toEqual([{ kind: 'head', name: 'HEAD', current: true }])
+  })
+})
+
+describe('parseFileCounts', () => {
+  it('numero di file per SHA; 0 senza riga di shortstat (merge senza modifiche)', () => {
+    const out = '\0aaa\n\n 2 files changed, 2 insertions(+), 1 deletion(-)\n\0bbb\n\0ccc\n\n 1 file changed, 1 insertion(+)\n'
+    expect(parseFileCounts(out)).toEqual(new Map([['aaa', 2], ['bbb', 0], ['ccc', 1]]))
   })
 })
