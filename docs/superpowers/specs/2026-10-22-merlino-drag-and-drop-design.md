@@ -103,10 +103,11 @@ Il riordino dei commit resta escluso: c'è già nel rebase interattivo.
   - `CommitList`: righe dei commit come origine, riga "Modifiche locali" come destinazione;
   - `WorkingView`: file come origine, sezioni come destinazione;
   - `CommitDetail`: file come origine.
-- **Verso altre app**:
-  - i file trascinabili fuori chiamano `dragstart` → `window.api.startDrag(root, item)`, sincrona;
-  - un file delle modifiche: `{ path }`, che deve esistere sul disco;
-  - un file di un commit: `{ sha, path }`.
+- **Verso altre app**: i file (modifiche e dettaglio del commit) al `dragstart` chiamano `window.api.startDrag(root, item)`, sincrona. L'`item` è `{ path }` per un file delle modifiche e `{ sha, path }` per un file di un commit.
+  - Se il main accetta, con `preventDefault()` il drag diventa nativo (Electron `startDrag`). Vale anche fuori da Merlino e nella finestra arriva come un drag di file, che le destinazioni gestiscono come gli altri.
+  - Se non accetta (file cancellato, oltre i 50 MB), resta un drag HTML5 interno.
+  - Fuori dall'app Electron consente solo la copia (`NSDragOperationCopy`), quindi il Finder non può spostare il file del repo.
+- **Fine del drag nativo**: il sistema non manda `dragend`. Lo stato si azzera al primo `mousemove` dopo il rilascio; durante un drag non ne arrivano. `App.vue` ignora i rilasci di file mentre c'è un drag di Merlino in corso, invece di aprirli come repo.
 
 ### Main e operazioni git
 
@@ -117,7 +118,7 @@ Le nuove varianti di `RepoCommand` vengono validate in `validate.ts` come le alt
 | `pushBranch { remote, branch, remoteBranch }` | `push --progress -u <remote> refs/heads/<branch>:refs/heads/<remoteBranch>` |
 | `fastForward { branch, from }` | `fetch . <from>:refs/heads/<branch>`. Se viene rifiutato, il messaggio è "<branch> non si può aggiornare in fast-forward da <from>: fai checkout e merge". |
 | `stashFiles { paths, untracked }` | `stash push [-u] -- <percorsi>` |
-| `applyFileChanges { sha, path }` | `show --format= --binary --diff-merges=first-parent <sha> -- <path>` → `apply --3way -`. Se non ci sono modifiche, errore "nessuna modifica da applicare". |
+| `applyFileChanges { sha, path }` | `show --format= --binary --diff-merges=first-parent <sha> -- <path>` → `apply -`, solo nella cartella di lavoro. Senza `--3way`, che metterebbe le modifiche in stage e potrebbe lasciare conflitti. Se la patch non si applica, l'errore lo dice; se non ci sono modifiche, errore "nessuna modifica da applicare". |
 
 **`startDrag`**:
 - IPC sincrona (`ipcMain.on`, `event.returnValue`): il drag nativo deve partire mentre è in corso il `dragstart`.
