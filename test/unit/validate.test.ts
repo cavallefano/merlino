@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { gitUrl, refName, repoCommand, revision } from '../../src/main/validate'
+import { gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
+import { DEFAULT_PREFERENCES } from '../../src/shared/preferences'
 
 describe('validazione degli argomenti dal renderer', () => {
   it('nomi di ref: niente opzioni travestite né caratteri non ammessi da git', () => {
@@ -24,5 +25,28 @@ describe('validazione degli argomenti dal renderer', () => {
       sha: 'abc1234',
       steps: [{ sha: 'abc1234', action: 'reword', message: 'x' }],
     })
+  })
+})
+
+describe('preferenze', () => {
+  it('valida il risultato della modifica e scarta i campi sconosciuti', () => {
+    expect(preferences(DEFAULT_PREFERENCES, { theme: 'dark', extra: 1 })).toEqual({ ...DEFAULT_PREFERENCES, theme: 'dark' })
+    expect(preferences(DEFAULT_PREFERENCES, { bodyGuide: 0 }).bodyGuide).toBe(0)
+    expect(preferences(DEFAULT_PREFERENCES, { editorApp: '/Applications/Code.app' }).editorApp).toBe('/Applications/Code.app')
+  })
+
+  it('rifiuta valori fuori intervallo, tipi sbagliati e vincoli fra campi violati', () => {
+    for (const bad of [
+      { theme: 'blu' },
+      { autoFetchMinutes: 61 },
+      { autoFetchMinutes: 1.5 },
+      { diffContext: 0 },
+      { bodyGuide: 20 },
+      { fetchPrune: 'sì' },
+      { diffAlgorithm: 'git' },
+      { editorApp: 'Code.app' },
+      { subjectLimit: 40 }, // sotto subjectWarn (50)
+    ]) expect(() => preferences(DEFAULT_PREFERENCES, bad)).toThrow()
+    expect(() => preferences({ ...DEFAULT_PREFERENCES, subjectLimit: 60 }, { subjectWarn: 70 })).toThrow()
   })
 })

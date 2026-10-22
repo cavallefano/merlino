@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import type { Result } from '../../shared/ipc'
-import type { CommandLogEntry, GitCheck, RepoInfo } from '../../shared/types'
+import { DEFAULT_PREFERENCES } from '../../shared/preferences'
+import type { AppSettings, CommandLogEntry, GitCheck, Preferences, RepoInfo } from '../../shared/types'
 import { disposeRepoStore, useRepoStore } from './repo'
 
 const MAX_LOG = 500
@@ -23,6 +24,8 @@ export interface PromptRequest {
 
 export type PromptValues = Record<string, string | boolean>
 
+export type SettingsSection = 'general' | 'commit' | 'diff' | 'integrations' | 'git'
+
 export const useAppStore = defineStore('app', () => {
   const git = ref<GitCheck | null>(null)
   const tabs = ref<string[]>([])
@@ -37,6 +40,17 @@ export const useAppStore = defineStore('app', () => {
   /** Ultima riga di avanzamento del clone in corso; null se non si sta clonando. */
   const cloneProgress = ref<string | null>(null)
   let cloneParent: string | null = null
+  const settings = ref<AppSettings | null>(null)
+  const preferences = computed(() => settings.value?.preferences ?? DEFAULT_PREFERENCES)
+  /** Sezione della schermata Impostazioni aperta; null = chiusa. */
+  const settingsSection = ref<SettingsSection | null>(null)
+
+  async function updatePreferences(patch: Partial<Preferences>): Promise<boolean> {
+    const r = await window.api.updatePreferences(patch)
+    if (r.ok) settings.value = r.value
+    else error.value = r.error.message
+    return r.ok
+  }
 
   function addLog(entry: CommandLogEntry) {
     log.value.push(entry)
@@ -65,19 +79,22 @@ export const useAppStore = defineStore('app', () => {
       if (active.value) void useRepoStore(active.value).refresh()
     })
     log.value = await window.api.getCommandLog()
+    settings.value = await window.api.getSettings()
     git.value = await window.api.checkGit()
     if (git.value.ok) await restore()
   }
 
   async function restore() {
-    const settings = await window.api.getSettings()
-    recent.value = settings.recentRepos
-    for (const path of settings.openRepos) {
-      if (!(await open(path, false))) await window.api.closeRepo(path)
+    const s = await window.api.getSettings()
+    settings.value = s
+    recent.value = s.recentRepos
+    for (const path of s.openRepos) {
+      // Senza "Riapri le tab" si dimenticano anche le tab della sessione precedente
+      if (!s.preferences.restoreTabs || !(await open(path, false))) await window.api.closeRepo(path)
     }
     const initial = await window.api.takeInitialPath()
     if (initial) await open(initial)
-    else activate(settings.activeRepo && tabs.value.includes(settings.activeRepo) ? settings.activeRepo : (tabs.value[0] ?? null))
+    else activate(s.activeRepo && tabs.value.includes(s.activeRepo) ? s.activeRepo : (tabs.value[0] ?? null))
   }
 
   async function setGitPath(path: string) {
@@ -162,6 +179,7 @@ export const useAppStore = defineStore('app', () => {
 
   return {
     git, tabs, active, recent, error, log, outputOpen, paletteOpen, promptRequest, cloneProgress,
+    settings, preferences, settingsSection, updatePreferences,
     init, setGitPath, open, initRepo, pickAndOpen, pickAndInit, activate, close, cycle, pushUiError, prompt, closePrompt, cloneRepo,
   }
 })

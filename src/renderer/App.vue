@@ -8,6 +8,7 @@ import CommandPalette from './components/CommandPalette.vue'
 import GitMissing from './components/GitMissing.vue'
 import OutputPanel from './components/OutputPanel.vue'
 import PromptDialog from './components/PromptDialog.vue'
+import SettingsView from './components/SettingsView.vue'
 import RepoView from './components/RepoView.vue'
 import TabBar from './components/TabBar.vue'
 import WelcomeScreen from './components/WelcomeScreen.vue'
@@ -45,6 +46,7 @@ onUnmounted(() => {
 <template>
   <div class="app" @dragover.prevent @drop.prevent="onDrop">
     <div v-if="!app.git" class="center muted">Avvio…</div>
+    <SettingsView v-else-if="app.settingsSection" />
     <GitMissing v-else-if="!app.git.ok" />
     <template v-else>
       <TabBar />

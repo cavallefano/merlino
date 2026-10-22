@@ -10,12 +10,13 @@ export const tempUserData = (): string => mkdtempSync(join(tmpdir(), 'merlino-ud
 export async function launch(
   args: string[] = [],
   userData = tempUserData(),
+  env: Record<string, string> = {},
 ): Promise<{ app: ElectronApplication; page: Page; userData: string }> {
   const executablePath = process.env.MERLINO_EXECUTABLE
   const app = await electron.launch({
     executablePath,
     args: executablePath ? args : ['.', ...args],
-    env: { ...process.env, MERLINO_USER_DATA: userData } as Record<string, string>,
+    env: { ...process.env, MERLINO_USER_DATA: userData, ...env } as Record<string, string>,
   })
   return { app, page: await app.firstWindow(), userData }
 }

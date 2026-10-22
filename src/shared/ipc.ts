@@ -11,6 +11,7 @@ import type {
   HistorySummary,
   MenuItem,
   PatchMode,
+  Preferences,
   RefsSnapshot,
   RepoCommand,
   RepoInfo,
@@ -23,6 +24,7 @@ export type Result<T> = { ok: true; value: T } | { ok: false; error: GitErrorInf
 
 export const Channels = {
   getSettings: 'settings:get',
+  updatePreferences: 'settings:update-preferences',
   checkGit: 'git:check',
   setGitPath: 'git:set-path',
   pickRepoFolder: 'repo:pick-folder',
@@ -70,6 +72,8 @@ export const Channels = {
 export interface Api {
   platform: string
   getSettings(): Promise<AppSettings>
+  /** Salva le preferenze (validate nel main) e ne applica gli effetti; restituisce le impostazioni aggiornate. */
+  updatePreferences(patch: Partial<Preferences>): Promise<Result<AppSettings>>
   checkGit(): Promise<GitCheck>
   setGitPath(path: string): Promise<GitCheck>
   /** Dialog di scelta cartella; null se annullato. */

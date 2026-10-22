@@ -16,7 +16,26 @@ export function buildMenu(run: (actionId: string) => void): void {
   const quit: MenuItemConstructorOptions[] = isMac ? [] : [{ type: 'separator' }, { role: 'quit', label: 'Esci' }]
 
   const template: MenuItemConstructorOptions[] = [
-    ...(isMac ? [{ role: 'appMenu' } as MenuItemConstructorOptions] : []),
+    ...(isMac
+      ? [
+          {
+            label: 'Merlino',
+            submenu: [
+              { role: 'about', label: 'Informazioni su Merlino' },
+              { type: 'separator' },
+              action('Impostazioni…', 'settings.open'),
+              { type: 'separator' },
+              { role: 'services', label: 'Servizi' },
+              { type: 'separator' },
+              { role: 'hide', label: 'Nascondi Merlino' },
+              { role: 'hideOthers', label: 'Nascondi altre' },
+              { role: 'unhide', label: 'Mostra tutte' },
+              { type: 'separator' },
+              { role: 'quit', label: 'Esci da Merlino' },
+            ],
+          } as MenuItemConstructorOptions,
+        ]
+      : []),
     {
       label: 'File',
       submenu: [
@@ -25,6 +44,7 @@ export function buildMenu(run: (actionId: string) => void): void {
         action('Clona repository…', 'repo.clone'),
         { type: 'separator' },
         action('Chiudi tab', 'tab.close'),
+        ...(isMac ? [] : [{ type: 'separator' } as MenuItemConstructorOptions, action('Impostazioni…', 'settings.open')]),
         ...quit,
       ],
     },

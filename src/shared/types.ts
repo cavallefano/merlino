@@ -41,11 +41,53 @@ export interface RepoInfo {
   headSha: string | null
 }
 
+export type ThemePreference = 'system' | 'light' | 'dark'
+export type DiffAlgorithm = 'default' | 'myers' | 'minimal' | 'patience' | 'histogram'
+
+/** Preferenze dell'app, dalla schermata Impostazioni. */
+export interface Preferences {
+  theme: ThemePreference
+  /** 0 = fetch automatico spento. */
+  autoFetchMinutes: number
+  fetchPrune: boolean
+  restoreTabs: boolean
+  subjectWarn: number
+  subjectLimit: number
+  /** Colonna della guida nella descrizione; 0 = nessuna. */
+  bodyGuide: number
+  diffSplit: boolean
+  diffIgnoreWhitespace: boolean
+  diffContext: number
+  diffAlgorithm: DiffAlgorithm
+  codeFontSize: number
+  tabSize: number
+  /** null = app predefinita del sistema. */
+  editorApp: string | null
+  /** null = terminale predefinito. */
+  terminalApp: string | null
+  /** null = il dialog del clone non parte da una cartella precisa. */
+  cloneFolder: string | null
+}
+
+export interface CommitTemplate {
+  id: string
+  name: string
+  subject: string
+  body: string
+}
+
+/** Chiavi della config globale di git gestite dalla sezione Git delle Impostazioni. */
+export type GitConfigKey = 'user.name' | 'user.email' | 'commit.gpgsign' | 'gpg.format' | 'user.signingkey' | 'pull.rebase' | 'init.defaultBranch'
+
 export interface AppSettings {
   gitPath: string
   openRepos: string[]
   activeRepo: string | null
   recentRepos: string[]
+  preferences: Preferences
+  commitTemplates: CommitTemplate[]
+  /** Radice del repo → id del template predefinito. */
+  defaultTemplates: Record<string, string>
 }
 
 export interface CommitRef {

@@ -1,8 +1,17 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { DEFAULT_PREFERENCES } from '../shared/preferences'
 import type { AppSettings } from '../shared/types'
 
-const DEFAULTS: AppSettings = { gitPath: 'git', openRepos: [], activeRepo: null, recentRepos: [] }
+const DEFAULTS: AppSettings = {
+  gitPath: 'git',
+  openRepos: [],
+  activeRepo: null,
+  recentRepos: [],
+  preferences: DEFAULT_PREFERENCES,
+  commitTemplates: [],
+  defaultTemplates: {},
+}
 const MAX_RECENT = 10
 
 /** Impostazioni dell'app in un file JSON. */
@@ -11,7 +20,9 @@ export class SettingsStore {
 
   constructor(private readonly file: string) {
     try {
-      this.data = { ...structuredClone(DEFAULTS), ...(JSON.parse(readFileSync(file, 'utf8')) as Partial<AppSettings>) }
+      const saved = JSON.parse(readFileSync(file, 'utf8')) as Partial<AppSettings>
+      // Le preferenze si uniscono campo per campo: un file di una versione precedente prende i default di quelle nuove
+      this.data = { ...structuredClone(DEFAULTS), ...saved, preferences: { ...DEFAULT_PREFERENCES, ...saved.preferences } }
     } catch {
       this.data = structuredClone(DEFAULTS)
     }

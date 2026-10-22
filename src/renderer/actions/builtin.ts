@@ -20,6 +20,7 @@ export function registerBuiltinActions(): void {
     { id: 'tab.close', title: 'Chiudi tab', keys: shortcuts['tab.close'], when: hasRepo, run: () => app.active && app.close(app.active) },
     { id: 'tab.next', title: 'Tab successiva', keys: shortcuts['tab.next'], when: manyTabs, run: () => app.cycle(1) },
     { id: 'tab.prev', title: 'Tab precedente', keys: shortcuts['tab.prev'], when: manyTabs, run: () => app.cycle(-1) },
+    { id: 'settings.open', title: 'Impostazioni…', keys: shortcuts['settings.open'], run: () => { app.settingsSection ??= 'general' } },
     { id: 'output.toggle', title: 'Mostra/nascondi output', keys: shortcuts['output.toggle'], run: () => { app.outputOpen = !app.outputOpen } },
   )
 }

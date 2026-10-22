@@ -12,6 +12,7 @@ function on<T>(channel: string, cb: (payload: T) => void): () => void {
 const api: Api = {
   platform: process.platform,
   getSettings: () => ipcRenderer.invoke(Channels.getSettings),
+  updatePreferences: (patch) => ipcRenderer.invoke(Channels.updatePreferences, patch),
   checkGit: () => ipcRenderer.invoke(Channels.checkGit),
   setGitPath: (path) => ipcRenderer.invoke(Channels.setGitPath, path),
   pickRepoFolder: () => ipcRenderer.invoke(Channels.pickRepoFolder),

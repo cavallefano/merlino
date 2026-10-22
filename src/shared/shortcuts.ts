@@ -18,6 +18,7 @@ export const shortcuts: Record<string, Keys> = {
   'output.toggle': { key: 'o', mod: true, shift: true },
   'history.search': { key: 'f', mod: true },
   'working.commit': { key: 'Enter', mod: true },
+  'settings.open': { key: ',', mod: true },
 }
 
 /** Formato degli acceleratori di Electron, es. CmdOrCtrl+Shift+P. */

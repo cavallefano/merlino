@@ -1,8 +1,8 @@
-import { BrowserWindow, dialog, ipcMain, Menu, type MenuItemConstructorOptions, shell } from 'electron'
+import { BrowserWindow, dialog, ipcMain, Menu, type MenuItemConstructorOptions, nativeTheme, shell } from 'electron'
 import { statSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { Channels, type Result } from '../shared/ipc'
-import type { CommandLogEntry, GitErrorInfo, PatchMode, RepoInfo, WorkingArea } from '../shared/types'
+import type { CommandLogEntry, GitErrorInfo, PatchMode, Preferences, RepoInfo, WorkingArea } from '../shared/types'
 import { clone, rebaseRange, runCommand } from './git/branches'
 import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
@@ -28,7 +28,22 @@ import {
 } from './git/working'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
-import { diffOptions, fileRequest, gitUrl, int, list, oneOf, relPath, repoCommand, sha, stashRef, str, text, withOldPath } from './validate'
+import {
+  diffOptions,
+  fileRequest,
+  gitUrl,
+  int,
+  list,
+  oneOf,
+  preferences as validatePreferences,
+  relPath,
+  repoCommand,
+  sha,
+  stashRef,
+  str,
+  text,
+  withOldPath,
+} from './validate'
 
 const MAX_LOG = 500
 const MAX_PAGE = 5000
@@ -90,7 +105,28 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
     }
   }
 
+  async function attempt<T>(fn: () => Promise<T> | T): Promise<Result<T>> {
+    try {
+      return { ok: true, value: await fn() }
+    } catch (e) {
+      return fail(e)
+    }
+  }
+
+  /** Effetti delle preferenze nel main: il tema (che segue anche il CSS con prefers-color-scheme). */
+  function applyPreferences(p: Preferences): void {
+    nativeTheme.themeSource = p.theme
+  }
+  applyPreferences(settings.get().preferences)
+
   ipcMain.handle(Channels.getSettings, () => settings.get())
+  ipcMain.handle(Channels.updatePreferences, (_e, patch: unknown) =>
+    attempt(() => {
+      const updated = settings.update({ preferences: validatePreferences(settings.get().preferences, patch) })
+      applyPreferences(updated.preferences)
+      return updated
+    }),
+  )
   ipcMain.handle(Channels.checkGit, () => checkGit(gitPath()))
   ipcMain.handle(Channels.setGitPath, (_e, path: unknown) => {
     settings.update({ gitPath: str(path, 'path') })

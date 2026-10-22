@@ -1,5 +1,6 @@
 import { isAbsolute } from 'node:path'
-import type { DiffOptions, Operation, RebaseStep, RepoCommand } from '../shared/types'
+import { DIFF_ALGORITHMS } from '../shared/preferences'
+import type { DiffOptions, Operation, Preferences, RebaseStep, RepoCommand } from '../shared/types'
 import type { DiffRequest } from './git/diff'
 
 /** Gli argomenti arrivano dal renderer: si validano qui. */
@@ -149,5 +150,48 @@ export function repoCommand(value: unknown): RepoCommand {
       return { kind: 'rebaseInteractive', sha: sha(v.sha), steps: list(v.steps, rebaseStep) }
     default:
       throw new TypeError('comando non valido')
+  }
+}
+
+export function intIn(value: unknown, name: string, min: number, max: number): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) {
+    throw new TypeError(`${name}: serve un numero intero da ${min} a ${max}`)
+  }
+  return value
+}
+
+function bool(value: unknown, name: string): boolean {
+  if (typeof value !== 'boolean') throw new TypeError(`${name} non valido`)
+  return value
+}
+
+function absolutePath(value: unknown, name: string): string | null {
+  if (value === null) return null
+  const s = str(value, name)
+  if (!isAbsolute(s) || s.length > 1024) throw new TypeError(`${name}: serve un percorso assoluto`)
+  return s
+}
+
+/** Preferenze dopo una modifica parziale: si valida il risultato, così i vincoli fra campi valgono sempre. */
+export function preferences(current: Preferences, patch: unknown): Preferences {
+  const p = { ...current, ...(typeof patch === 'object' && patch !== null ? patch : {}) } as Record<string, unknown>
+  const subjectWarn = intIn(p.subjectWarn, "Avviso sull'oggetto", 20, 200)
+  return {
+    theme: oneOf(p.theme, ['system', 'light', 'dark'] as const, 'Tema'),
+    autoFetchMinutes: intIn(p.autoFetchMinutes, 'Fetch automatico', 0, 60),
+    fetchPrune: bool(p.fetchPrune, 'Prune'),
+    restoreTabs: bool(p.restoreTabs, 'Riapri le tab'),
+    subjectWarn,
+    subjectLimit: intIn(p.subjectLimit, "Limite dell'oggetto", subjectWarn, 200),
+    bodyGuide: p.bodyGuide === 0 ? 0 : intIn(p.bodyGuide, 'Guida della descrizione', 40, 200),
+    diffSplit: bool(p.diffSplit, 'Vista del diff'),
+    diffIgnoreWhitespace: bool(p.diffIgnoreWhitespace, 'Ignora spazi'),
+    diffContext: intIn(p.diffContext, 'Righe di contesto', 1, 20),
+    diffAlgorithm: oneOf(p.diffAlgorithm, DIFF_ALGORITHMS, 'Algoritmo del diff'),
+    codeFontSize: intIn(p.codeFontSize, 'Dimensione del carattere', 10, 20),
+    tabSize: intIn(p.tabSize, 'Larghezza del tab', 1, 8),
+    editorApp: absolutePath(p.editorApp, 'Editor'),
+    terminalApp: absolutePath(p.terminalApp, 'Terminale'),
+    cloneFolder: absolutePath(p.cloneFolder, 'Cartella dei clone'),
   }
 }
