@@ -1,21 +1,12 @@
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Commit, CommandLogEntry, Operation } from '../../shared/types'
+import type { Commit, CommandLogEntry, Operation, RebaseStep, RepoCommand } from '../../shared/types'
 import { LOG_FORMAT, parseLog } from './log'
 import { GitRunner } from './runner'
 
 const write = { write: true }
 type Progress = (line: string) => void
-
-export type RebaseAction = 'pick' | 'reword' | 'edit' | 'squash' | 'fixup' | 'drop'
-
-export interface RebaseStep {
-  sha: string
-  action: RebaseAction
-  /** Solo per reword. */
-  message?: string
-}
 
 const run = async (r: GitRunner, args: string[], onProgress?: Progress) => {
   await r.run(args, { ...write, onProgress })
@@ -161,4 +152,56 @@ export async function rebaseInteractive(r: GitRunner, sha: string, steps: Rebase
   writeFileSync(todoFile, `${todo.join('\n')}\n`)
   const root = (await parentsOf(r, sha)).length === 0
   await r.run(['rebase', '-i', root ? '--root' : `${sha}^`], { ...write, env: { GIT_SEQUENCE_EDITOR: `cp '${todoFile}'` } })
+}
+
+/** Esegue un'operazione già validata (vedi validate.ts). */
+export function runCommand(r: GitRunner, c: RepoCommand, onProgress: Progress): Promise<void> {
+  switch (c.kind) {
+    case 'createBranch':
+      return createBranch(r, c.name, c.start, c.checkout)
+    case 'checkoutBranch':
+      return checkoutBranch(r, c.name)
+    case 'checkoutRemote':
+      return checkoutRemote(r, c.fullName)
+    case 'checkoutDetached':
+      return checkoutDetached(r, c.sha)
+    case 'renameBranch':
+      return renameBranch(r, c.from, c.to)
+    case 'deleteBranch':
+      return deleteBranch(r, c.name, c.force)
+    case 'deleteRemoteBranch':
+      return deleteRemoteBranch(r, c.remote, c.name)
+    case 'setUpstream':
+      return setUpstream(r, c.branch, c.upstream)
+    case 'merge':
+      return merge(r, c.ref, c.noFf)
+    case 'rebase':
+      return rebase(r, c.onto)
+    case 'cherryPick':
+      return cherryPick(r, c.sha)
+    case 'revert':
+      return revert(r, c.sha)
+    case 'reset':
+      return reset(r, c.sha, c.mode)
+    case 'operation':
+      return operation(r, c.op, c.step)
+    case 'createTag':
+      return createTag(r, c.name, c.sha, c.message)
+    case 'deleteTag':
+      return deleteTag(r, c.name)
+    case 'pushTag':
+      return pushTag(r, c.remote, c.name)
+    case 'fetch':
+      return fetch(r, onProgress)
+    case 'pull':
+      return pull(r, c.mode, onProgress)
+    case 'push':
+      return push(r, c.remote, c.force, onProgress)
+    case 'addRemote':
+      return addRemote(r, c.name, c.url)
+    case 'removeRemote':
+      return removeRemote(r, c.name)
+    case 'rebaseInteractive':
+      return rebaseInteractive(r, c.sha, c.steps)
+  }
 }

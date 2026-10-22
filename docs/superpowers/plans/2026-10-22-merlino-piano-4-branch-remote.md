@@ -140,3 +140,9 @@ Test di integrazione (`test/integration/branches.test.ts`):
 - Su una copia locale di `demo-backend` che ha come remote un bare locale, mai il server reale perché l'utente non è presente, con screenshot di sidebar, menu e toolbar:
   - fetch e push verso il bare;
   - creazione e checkout di un branch, poi eliminazione.
+
+**Note dall'esecuzione (Task 1–3):**
+- **Un'unica chiamata per le operazioni**: invece di un'operazione IPC per funzione c'è `git(root, command: RepoCommand)`, con un'unione discriminata. Restano operazioni con nome; il main le valida variante per variante (`src/main/validate.ts`, dove è finita anche la validazione dei piani 2–3) e le esegue con `runCommand` in `branches.ts`.
+- **`openInEditor`**: l'operazione si chiama così e non `openPath`, perché `Channels.openPath` era già l'evento "apri cartella" della seconda istanza.
+- **Errori su stdout**: git scrive alcuni errori, come i conflitti di merge, su stdout. `explain()` guarda entrambi e il log dei comandi mostra stdout quando stderr è vuoto.
+- **Menu contestuali nei test**: sono nativi, quindi i test E2E sostituiscono `Menu.prototype.popup` (`test/e2e/menu.ts`) e nell'app non c'è codice solo per i test.

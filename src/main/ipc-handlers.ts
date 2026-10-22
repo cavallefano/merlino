@@ -1,11 +1,13 @@
-import { type BrowserWindow, dialog, ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain, Menu, type MenuItemConstructorOptions, shell } from 'electron'
 import { statSync } from 'node:fs'
-import { isAbsolute } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { Channels, type Result } from '../shared/ipc'
-import type { CommandLogEntry, DiffOptions, GitErrorInfo, PatchMode, RepoInfo, WorkingArea } from '../shared/types'
+import type { CommandLogEntry, GitErrorInfo, PatchMode, RepoInfo, WorkingArea } from '../shared/types'
+import { clone, rebaseRange, runCommand } from './git/branches'
 import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
-import { type DiffRequest, readCommitFileDiff } from './git/diff'
+import { readCommitFileDiff } from './git/diff'
+import { readRefs } from './git/refs'
 import { readRepoInfo } from './git/repo-info'
 import { GitError, GitRunner } from './git/runner'
 import { readStatus } from './git/status'
@@ -26,74 +28,10 @@ import {
 } from './git/working'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
+import { diffOptions, fileRequest, gitUrl, int, list, oneOf, relPath, repoCommand, sha, stashRef, str, text, withOldPath } from './validate'
 
 const MAX_LOG = 500
 const MAX_PAGE = 5000
-
-/** Gli argomenti arrivano dal renderer: si validano qui. */
-function str(value: unknown, name: string): string {
-  if (typeof value !== 'string' || value === '') throw new TypeError(`${name} deve essere una stringa non vuota`)
-  return value
-}
-
-/** Uno SHA che non può essere scambiato per un'opzione di git. */
-function sha(value: unknown): string {
-  const s = str(value, 'sha')
-  if (!/^[0-9a-f]{4,64}$/i.test(s)) throw new TypeError('sha non valido')
-  return s
-}
-
-function int(value: unknown, name: string, max: number): number {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max) throw new TypeError(`${name} non valido`)
-  return value
-}
-
-function fileRequest(value: unknown): DiffRequest {
-  const v = (typeof value === 'object' && value !== null ? value : {}) as { path?: unknown; oldPath?: unknown }
-  const path = str(v.path, 'path')
-  return v.oldPath === undefined ? { path } : { path, oldPath: str(v.oldPath, 'oldPath') }
-}
-
-function diffOptions(value: unknown): DiffOptions {
-  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
-  return { ignoreWhitespace: v.ignoreWhitespace === true, force: v.force === true }
-}
-
-const MAX_TEXT = 50 * 1024 * 1024
-
-/** Percorso relativo dentro il repo. */
-function relPath(value: unknown): string {
-  const p = str(value, 'path')
-  if (isAbsolute(p) || p.split(/[\\/]/).includes('..')) throw new TypeError(`percorso non valido: ${p}`)
-  return p
-}
-
-function list<T>(value: unknown, item: (v: unknown) => T): T[] {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 10_000) throw new TypeError('elenco non valido')
-  return value.map(item)
-}
-
-function text(value: unknown, name: string): string {
-  if (typeof value !== 'string' || value.length > MAX_TEXT) throw new TypeError(`${name} non valido`)
-  return value
-}
-
-function oneOf<T extends string>(value: unknown, options: readonly T[], name: string): T {
-  if (!options.includes(value as T)) throw new TypeError(`${name} non valido`)
-  return value as T
-}
-
-function stashRef(value: unknown): string {
-  const ref = str(value, 'ref')
-  if (!/^stash@\{\d+\}$/.test(ref)) throw new TypeError('stash non valido')
-  return ref
-}
-
-/** Il file e, per le rinomine, anche il vecchio percorso. */
-function withOldPath(value: unknown): string[] {
-  const f = fileRequest(value)
-  return f.oldPath ? [relPath(f.oldPath), relPath(f.path)] : [relPath(f.path)]
-}
 
 function fail(e: unknown): { ok: false; error: GitErrorInfo } {
   if (e instanceof GitError) return { ok: false, error: e.info }
@@ -250,6 +188,41 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.handle(Channels.ignorePath, (_e, root: unknown, path: unknown) =>
     withSession(root, (s) => addToGitignore(s.root, relPath(path))),
   )
+  const progress = (root: string) => (line: string) => send(Channels.progress, { root, line })
+  ipcMain.handle(Channels.refs, (_e, root: unknown) => withSession(root, (s) => readRefs(s.runner)))
+  ipcMain.handle(Channels.command, (_e, root: unknown, command: unknown) =>
+    withSession(root, (s) => runCommand(s.runner, repoCommand(command), progress(s.root))),
+  )
+  ipcMain.handle(Channels.rebaseRange, (_e, root: unknown, commit: unknown) => withSession(root, (s) => rebaseRange(s.runner, sha(commit))))
+  ipcMain.handle(Channels.clone, async (_e, url: unknown, parent: unknown) => {
+    try {
+      const dir = str(parent, 'cartella')
+      if (!isAbsolute(dir) || !isDirectory(dir)) throw new Error(`Cartella non trovata: ${dir}`)
+      return { ok: true, value: await clone(gitPath, gitUrl(url), dir, onLog, progress(dir)) }
+    } catch (e) {
+      return fail(e)
+    }
+  })
+  ipcMain.handle(Channels.openInEditor, (_e, root: unknown, path: unknown) =>
+    withSession(root, async (s) => {
+      const error = await shell.openPath(join(s.root, relPath(path)))
+      if (error) throw new Error(error)
+    }),
+  )
+  ipcMain.handle(Channels.contextMenu, (e, items: unknown) => {
+    const entries = Array.isArray(items) ? items.slice(0, 60) : []
+    return new Promise<string | null>((resolve) => {
+      let chosen: string | null = null
+      const template: MenuItemConstructorOptions[] = entries.map((raw) => {
+        const item = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
+        if (item.separator === true) return { type: 'separator' }
+        return { label: String(item.label ?? ''), enabled: item.enabled !== false, click: () => (chosen = String(item.id ?? '')) }
+      })
+      const window = BrowserWindow.fromWebContents(e.sender) ?? undefined
+      // La callback arriva alla chiusura del menu; il clic, se c'è, è già stato gestito
+      Menu.buildFromTemplate(template).popup({ window, callback: () => setTimeout(() => resolve(chosen), 0) })
+    })
+  })
   ipcMain.handle(Channels.commitFileDiff, (_e, root: unknown, commit: unknown, file: unknown, options: unknown) =>
     withSession(root, (s) => readCommitFileDiff(s.runner, sha(commit), fileRequest(file), diffOptions(options))),
   )

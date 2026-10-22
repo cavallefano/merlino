@@ -1,0 +1,153 @@
+import { isAbsolute } from 'node:path'
+import type { DiffOptions, Operation, RebaseStep, RepoCommand } from '../shared/types'
+import type { DiffRequest } from './git/diff'
+
+/** Gli argomenti arrivano dal renderer: si validano qui. */
+export function str(value: unknown, name: string): string {
+  if (typeof value !== 'string' || value === '') throw new TypeError(`${name} deve essere una stringa non vuota`)
+  return value
+}
+
+/** Uno SHA che non può essere scambiato per un'opzione di git. */
+export function sha(value: unknown): string {
+  const s = str(value, 'sha')
+  if (!/^[0-9a-f]{4,64}$/i.test(s)) throw new TypeError('sha non valido')
+  return s
+}
+
+export function int(value: unknown, name: string, max: number): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max) throw new TypeError(`${name} non valido`)
+  return value
+}
+
+export function fileRequest(value: unknown): DiffRequest {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as { path?: unknown; oldPath?: unknown }
+  const path = str(v.path, 'path')
+  return v.oldPath === undefined ? { path } : { path, oldPath: str(v.oldPath, 'oldPath') }
+}
+
+export function diffOptions(value: unknown): DiffOptions {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  return { ignoreWhitespace: v.ignoreWhitespace === true, force: v.force === true }
+}
+
+const MAX_TEXT = 50 * 1024 * 1024
+
+/** Percorso relativo dentro il repo. */
+export function relPath(value: unknown): string {
+  const p = str(value, 'path')
+  if (isAbsolute(p) || p.split(/[\\/]/).includes('..')) throw new TypeError(`percorso non valido: ${p}`)
+  return p
+}
+
+export function list<T>(value: unknown, item: (v: unknown) => T): T[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 10_000) throw new TypeError('elenco non valido')
+  return value.map(item)
+}
+
+export function text(value: unknown, name: string): string {
+  if (typeof value !== 'string' || value.length > MAX_TEXT) throw new TypeError(`${name} non valido`)
+  return value
+}
+
+export function oneOf<T extends string>(value: unknown, options: readonly T[], name: string): T {
+  if (!options.includes(value as T)) throw new TypeError(`${name} non valido`)
+  return value as T
+}
+
+export function stashRef(value: unknown): string {
+  const ref = str(value, 'ref')
+  if (!/^stash@\{\d+\}$/.test(ref)) throw new TypeError('stash non valido')
+  return ref
+}
+
+/** Il file e, per le rinomine, anche il vecchio percorso. */
+export function withOldPath(value: unknown): string[] {
+  const f = fileRequest(value)
+  return f.oldPath ? [relPath(f.oldPath), relPath(f.path)] : [relPath(f.path)]
+}
+
+const NOT_PRINTABLE = /[^\x20-\x7e\u00a0-\uffff]/
+
+/** Nome di branch, tag o remote: niente opzioni travestite (-x) né caratteri che git non ammette. */
+export function refName(value: unknown): string {
+  const s = str(value, 'nome')
+  if (s.startsWith('-') || /[\s~^:?*[\\]|\.\.|@\{/.test(s) || NOT_PRINTABLE.test(s)) throw new TypeError(`nome non valido: ${s}`)
+  return s
+}
+
+/** Revisione (sha, branch, HEAD~2, origin/main): non deve sembrare un'opzione. */
+export function revision(value: unknown): string {
+  const s = str(value, 'revisione')
+  if (s.startsWith('-') || /\s/.test(s) || NOT_PRINTABLE.test(s)) throw new TypeError(`revisione non valida: ${s}`)
+  return s
+}
+
+export function gitUrl(value: unknown): string {
+  const s = str(value, 'url')
+  if (s.startsWith('-') || /\s/.test(s) || s.length > 2000) throw new TypeError(`URL non valido: ${s}`)
+  return s
+}
+
+const OPERATIONS = ['merge', 'rebase', 'cherry-pick', 'revert'] as const satisfies readonly Operation[]
+
+function rebaseStep(value: unknown): RebaseStep {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  const action = oneOf(v.action, ['pick', 'reword', 'edit', 'squash', 'fixup', 'drop'] as const, 'action')
+  return action === 'reword' ? { sha: sha(v.sha), action, message: text(v.message, 'message') } : { sha: sha(v.sha), action }
+}
+
+/** Le operazioni su branch, tag e remote: ogni variante ha i suoi campi, validati uno per uno. */
+export function repoCommand(value: unknown): RepoCommand {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  switch (v.kind) {
+    case 'createBranch':
+      return { kind: 'createBranch', name: refName(v.name), start: revision(v.start), checkout: v.checkout === true }
+    case 'checkoutBranch':
+      return { kind: 'checkoutBranch', name: refName(v.name) }
+    case 'checkoutRemote':
+      return { kind: 'checkoutRemote', fullName: refName(v.fullName) }
+    case 'checkoutDetached':
+      return { kind: 'checkoutDetached', sha: sha(v.sha) }
+    case 'renameBranch':
+      return { kind: 'renameBranch', from: refName(v.from), to: refName(v.to) }
+    case 'deleteBranch':
+      return { kind: 'deleteBranch', name: refName(v.name), force: v.force === true }
+    case 'deleteRemoteBranch':
+      return { kind: 'deleteRemoteBranch', remote: refName(v.remote), name: refName(v.name) }
+    case 'setUpstream':
+      return { kind: 'setUpstream', branch: refName(v.branch), upstream: v.upstream === null ? null : refName(v.upstream) }
+    case 'merge':
+      return { kind: 'merge', ref: revision(v.ref), noFf: v.noFf === true }
+    case 'rebase':
+      return { kind: 'rebase', onto: revision(v.onto) }
+    case 'cherryPick':
+      return { kind: 'cherryPick', sha: sha(v.sha) }
+    case 'revert':
+      return { kind: 'revert', sha: sha(v.sha) }
+    case 'reset':
+      return { kind: 'reset', sha: sha(v.sha), mode: oneOf(v.mode, ['soft', 'mixed', 'hard'] as const, 'mode') }
+    case 'operation':
+      return { kind: 'operation', op: oneOf(v.op, OPERATIONS, 'op'), step: oneOf(v.step, ['continue', 'skip', 'abort'] as const, 'step') }
+    case 'createTag':
+      return { kind: 'createTag', name: refName(v.name), sha: sha(v.sha), message: text(v.message ?? '', 'message') }
+    case 'deleteTag':
+      return { kind: 'deleteTag', name: refName(v.name) }
+    case 'pushTag':
+      return { kind: 'pushTag', remote: refName(v.remote), name: refName(v.name) }
+    case 'fetch':
+      return { kind: 'fetch' }
+    case 'pull':
+      return { kind: 'pull', mode: oneOf(v.mode, ['config', 'rebase', 'merge'] as const, 'mode') }
+    case 'push':
+      return { kind: 'push', remote: refName(v.remote), force: v.force === true }
+    case 'addRemote':
+      return { kind: 'addRemote', name: refName(v.name), url: gitUrl(v.url) }
+    case 'removeRemote':
+      return { kind: 'removeRemote', name: refName(v.name) }
+    case 'rebaseInteractive':
+      return { kind: 'rebaseInteractive', sha: sha(v.sha), steps: list(v.steps, rebaseStep) }
+    default:
+      throw new TypeError('comando non valido')
+  }
+}

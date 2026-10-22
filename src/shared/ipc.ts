@@ -1,6 +1,7 @@
 import type {
   AppSettings,
   CommandLogEntry,
+  Commit,
   CommitDetail,
   DiffOptions,
   FileDiff,
@@ -8,7 +9,10 @@ import type {
   GitErrorInfo,
   HistoryPage,
   HistorySummary,
+  MenuItem,
   PatchMode,
+  RefsSnapshot,
+  RepoCommand,
   RepoInfo,
   StashEntry,
   WorkingArea,
@@ -47,6 +51,13 @@ export const Channels = {
   stashPush: 'stash:push',
   stashAction: 'stash:action',
   ignorePath: 'working:ignore',
+  refs: 'repo:refs',
+  command: 'repo:command',
+  rebaseRange: 'repo:rebase-range',
+  clone: 'repo:clone',
+  openInEditor: 'repo:open-in-editor',
+  contextMenu: 'app:context-menu',
+  progress: 'repo:progress',
   // eventi dal main al renderer
   repoChanged: 'repo:changed',
   commandLogged: 'log:entry',
@@ -90,6 +101,18 @@ export interface Api {
   stashPush(root: string, message: string, includeUntracked: boolean): Promise<Result<void>>
   stashAction(root: string, action: 'apply' | 'pop' | 'drop', ref: string): Promise<Result<void>>
   ignorePath(root: string, path: string): Promise<Result<void>>
+  refs(root: string): Promise<Result<RefsSnapshot>>
+  /** Operazioni su branch, tag e remote (validate nel main variante per variante). */
+  git(root: string, command: RepoCommand): Promise<Result<void>>
+  /** Commit dal commit scelto a HEAD, per il rebase interattivo. */
+  rebaseRange(root: string, sha: string): Promise<Result<Commit[]>>
+  /** Clona url dentro la cartella parent; restituisce la cartella del nuovo repo. */
+  clone(url: string, parent: string): Promise<Result<string>>
+  /** Apre un file del repo con l'applicazione predefinita del sistema. */
+  openInEditor(root: string, path: string): Promise<Result<void>>
+  /** Menu contestuale nativo; restituisce l'id della voce scelta o null. */
+  contextMenu(items: MenuItem[]): Promise<string | null>
+  onProgress(cb: (event: { root: string; line: string }) => void): () => void
   /** Percorso sul disco di un file o di una cartella trascinati nella finestra. */
   pathForFile(file: File): string
   onRepoChanged(cb: (root: string) => void): () => void

@@ -216,3 +216,40 @@ export interface RefsSnapshot {
   remotes: RemoteInfo[]
   tags: TagInfo[]
 }
+
+export type RebaseAction = 'pick' | 'reword' | 'edit' | 'squash' | 'fixup' | 'drop'
+
+export interface RebaseStep {
+  sha: string
+  action: RebaseAction
+  /** Solo per reword. */
+  message?: string
+}
+
+/** Operazioni su branch, tag e remote: una variante per operazione, mai argomenti git liberi. */
+export type RepoCommand =
+  | { kind: 'createBranch'; name: string; start: string; checkout: boolean }
+  | { kind: 'checkoutBranch'; name: string }
+  | { kind: 'checkoutRemote'; fullName: string }
+  | { kind: 'checkoutDetached'; sha: string }
+  | { kind: 'renameBranch'; from: string; to: string }
+  | { kind: 'deleteBranch'; name: string; force: boolean }
+  | { kind: 'deleteRemoteBranch'; remote: string; name: string }
+  | { kind: 'setUpstream'; branch: string; upstream: string | null }
+  | { kind: 'merge'; ref: string; noFf: boolean }
+  | { kind: 'rebase'; onto: string }
+  | { kind: 'cherryPick'; sha: string }
+  | { kind: 'revert'; sha: string }
+  | { kind: 'reset'; sha: string; mode: 'soft' | 'mixed' | 'hard' }
+  | { kind: 'operation'; op: Operation; step: 'continue' | 'skip' | 'abort' }
+  | { kind: 'createTag'; name: string; sha: string; message: string }
+  | { kind: 'deleteTag'; name: string }
+  | { kind: 'pushTag'; remote: string; name: string }
+  | { kind: 'fetch' }
+  | { kind: 'pull'; mode: 'config' | 'rebase' | 'merge' }
+  | { kind: 'push'; remote: string; force: boolean }
+  | { kind: 'addRemote'; name: string; url: string }
+  | { kind: 'removeRemote'; name: string }
+  | { kind: 'rebaseInteractive'; sha: string; steps: RebaseStep[] }
+
+export type MenuItem = { id: string; label: string; enabled?: boolean } | { separator: true }
