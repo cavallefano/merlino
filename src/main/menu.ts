@@ -22,6 +22,7 @@ export function buildMenu(run: (actionId: string) => void): void {
       submenu: [
         action('Apri repository…', 'repo.open'),
         action('Nuovo repository…', 'repo.init'),
+        action('Clona repository…', 'repo.clone'),
         { type: 'separator' },
         action('Chiudi tab', 'tab.close'),
         ...quit,

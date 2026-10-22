@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { commitMenu } from '../actions/branches'
 import { formatShortDate } from '../history/format'
 import { drawGraph, LANE_WIDTH, MAX_LANES, ROW_HEIGHT } from '../history/graph-draw'
 import { useRepoStore } from '../stores/repo'
@@ -87,6 +88,13 @@ function select(i: number) {
   if (commit) void repo.select(commit.sha, i)
   scroller.value?.focus()
 }
+
+function openMenu(i: number) {
+  const commit = repo.commitAt(i)
+  if (!commit) return
+  select(i)
+  void commitMenu(repo, commit)
+}
 </script>
 
 <template>
@@ -102,6 +110,7 @@ function select(i: number) {
         :style="{ top: `${i * ROW_HEIGHT}px`, paddingLeft: `${graphWidth + 8}px` }"
         data-testid="commit-row"
         @click="select(i)"
+        @contextmenu.prevent="openMenu(i)"
       >
         <template v-if="commit">
           <span

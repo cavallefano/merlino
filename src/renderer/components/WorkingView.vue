@@ -29,6 +29,11 @@ const sections = computed(() => {
 
 const isSelected = (file: WorkingFile, area: WorkingArea) => repo.working?.area === area && repo.working.file.path === file.path
 
+async function openFile(file: WorkingFile) {
+  const r = await window.api.openInEditor(props.root, file.path)
+  if (!r.ok) repo.error = r.error.message
+}
+
 function discard(file: WorkingFile, area: WorkingArea) {
   const question = area === 'untracked' ? `Eliminare ${file.path}?` : `Scartare le modifiche a ${file.path}?`
   if (window.confirm(`${question} Non si può annullare.`)) void repo.discard([file], area === 'untracked')
@@ -95,7 +100,10 @@ async function createStash() {
             <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
             <span class="actions" @click.stop>
               <button v-if="section.area === 'staged'" data-testid="unstage-file" @click="repo.unstage([f])">Togli</button>
-              <button v-else-if="section.area === 'conflicted'" data-testid="stage-file" @click="repo.stage([f])">Segna risolto</button>
+              <template v-else-if="section.area === 'conflicted'">
+                <button data-testid="open-file" @click="openFile(f)">Apri</button>
+                <button data-testid="stage-file" @click="repo.stage([f])">Segna come risolto</button>
+              </template>
               <template v-else>
                 <button data-testid="stage-file" @click="repo.stage([f])">Aggiungi</button>
                 <button v-if="section.area === 'untracked'" data-testid="ignore-file" @click="repo.ignore(f)">Ignora</button>

@@ -146,3 +146,17 @@ Test di integrazione (`test/integration/branches.test.ts`):
 - **`openInEditor`**: l'operazione si chiama così e non `openPath`, perché `Channels.openPath` era già l'evento "apri cartella" della seconda istanza.
 - **Errori su stdout**: git scrive alcuni errori, come i conflitti di merge, su stdout. `explain()` guarda entrambi e il log dei comandi mostra stdout quando stderr è vuoto.
 - **Menu contestuali nei test**: sono nativi, quindi i test E2E sostituiscono `Menu.prototype.popup` (`test/e2e/menu.ts`) e nell'app non c'è codice solo per i test.
+
+**Note dall'esecuzione (Task 4):**
+- **Dialog**: PromptDialog e RebaseDialog usano `<dialog>` nativo con `showModal()`, che dà focus sul primo campo, tab bloccato ed Esc come annulla. Gli stili comuni sono in `styles.css`.
+- **`actions/branches.ts`**: contiene le operazioni con dialog o conferma e i menu contestuali, condivisi da sidebar, lista dei commit, toolbar e palette. `popup()` costruisce il menu nativo dalle voci.
+- **OperationBanner**: sta dentro `RepoView` (poche righe), non è un componente a sé.
+- **Scelte non scritte nel piano**:
+  - push senza upstream: va su `origin`, altrimenti sul primo remote;
+  - tag: una voce "Push su <remote>" per ogni remote;
+  - branch: anche "Merge senza fast-forward", perché la spec chiede sia fast-forward sia `--no-ff`.
+- **Clone**: riusa `pickRepoFolder` (non c'è un `pickFolder` separato). L'avanzamento appare in una barra sotto le tab.
+- **Correzioni alle parti precedenti**:
+  - l'errore del repo si azzera all'inizio di ogni operazione; prima restava visibile per sempre;
+  - il diff di un file in conflitto si confronta con HEAD. Senza, git produce un diff combinato (`diff --cc`) che il parser non legge, e i marcatori di conflitto non si vedevano.
+- **E2E**: in più, un test del clone, con il dialog di scelta della cartella sostituito nel main.

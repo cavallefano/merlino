@@ -63,6 +63,12 @@ code, pre, kbd { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospac
 .center { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; text-align: center; }
 .spacer { flex: 1; }
 
+/* Dialog modali (<dialog> con showModal) */
+dialog { padding: 16px; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 12px 40px rgb(0 0 0 / 0.3); }
+dialog::backdrop { background: rgb(0 0 0 / 0.25); }
+dialog h2 { margin: 0 0 12px; font-size: 15px; }
+dialog footer { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
 /* Sintassi (classi di highlight.js) */
 .hljs-comment, .hljs-quote { color: var(--syn-comment); font-style: italic; }
 .hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-built_in, .hljs-type { color: var(--syn-keyword); }

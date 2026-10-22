@@ -13,6 +13,7 @@ const paletteKeys = registry.keyLabel(shortcuts['palette.open'])
     <div class="actions">
       <button class="primary" @click="app.pickAndOpen()">Apri repository…</button>
       <button @click="app.pickAndInit()">Nuovo repository…</button>
+      <button data-testid="clone" :disabled="app.cloneProgress !== null" @click="app.cloneRepo()">Clona repository…</button>
     </div>
     <p class="muted">Oppure trascina qui la cartella di un repository.</p>
     <p class="muted">Tutti i comandi: <kbd>{{ paletteKeys }}</kbd></p>

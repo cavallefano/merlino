@@ -11,6 +11,8 @@ import type {
   HistoryPage,
   HistorySummary,
   PatchMode,
+  RefsSnapshot,
+  RepoCommand,
   RepoInfo,
   StashEntry,
   WorkingArea,
@@ -70,6 +72,14 @@ function define(root: string) {
     const body = ref('')
     const amend = ref(false)
 
+    // Branch, tag e remote
+    const refs = shallowRef<RefsSnapshot | null>(null)
+    /** Comando git in esecuzione (fetch, push…), per disattivare i pulsanti e mostrare l'avanzamento. */
+    const busy = ref<RepoCommand['kind'] | null>(null)
+    const progress = ref('')
+    /** Rebase interattivo da preparare: il commit di partenza e i commit da lì a HEAD (dal più recente). */
+    const rebasePlan = shallowRef<{ sha: string; commits: Commit[] } | null>(null)
+
     const changeCount = computed(() => {
       const s = status.value
       return s ? s.staged.length + s.unstaged.length + s.untracked.length + s.conflicted.length : 0
@@ -77,7 +87,7 @@ function define(root: string) {
     const canCommit = computed(() => subject.value.trim() !== '' && (amend.value || (status.value?.staged.length ?? 0) > 0))
 
     async function refresh() {
-      const [r] = await Promise.all([window.api.repoInfo(root), loadStatus(), loadStashes(), loadHistory()])
+      const [r] = await Promise.all([window.api.repoInfo(root), loadStatus(), loadStashes(), loadRefs(), loadHistory()])
       if (r.ok) info.value = r.value
       else error.value = r.error.message
       if (view.value === 'working') await loadWorkingDiff()
@@ -92,6 +102,11 @@ function define(root: string) {
     async function loadStashes() {
       const r = await window.api.stashList(root)
       if (r.ok) stashes.value = r.value
+    }
+
+    async function loadRefs() {
+      const r = await window.api.refs(root)
+      if (r.ok) refs.value = r.value
     }
 
     async function loadHistory() {
@@ -244,6 +259,7 @@ function define(root: string) {
 
     /** Esegue un'operazione, mostra l'eventuale errore e ricarica lo stato da git. */
     async function run(op: Promise<Result<unknown>>): Promise<boolean> {
+      error.value = null
       const r = await op
       if (!r.ok) error.value = r.error.message
       await refresh()
@@ -313,6 +329,24 @@ function define(root: string) {
     const stashPush = (message: string, untracked: boolean) => run(window.api.stashPush(root, message, untracked))
     const stashAction = (action: 'apply' | 'pop' | 'drop', ref: string) => run(window.api.stashAction(root, action, ref))
 
+    // --- Branch, tag e remote ---
+
+    async function git(command: RepoCommand): Promise<boolean> {
+      busy.value = command.kind
+      progress.value = ''
+      try {
+        return await run(window.api.git(root, command))
+      } finally {
+        busy.value = null
+      }
+    }
+
+    async function openRebase(sha: string) {
+      const r = await window.api.rebaseRange(root, sha)
+      if (r.ok) rebasePlan.value = { sha, commits: r.value }
+      else error.value = r.error.message
+    }
+
     return {
       root, info, error, refresh,
       history, query, pagesTick, loadHistory, ensureRows, commitAt, rowAt, search, move,
@@ -320,6 +354,7 @@ function define(root: string) {
       status, stashes, working, workingDiff, selectedLines, subject, body, amend, changeCount, canCommit,
       selectWorking, selectWorkingFile, stage, unstage, discard, stageEverything, unstageEverything, ignore,
       applyLines, toggleLine, clearSelection, setAmend, commitChanges, stashPush, stashAction,
+      refs, busy, progress, rebasePlan, run, git, openRebase,
     }
   })
 }

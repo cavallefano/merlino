@@ -1,11 +1,27 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import type { Result } from '../../shared/ipc'
 import type { CommandLogEntry, GitCheck, RepoInfo } from '../../shared/types'
 import { disposeRepoStore, useRepoStore } from './repo'
 
 const MAX_LOG = 500
 let uiErrorId = -1
+
+export interface PromptField {
+  key: string
+  label: string
+  type?: 'text' | 'checkbox'
+  value?: string | boolean
+}
+
+export interface PromptRequest {
+  title: string
+  fields: PromptField[]
+  /** Testo del pulsante di conferma. */
+  confirm: string
+}
+
+export type PromptValues = Record<string, string | boolean>
 
 export const useAppStore = defineStore('app', () => {
   const git = ref<GitCheck | null>(null)
@@ -16,6 +32,11 @@ export const useAppStore = defineStore('app', () => {
   const log = ref<CommandLogEntry[]>([])
   const outputOpen = ref(false)
   const paletteOpen = ref(false)
+  /** Dialog di input aperto (Electron non implementa window.prompt). */
+  const promptRequest = shallowRef<(PromptRequest & { resolve: (values: PromptValues | null) => void }) | null>(null)
+  /** Ultima riga di avanzamento del clone in corso; null se non si sta clonando. */
+  const cloneProgress = ref<string | null>(null)
+  let cloneParent: string | null = null
 
   function addLog(entry: CommandLogEntry) {
     log.value.push(entry)
@@ -36,6 +57,10 @@ export const useAppStore = defineStore('app', () => {
       if (tabs.value.includes(root)) void useRepoStore(root).refresh()
     })
     window.api.onOpenPath((path) => void open(path))
+    window.api.onProgress(({ root, line }) => {
+      if (root === cloneParent) cloneProgress.value = line
+      else if (tabs.value.includes(root)) useRepoStore(root).progress = line
+    })
     window.addEventListener('focus', () => {
       if (active.value) void useRepoStore(active.value).refresh()
     })
@@ -87,6 +112,34 @@ export const useAppStore = defineStore('app', () => {
     if (path) await initRepo(path)
   }
 
+  /** Chiede dei valori con il dialog; null se annullato. */
+  function prompt(request: PromptRequest): Promise<PromptValues | null> {
+    promptRequest.value?.resolve(null)
+    return new Promise((resolve) => {
+      promptRequest.value = { ...request, resolve }
+    })
+  }
+
+  function closePrompt(values: PromptValues | null) {
+    promptRequest.value?.resolve(values)
+    promptRequest.value = null
+  }
+
+  async function cloneRepo() {
+    const values = await prompt({ title: 'Clona repository', fields: [{ key: 'url', label: 'URL' }], confirm: 'Scegli la cartella…' })
+    const url = String(values?.url ?? '').trim()
+    if (!url) return
+    const parent = await window.api.pickRepoFolder()
+    if (!parent) return
+    cloneParent = parent
+    cloneProgress.value = 'Clone in corso…'
+    const r = await window.api.clone(url, parent)
+    cloneParent = null
+    cloneProgress.value = null
+    if (r.ok) await open(r.value)
+    else error.value = r.error.message
+  }
+
   function activate(root: string | null) {
     active.value = root
     void window.api.setActiveRepo(root)
@@ -108,7 +161,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   return {
-    git, tabs, active, recent, error, log, outputOpen, paletteOpen,
-    init, setGitPath, open, initRepo, pickAndOpen, pickAndInit, activate, close, cycle, pushUiError,
+    git, tabs, active, recent, error, log, outputOpen, paletteOpen, promptRequest, cloneProgress,
+    init, setGitPath, open, initRepo, pickAndOpen, pickAndInit, activate, close, cycle, pushUiError, prompt, closePrompt, cloneRepo,
   }
 })
