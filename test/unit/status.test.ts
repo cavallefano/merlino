@@ -18,6 +18,7 @@ const out = [
 describe('parseStatus', () => {
   it('stage, modificati, non tracciati, conflitti, upstream e avanti/indietro', () => {
     expect(parseStatus(out)).toEqual({
+      operation: null,
       staged: [
         { path: 'con spazio.txt', status: 'M' },
         { path: 'new name.txt', oldPath: 'old.txt', status: 'R' },

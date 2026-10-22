@@ -29,3 +29,20 @@ export function makeRepo(commits = 1): string {
   }
   return dir
 }
+
+/** Un repo bare che fa da "server" e un clone con un commit già pushato su main (upstream impostato). */
+export function makeRemotePair(): { bare: string; clone: string } {
+  const bare = realpathSync(mkdtempSync(join(tmpdir(), 'merlino-bare-')))
+  git(bare, 'init', '-q', '--bare', '-b', 'main')
+  const clone = makeRepo(1)
+  git(clone, 'remote', 'add', 'origin', bare)
+  git(clone, 'push', '-q', '-u', 'origin', 'main')
+  return { bare, clone }
+}
+
+/** Un altro clone dello stesso "server". */
+export function cloneOf(bare: string): string {
+  const parent = realpathSync(mkdtempSync(join(tmpdir(), 'merlino-clone-')))
+  git(parent, 'clone', '-q', bare, 'clone')
+  return join(parent, 'clone')
+}

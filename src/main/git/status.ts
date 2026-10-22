@@ -1,11 +1,13 @@
-import type { FileStatus, WorkingStatus } from '../../shared/types'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import type { FileStatus, Operation, WorkingStatus } from '../../shared/types'
 import type { GitRunner } from './runner'
 
 const code = (c: string | undefined): FileStatus | null => (!c || c === '.' ? null : (c as FileStatus))
 
 /** git status --porcelain=v2 -z --branch: voci separate da NUL; nelle rinomine il vecchio percorso è la voce successiva. */
 export function parseStatus(out: string): WorkingStatus {
-  const status: WorkingStatus = { staged: [], unstaged: [], untracked: [], conflicted: [], upstream: null, ahead: 0, behind: 0 }
+  const status: WorkingStatus = { operation: null, staged: [], unstaged: [], untracked: [], conflicted: [], upstream: null, ahead: 0, behind: 0 }
   const parts = out.split('\0')
   for (let i = 0; i < parts.length; i++) {
     const entry = parts[i]
@@ -33,6 +35,21 @@ export function parseStatus(out: string): WorkingStatus {
   return status
 }
 
+/** Merge, rebase, cherry-pick o revert lasciati a metà, dai file di stato nella cartella .git. */
+export async function readOperation(runner: GitRunner): Promise<Operation | null> {
+  const dir = (await runner.run(['rev-parse', '--absolute-git-dir'])).stdout.trim()
+  const has = (name: string) => existsSync(join(dir, name))
+  if (has('rebase-merge') || has('rebase-apply')) return 'rebase'
+  if (has('MERGE_HEAD')) return 'merge'
+  if (has('CHERRY_PICK_HEAD')) return 'cherry-pick'
+  if (has('REVERT_HEAD')) return 'revert'
+  return null
+}
+
 export async function readStatus(runner: GitRunner): Promise<WorkingStatus> {
-  return parseStatus((await runner.run(['status', '--porcelain=v2', '-z', '--branch', '--untracked-files=all'])).stdout)
+  const [out, operation] = await Promise.all([
+    runner.run(['status', '--porcelain=v2', '-z', '--branch', '--untracked-files=all']),
+    readOperation(runner),
+  ])
+  return { ...parseStatus(out.stdout), operation }
 }

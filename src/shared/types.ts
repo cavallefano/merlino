@@ -155,7 +155,11 @@ export interface WorkingFile {
   status: FileStatus | '?'
 }
 
+/** Operazione lasciata a metà (di solito per conflitti). */
+export type Operation = 'merge' | 'rebase' | 'cherry-pick' | 'revert'
+
 export interface WorkingStatus {
+  operation: Operation | null
   staged: WorkingFile[]
   unstaged: WorkingFile[]
   untracked: WorkingFile[]
@@ -175,3 +179,40 @@ export interface StashEntry {
 
 /** stage: index ← righe scelte; unstage: index → le toglie; discard: le toglie dalla cartella di lavoro. */
 export type PatchMode = 'stage' | 'unstage' | 'discard'
+
+export interface BranchInfo {
+  name: string
+  sha: string
+  upstream: string | null
+  ahead: number
+  behind: number
+  /** L'upstream non esiste più sul remote. */
+  gone: boolean
+  current: boolean
+}
+
+export interface RemoteBranch {
+  /** Nome senza il remote: main */
+  name: string
+  /** origin/main */
+  fullName: string
+  sha: string
+}
+
+export interface RemoteInfo {
+  name: string
+  url: string
+  branches: RemoteBranch[]
+}
+
+export interface TagInfo {
+  name: string
+  /** Commit del tag (per i tag annotati, quello a cui punta). */
+  sha: string
+}
+
+export interface RefsSnapshot {
+  branches: BranchInfo[]
+  remotes: RemoteInfo[]
+  tags: TagInfo[]
+}
