@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import type { Result } from '../../shared/ipc'
 import { DEFAULT_PREFERENCES } from '../../shared/preferences'
-import type { AppSettings, CommandLogEntry, GitCheck, Preferences, RepoInfo } from '../../shared/types'
+import type { AppSettings, CommandLogEntry, CommitTemplate, GitCheck, Preferences, RepoInfo } from '../../shared/types'
 import { disposeRepoStore, useRepoStore } from './repo'
 
 const MAX_LOG = 500
@@ -50,6 +50,36 @@ export const useAppStore = defineStore('app', () => {
     if (r.ok) settings.value = r.value
     else error.value = r.error.message
     return r.ok
+  }
+
+  // La libreria si aggiorna subito in locale (si scrive senza attese) e si salva dopo 400 ms di pausa
+  let templatesTimer: ReturnType<typeof setTimeout> | undefined
+  let pendingTemplates: CommitTemplate[] | null = null
+
+  function saveTemplates(list: CommitTemplate[]) {
+    if (!settings.value) return
+    settings.value = { ...settings.value, commitTemplates: list }
+    pendingTemplates = list
+    clearTimeout(templatesTimer)
+    templatesTimer = setTimeout(() => void flushTemplates(), 400)
+  }
+
+  async function flushTemplates() {
+    clearTimeout(templatesTimer)
+    const list = pendingTemplates
+    pendingTemplates = null
+    if (!list) return
+    const r = await window.api.saveCommitTemplates(list)
+    // Dal main serve solo defaultTemplates: i template locali possono essere già più nuovi
+    if (r.ok && settings.value) settings.value = { ...settings.value, defaultTemplates: r.value.defaultTemplates }
+    else if (!r.ok) error.value = r.error.message
+  }
+
+  async function setDefaultTemplate(root: string, id: string | null) {
+    await flushTemplates()
+    const r = await window.api.setDefaultTemplate(root, id)
+    if (r.ok && settings.value) settings.value = { ...settings.value, defaultTemplates: r.value.defaultTemplates }
+    else if (!r.ok) error.value = r.error.message
   }
 
   function addLog(entry: CommandLogEntry) {
@@ -179,7 +209,7 @@ export const useAppStore = defineStore('app', () => {
 
   return {
     git, tabs, active, recent, error, log, outputOpen, paletteOpen, promptRequest, cloneProgress,
-    settings, preferences, settingsSection, updatePreferences,
+    settings, preferences, settingsSection, updatePreferences, saveTemplates, flushTemplates, setDefaultTemplate,
     init, setGitPath, open, initRepo, pickAndOpen, pickAndInit, activate, close, cycle, pushUiError, prompt, closePrompt, cloneRepo,
   }
 })

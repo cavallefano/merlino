@@ -18,6 +18,17 @@ export function registerWorkingActions(): void {
       when: () => repo()?.view === 'working' && repo()?.canCommit === true,
       run: () => repo()?.commitChanges(),
     },
+    {
+      id: 'commit.template',
+      title: 'Applica un template di commit…',
+      when: () => app.active !== null,
+      run: async () => {
+        const r = repo()
+        if (!r) return
+        await r.selectWorking()
+        r.templatePicker = 'button'
+      },
+    },
     { id: 'working.stageAll', title: 'Aggiungi tutto allo stage', when: hasChanges, run: () => repo()?.stageEverything() },
     {
       id: 'working.unstageAll',

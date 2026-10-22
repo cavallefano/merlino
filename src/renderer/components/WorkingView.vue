@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { shortcuts } from '../../shared/shortcuts'
-import type { WorkingArea, WorkingFile } from '../../shared/types'
+import type { CommitTemplate, WorkingArea, WorkingFile } from '../../shared/types'
 import { registry } from '../actions/builtin'
+import { useAppStore } from '../stores/app'
 import { useRepoStore } from '../stores/repo'
 import StageDiff from './StageDiff.vue'
+import TemplatePicker from './TemplatePicker.vue'
 
 const props = defineProps<{ root: string }>()
 const repo = useRepoStore(props.root)
@@ -12,8 +14,39 @@ const showStash = ref(false)
 const stashMessage = ref('')
 const stashUntracked = ref(false)
 const commitKeys = registry.keyLabel(shortcuts['working.commit'])
-// Guide di git: oggetto entro 50 caratteri, mai oltre 72
-const subjectLength = computed(() => (repo.subject.length > 72 ? 'over' : repo.subject.length > 50 ? 'long' : ''))
+const app = useAppStore()
+// Guide dell'oggetto dalle preferenze (di solito 50 e 72 caratteri)
+const subjectLength = computed(() => {
+  const n = repo.subject.length
+  return n > app.preferences.subjectLimit ? 'over' : n > app.preferences.subjectWarn ? 'long' : ''
+})
+
+const subjectInput = ref<HTMLInputElement | null>(null)
+const picker = ref<InstanceType<typeof TemplatePicker> | null>(null)
+// Scrivendo "/" in un oggetto vuoto si apre il selettore; il testo dopo la "/" fa da ricerca
+watch(
+  () => repo.subject,
+  (s, old) => {
+    if (repo.templatePicker === null && !old && s.startsWith('/')) repo.templatePicker = 'slash'
+    else if (repo.templatePicker === 'slash' && !s.startsWith('/')) repo.templatePicker = null
+  },
+)
+
+function onSubjectKey(e: KeyboardEvent) {
+  if (repo.templatePicker === 'slash') picker.value?.onKey(e)
+}
+
+async function chooseTemplate(t: CommitTemplate) {
+  const slash = repo.templatePicker === 'slash'
+  repo.templatePicker = null
+  const typed = repo.body.trim() !== '' || (!slash && repo.subject.trim() !== '')
+  if (typed && !window.confirm(`Sostituire il messaggio con il template «${t.name}»?`)) return
+  repo.applyTemplate(t)
+  await nextTick()
+  const el = subjectInput.value
+  el?.focus()
+  el?.setSelectionRange(el.value.length, el.value.length)
+}
 
 const sections = computed(() => {
   const s = repo.status
@@ -51,10 +84,32 @@ async function createStash() {
   <section class="working">
     <div class="commit">
       <div class="subject">
-        <input v-model="repo.subject" data-testid="commit-subject" placeholder="Oggetto del commit" />
+        <input
+          ref="subjectInput"
+          v-model="repo.subject"
+          data-testid="commit-subject"
+          placeholder="Oggetto del commit (/ per i template)"
+          @keydown="onSubjectKey"
+          @blur="repo.templatePicker === 'slash' && (repo.templatePicker = null)"
+        />
         <span class="count" :class="subjectLength">{{ repo.subject.length }}</span>
+        <TemplatePicker
+          v-if="repo.templatePicker"
+          ref="picker"
+          :root="root"
+          :filter="repo.templatePicker === 'slash' ? repo.subject.slice(1) : undefined"
+          @choose="chooseTemplate"
+          @close="repo.templatePicker = null"
+        />
       </div>
-      <textarea v-model="repo.body" data-testid="commit-body" rows="3" placeholder="Descrizione (facoltativa)" />
+      <textarea
+        v-model="repo.body"
+        data-testid="commit-body"
+        rows="3"
+        placeholder="Descrizione (facoltativa)"
+        :class="{ guided: app.preferences.bodyGuide > 0 }"
+        :style="{ '--guide': `calc(8px + ${app.preferences.bodyGuide}ch)` }"
+      />
       <div class="commit-actions">
         <label>
           <input
@@ -66,6 +121,12 @@ async function createStash() {
           Amend
         </label>
         <button data-testid="stash-toggle" @click="showStash = !showStash">Stash…</button>
+        <!-- mousedown.prevent: il campo di ricerca aperto non perde il fuoco, così il clic chiude invece di riaprire -->
+        <button
+          data-testid="template-toggle"
+          @mousedown.prevent
+          @click="repo.templatePicker = repo.templatePicker === 'button' ? null : 'button'"
+        >Template</button>
         <span class="spacer" />
         <button class="primary" data-testid="commit-button" :disabled="!repo.canCommit" @click="repo.commitChanges()">
           Commit <kbd>{{ commitKeys }}</kbd>
@@ -133,7 +194,7 @@ async function createStash() {
 <style scoped>
 .working { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .commit { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
-.subject { display: flex; align-items: center; gap: 8px; }
+.subject { position: relative; display: flex; align-items: center; gap: 8px; }
 .subject input { flex: 1; font-weight: 600; }
 .count { width: 24px; font-size: 11px; color: var(--fg-muted); text-align: right; font-variant-numeric: tabular-nums; }
 .count.long { color: #bf8700; }
@@ -159,4 +220,6 @@ kbd { opacity: 0.8; margin-left: 4px; }
 .empty { padding: 12px; }
 .diff-bar { display: flex; align-items: center; gap: 10px; padding: 4px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
 .diff-bar .path { flex: 1; }
+/* Guida verticale a N colonne nella descrizione (solo visiva) */
+textarea.guided { background-image: linear-gradient(to right, transparent calc(var(--guide) - 1px), var(--border) calc(var(--guide) - 1px), var(--border) var(--guide), transparent var(--guide)); background-repeat: no-repeat; }
 </style>
