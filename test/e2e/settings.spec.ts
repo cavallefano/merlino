@@ -14,7 +14,14 @@ test('Impostazioni: ⌘, apre, il tema arriva a nativeTheme, Esc chiude; senza "
 
   await page.keyboard.press(`${mod}+Comma`)
   await expect(page.getByTestId('settings')).toBeVisible()
+  // Playwright forza prefers-color-scheme: light; senza emulazione la pagina segue nativeTheme
+  await page.emulateMedia({ colorScheme: null })
+  type Win = { matchMedia: (query: string) => { matches: boolean } }
+  const dark = () => page.evaluate(() => (globalThis as unknown as Win).matchMedia('(prefers-color-scheme: dark)').matches)
+  await page.getByTestId('pref-theme').selectOption('light')
+  await expect.poll(dark).toBe(false)
   await page.getByTestId('pref-theme').selectOption('dark')
+  await expect.poll(dark).toBe(true)
   await expect.poll(() => app.evaluate(({ nativeTheme }) => nativeTheme.themeSource)).toBe('dark')
   await page.getByTestId('pref-restoreTabs').uncheck()
   await page.keyboard.press('Escape')

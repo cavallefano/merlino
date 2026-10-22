@@ -2494,3 +2494,24 @@ git commit -m "feat: commit template nel composer (pulsante, scorciatoia /, pred
   - editor esterno scelto: "Apri" su un file in conflitto;
   - in entrambi i casi l'app giusta si apre nella cartella o sul file giusti.
 - [ ] **Step 4:** Annota l'esito in fondo a questo piano e committa.
+
+**Note dall'esecuzione:**
+- **Nomi diversi dal piano**:
+  - nello store del repo esisteva già il contatore `diffRequest`, quindi la funzione per le opzioni del diff si chiama `diffOptionsFor`;
+  - l'helper del messaggio si chiama `currentMessage`, perché `commitChanges` ha già una variabile `message`.
+- **Bug trovato dagli E2E (Task 4)**: un salvataggio che finiva mentre si scriveva in un altro campo riscriveva quel campo con il valore salvato, perché Vue applicava di nuovo `:value`. Per questo l'email si perdeva. `PrefNumber` e i campi di testo della sezione Git ora usano una copia locale con `v-model`.
+- **Test E2E corretti**:
+  - nella sezione Git, prima di premere ⌘, il test aspetta la fine dell'avvio: prima la scorciatoia non è ancora registrata;
+  - il test del tema ora controlla anche la pagina (`prefers-color-scheme`) dopo aver tolto l'emulazione di Playwright, che altrimenti forza il chiaro. Prima controllava solo `nativeTheme.themeSource`, e non si accorgeva se la finestra non cambiava.
+- **Task 8**:
+  - lint, typecheck e unit (129, più 1 saltato) verdi. E2E (23) verdi nelle ultime esecuzioni complete, con l'eccezione del blocco intermittente qui sotto;
+  - screenshot di tutte le sezioni e del selettore dei template, in tema chiaro e scuro, su una copia di `demo-backend`. La config globale era temporanea, con un'identità di prova;
+  - prove reali su macOS:
+    - "Apri nel terminale" con Terminale e con iTerm: entrambe le shell partono nella cartella del repo (verificato con `lsof`);
+    - editor TextEdit su un file: si apre;
+    - un'app inesistente dà l'errore "Impossibile aprire con … (exit 1)".
+- **Problema aperto**: in una suite E2E completa su tre o quattro, un test a caso aspetta 30 s la prima finestra di Electron e fallisce; il processo non scrive niente.
+  - Non succede su `feature/storia-stile` (4 esecuzioni su 4 verdi), né ripetendo un solo file (15 e 15 avvii senza blocchi).
+  - Non dipende dall'impostazione del tema all'avvio: provato.
+  - Se dipenda da un'altra istanza di Merlino aperta non è dimostrato.
+  - `launch()` ora riporta l'output del processo quando la finestra non arriva, ma resta da trovare la causa.
