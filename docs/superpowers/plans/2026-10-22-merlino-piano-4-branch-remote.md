@@ -160,3 +160,16 @@ Test di integrazione (`test/integration/branches.test.ts`):
   - l'errore del repo si azzera all'inizio di ogni operazione; prima restava visibile per sempre;
   - il diff di un file in conflitto si confronta con HEAD. Senza, git produce un diff combinato (`diff --cc`) che il parser non legge, e i marcatori di conflitto non si vedevano.
 - **E2E**: in più, un test del clone, con il dialog di scelta della cartella sostituito nel main.
+
+**Note dall'esecuzione (Task 5):**
+- `npm run lint && npm run typecheck && npm test && npm run test:e2e`: tutto verde, con 102 test unit e di integrazione (più 1 saltato) e 19 E2E.
+- **Copia di `demo-backend`**: un clone `--bare` fa da server, senza remote. Il clone di lavoro ha come origin solo quel bare, più un secondo clone che fa da collega. Il repo ha 2870 commit, 78 branch remoti e 82 tag. L'app gira con l'ambiente e la config git reali dell'utente.
+  - Fetch del commit pushato dal collega: compare "Pull ↓1", sia nella toolbar sia sul branch in sidebar. Il pull lo porta in HEAD.
+  - Branch creato dal menu del commit, con checkout: commit fatto dal terminale, poi Push senza upstream (`-u origin HEAD`). Upstream e branch risultano sul bare.
+  - Checkout del branch di partenza con doppio clic in sidebar.
+  - Eliminazione del branch dalla sidebar:
+    - se è già pushato, `-d` riesce senza conferma, perché è mergiato nel suo upstream;
+    - se non è mergiato, `-d` fallisce e compare la conferma: "Annulla" lascia il branch e non mostra errori, "OK" esegue `-D`.
+  - Eliminazione dal remote: chiede conferma e il branch sparisce dal bare.
+  - Nessun errore a schermo durante tutto il percorso.
+- **Screenshot**: sidebar e toolbar. Dei menu contestuali nativi sono registrate le voci dagli oggetti `Menu` reali, non le immagini: catturare un menu nativo richiede uno screenshot dell'intero schermo.
