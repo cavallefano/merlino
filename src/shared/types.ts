@@ -47,3 +47,98 @@ export interface AppSettings {
   activeRepo: string | null
   recentRepos: string[]
 }
+
+export interface CommitRef {
+  kind: 'head' | 'branch' | 'remote' | 'tag'
+  /** Nome breve: main, origin/main, v1.0 */
+  name: string
+  /** true per il branch su cui è HEAD (e per HEAD staccato). */
+  current: boolean
+}
+
+export interface Commit {
+  sha: string
+  parents: string[]
+  author: string
+  authorEmail: string
+  /** Secondi dall'epoch. */
+  authorTime: number
+  committer: string
+  committerEmail: string
+  commitTime: number
+  subject: string
+  refs: CommitRef[]
+}
+
+/** Segmento del grafo dalla riga precedente (colonna from) a questa riga (colonna to). */
+export interface GraphEdge {
+  from: number
+  to: number
+}
+
+export interface GraphRow {
+  /** Colonna del nodo. */
+  lane: number
+  up: GraphEdge[]
+}
+
+export interface HistorySummary {
+  /** Cambia quando cambiano ref, HEAD o ricerca: il renderer scarta le pagine vecchie. */
+  version: number
+  total: number
+  /** Colonne del grafo; 0 durante una ricerca (niente grafo). */
+  lanes: number
+}
+
+export interface HistoryPage {
+  version: number
+  commits: Commit[]
+  rows: GraphRow[]
+}
+
+export type FileStatus = 'A' | 'M' | 'D' | 'R' | 'C' | 'T' | 'U'
+
+export interface FileChange {
+  path: string
+  /** Solo per rinomine e copie. */
+  oldPath?: string
+  status: FileStatus
+  /** null per i file binari. */
+  added: number | null
+  deleted: number | null
+}
+
+export interface CommitDetail {
+  commit: Commit
+  /** Messaggio completo (oggetto e corpo). */
+  message: string
+  files: FileChange[]
+}
+
+export interface DiffLine {
+  type: 'context' | 'add' | 'del'
+  text: string
+  oldNo: number | null
+  newNo: number | null
+}
+
+export interface Hunk {
+  /** La riga @@ … @@. */
+  header: string
+  lines: DiffLine[]
+}
+
+export interface FileDiff {
+  path: string
+  oldPath?: string
+  binary: boolean
+  /** Oltre i limiti: hunks vuoti finché non si chiede force. */
+  tooLarge: boolean
+  hunks: Hunk[]
+}
+
+export interface DiffOptions {
+  ignoreWhitespace: boolean
+  /** Mostra anche se supera i limiti. */
+  force: boolean
+}
