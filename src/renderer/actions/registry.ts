@@ -49,7 +49,10 @@ export class ActionRegistry {
 
   keyLabel(k: Keys): string {
     const key = k.key.length === 1 ? k.key.toUpperCase() : k.key
-    if (this.isMac) return `${k.ctrl ? '⌃' : ''}${k.alt ? '⌥' : ''}${k.shift ? '⇧' : ''}${k.mod ? '⌘' : ''}${key}`
+    if (this.isMac) {
+      const symbol = key === 'Enter' ? '↩' : key
+      return `${k.ctrl ? '⌃' : ''}${k.alt ? '⌥' : ''}${k.shift ? '⇧' : ''}${k.mod ? '⌘' : ''}${symbol}`
+    }
     return [k.mod || k.ctrl ? 'Ctrl' : '', k.alt ? 'Alt' : '', k.shift ? 'Shift' : '', key].filter(Boolean).join('+')
   }
 

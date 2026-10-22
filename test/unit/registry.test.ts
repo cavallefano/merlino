@@ -63,6 +63,8 @@ describe('ActionRegistry', () => {
     expect(new ActionRegistry(true).keyLabel({ key: 'p', mod: true, shift: true })).toBe('⇧⌘P')
     expect(new ActionRegistry(false).keyLabel({ key: 'p', mod: true, shift: true })).toBe('Ctrl+Shift+P')
     expect(new ActionRegistry(true).keyLabel({ key: 'Tab', ctrl: true })).toBe('⌃Tab')
+    expect(new ActionRegistry(true).keyLabel({ key: 'Enter', mod: true })).toBe('⌘↩')
+    expect(new ActionRegistry(false).keyLabel({ key: 'Enter', mod: true })).toBe('Ctrl+Enter')
   })
 })
 
