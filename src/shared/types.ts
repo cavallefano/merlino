@@ -120,6 +120,8 @@ export interface DiffLine {
   text: string
   oldNo: number | null
   newNo: number | null
+  /** La riga è l'ultima del file e non ha a capo ("\ No newline at end of file"). */
+  noNewline?: boolean
 }
 
 export interface Hunk {
@@ -142,3 +144,34 @@ export interface DiffOptions {
   /** Mostra anche se supera i limiti. */
   force: boolean
 }
+
+export type WorkingArea = 'staged' | 'unstaged' | 'untracked' | 'conflicted'
+
+export interface WorkingFile {
+  path: string
+  /** Solo per le rinomine in stage. */
+  oldPath?: string
+  /** '?' per i non tracciati. */
+  status: FileStatus | '?'
+}
+
+export interface WorkingStatus {
+  staged: WorkingFile[]
+  unstaged: WorkingFile[]
+  untracked: WorkingFile[]
+  conflicted: WorkingFile[]
+  upstream: string | null
+  ahead: number
+  behind: number
+}
+
+export interface StashEntry {
+  /** stash@{n} */
+  ref: string
+  sha: string
+  time: number
+  message: string
+}
+
+/** stage: index ← righe scelte; unstage: index → le toglie; discard: le toglie dalla cartella di lavoro. */
+export type PatchMode = 'stage' | 'unstage' | 'discard'

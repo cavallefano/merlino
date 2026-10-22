@@ -31,9 +31,17 @@ describe('parseFileDiff', () => {
       { type: 'context', text: 'c', oldNo: 3, newNo: 3 },
     ])
     expect(d.hunks[1].lines).toEqual([
-      { type: 'del', text: 'x', oldNo: 10, newNo: null },
+      { type: 'del', text: 'x', oldNo: 10, newNo: null, noNewline: true },
       { type: 'add', text: 'x', oldNo: null, newNo: 10 },
       { type: 'add', text: 'y', oldNo: null, newNo: 11 },
+    ])
+  })
+
+  it('segna la riga senza a capo finale', () => {
+    const d = parseFileDiff('@@ -1 +1 @@\n-a\n\\ No newline at end of file\n+b\n\\ No newline at end of file\n', 'f')
+    expect(d.hunks[0].lines).toEqual([
+      { type: 'del', text: 'a', oldNo: 1, newNo: null, noNewline: true },
+      { type: 'add', text: 'b', oldNo: null, newNo: 1, noNewline: true },
     ])
   })
 

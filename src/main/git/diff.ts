@@ -35,7 +35,14 @@ export function parseFileDiff(out: string, path: string, oldPath?: string): File
       } else if (raw[0] === '+') {
         hunk.lines.push({ type: 'add', text, oldNo: null, newNo: newNo++ })
         newLeft--
-      } // "\ No newline at end of file": nessuna riga
+      } else if (raw[0] === '\\' && hunk.lines.length) {
+        hunk.lines[hunk.lines.length - 1].noNewline = true
+      }
+      continue
+    }
+    // Il marcatore può arrivare anche a hunk chiuso, dopo l'ultima riga
+    if (raw.startsWith('\\ ') && hunk?.lines.length) {
+      hunk.lines[hunk.lines.length - 1].noNewline = true
       continue
     }
     const m = HUNK.exec(raw)
