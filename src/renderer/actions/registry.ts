@@ -1,11 +1,6 @@
-/** Combinazione di tasti. mod = Cmd su macOS, Ctrl su Windows e Linux; ctrl = sempre Ctrl. */
-export interface Keys {
-  key: string
-  mod?: boolean
-  ctrl?: boolean
-  shift?: boolean
-  alt?: boolean
-}
+import type { Keys } from '../../shared/shortcuts'
+
+export type { Keys }
 
 export interface Action {
   id: string

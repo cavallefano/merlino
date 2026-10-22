@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { shortcuts } from '../../shared/shortcuts'
+import { registry } from '../actions/builtin'
 import { useAppStore } from '../stores/app'
 
 const app = useAppStore()
+const paletteKeys = registry.keyLabel(shortcuts['palette.open'])
 </script>
 
 <template>
@@ -12,6 +15,7 @@ const app = useAppStore()
       <button @click="app.pickAndInit()">Nuovo repository…</button>
     </div>
     <p class="muted">Oppure trascina qui la cartella di un repository.</p>
+    <p class="muted">Tutti i comandi: <kbd>{{ paletteKeys }}</kbd></p>
     <template v-if="app.recent.length">
       <h2>Recenti</h2>
       <ul class="recent">

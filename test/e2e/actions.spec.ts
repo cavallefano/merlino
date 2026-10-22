@@ -23,6 +23,13 @@ test('palette, output, menu e scorciatoie delle tab', async () => {
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('output-panel')).toContainText('git rev-parse --show-toplevel')
 
+  const accelerator = await app.evaluate(({ Menu }) => Menu.getApplicationMenu()?.getMenuItemById('palette.open')?.accelerator)
+  expect(accelerator).toBe('CmdOrCtrl+Shift+P')
+  await page.getByTestId('palette-button').click()
+  await expect(page.getByTestId('palette-input')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('palette-input')).toBeHidden()
+
   await app.evaluate(({ Menu }) => Menu.getApplicationMenu()?.getMenuItemById('output.toggle')?.click())
   await expect(page.getByTestId('output-panel')).toBeHidden()
 
