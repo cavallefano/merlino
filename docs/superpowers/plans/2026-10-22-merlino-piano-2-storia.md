@@ -2115,8 +2115,8 @@ test('dettaglio: file cambiati, diff unificato e affiancato, copia SHA', async (
   await expect(page.getByTestId('diff-split-view')).toBeVisible()
 
   await page.getByTestId('copy-sha').click()
-  const copied = await app.evaluate(({ clipboard }) => clipboard.readText())
-  expect(copied).toBe(git(repo, 'rev-parse', 'feature/x').trim())
+  // writeText è asincrono: si aspetta che gli appunti contengano lo SHA
+  await expect.poll(() => app.evaluate(({ clipboard }) => clipboard.readText())).toBe(git(repo, 'rev-parse', 'feature/x').trim())
   await app.close()
 })
 ```

@@ -44,3 +44,20 @@ test('storia: grafo, etichette, ricerca e aggiornamento automatico', async () =>
   await expect(rows.first()).toContainText('commit dal terminale')
   await app.close()
 })
+
+test('dettaglio: file cambiati, diff unificato e affiancato, copia SHA', async () => {
+  const repo = repoWithMerge()
+  const { app, page } = await launch([repo])
+  await page.getByTestId('commit-row').filter({ hasText: 'modifica su feature' }).click()
+  await expect(page.getByTestId('file-row')).toHaveText(/file1\.txt/)
+  await expect(page.getByTestId('diff-line-add')).toContainText('modificato')
+  await expect(page.getByTestId('diff-line-context')).toContainText('1')
+
+  await page.getByTestId('diff-split').click()
+  await expect(page.getByTestId('diff-split-view')).toBeVisible()
+
+  await page.getByTestId('copy-sha').click()
+  // writeText è asincrono: si aspetta che gli appunti contengano lo SHA
+  await expect.poll(() => app.evaluate(({ clipboard }) => clipboard.readText())).toBe(git(repo, 'rev-parse', 'feature/x').trim())
+  await app.close()
+})

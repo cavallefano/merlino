@@ -32,6 +32,7 @@ export function buildMenu(run: (actionId: string) => void): void {
       label: 'Vista',
       submenu: [
         action('Command palette', 'palette.open'),
+        action('Cerca nella storia', 'history.search'),
         action('Output', 'output.toggle'),
         action('Aggiorna', 'repo.refresh'),
         { type: 'separator' },
