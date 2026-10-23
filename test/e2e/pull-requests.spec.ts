@@ -133,3 +133,25 @@ test('checkout di una PR da fork (pr/2) e di una dello stesso repository; chiudi
   await app.close()
   await server.close()
 })
+
+test('merge: metodi del repo, messaggio proposto, SHA mostrato; poi la PR è unita', async () => {
+  const { repo, server, app, page } = await start()
+  await addAccount(page, 'git.example.com')
+  await page.keyboard.press(`${mod}+2`)
+  await page.getByTestId('pr-row').first().click()
+  await page.getByTestId('pr-merge').click()
+  await expect(page.getByTestId('merge-method').locator('option')).toHaveText(['Merge commit', 'Squash and merge'])
+  await expect(page.getByTestId('merge-message')).toHaveValue('Merge pull request #1 from acme/feature/login\n\nAdd the login page')
+  await page.getByTestId('merge-method').selectOption('squash')
+  await expect(page.getByTestId('merge-message')).toHaveValue('Add the login page (#1)\n\nAdds **login** with a form.')
+  await page.getByTestId('merge-confirm').click()
+  await expect(page.getByTestId('pr-state')).toHaveText('Merged')
+  expect(server.requests.find((r) => r.line === 'PUT /api/v3/repos/acme/demo-app/pulls/1/merge')?.body).toMatchObject({
+    merge_method: 'squash',
+    sha: repo.loginSha,
+    commit_title: 'Add the login page (#1)',
+  })
+  await expect(page.getByTestId('pr-row')).toHaveCount(1)
+  await app.close()
+  await server.close()
+})

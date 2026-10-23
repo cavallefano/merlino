@@ -8,6 +8,7 @@ import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
 import CommitDetail from './CommitDetail.vue'
 import HistoryView from './HistoryView.vue'
+import MergeDialog from './MergeDialog.vue'
 import PullRequestDetail from './PullRequestDetail.vue'
 import PullRequestList from './PullRequestList.vue'
 import RebaseDialog from './RebaseDialog.vue'
@@ -83,6 +84,7 @@ onMounted(() => {
       </template>
     </div>
     <RebaseDialog v-if="repo.rebasePlan" :root="root" />
+    <MergeDialog v-if="prs.merging && prs.detail" :root="root" />
   </section>
 </template>
 
