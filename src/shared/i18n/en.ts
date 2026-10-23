@@ -104,6 +104,8 @@ export const en = {
   'hosting.conflicts': 'The pull request has conflicts',
   'hosting.requiredChecks': 'Required checks have not passed',
   'hosting.httpError': 'The server answered with an error (HTTP {status})',
+  'hosting.noKeychain': 'The system keychain is not available: the token cannot be saved securely',
+  'hosting.accountNotFound': 'Account not found',
   'dialog.applications': 'Applications',
   'dialog.programs': 'Programs',
   'common.cancel': 'Cancel',

@@ -106,6 +106,8 @@ export const it: Messages = {
   'hosting.conflicts': 'La pull request ha dei conflitti',
   'hosting.requiredChecks': 'I controlli obbligatori non sono superati',
   'hosting.httpError': 'Il server ha risposto con un errore (HTTP {status})',
+  'hosting.noKeychain': 'Il portachiavi del sistema non è disponibile: il token non si può salvare in modo sicuro',
+  'hosting.accountNotFound': 'Account non trovato',
   'dialog.applications': 'Applicazioni',
   'dialog.programs': 'Programmi',
   'common.cancel': 'Annulla',

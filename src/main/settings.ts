@@ -36,12 +36,17 @@ export class SettingsStore {
 
   update(patch: Partial<AppSettings>): AppSettings {
     this.data = { ...this.data, ...patch }
-    mkdirSync(dirname(this.file), { recursive: true })
-    const tmp = `${this.file}.tmp`
-    writeFileSync(tmp, JSON.stringify(this.data, null, 2))
-    renameSync(tmp, this.file) // scrittura atomica: un crash non lascia il file a metà
+    saveJson(this.file, this.data)
     return this.get()
   }
+}
+
+/** Scrittura atomica: un crash non lascia il file a metà. mode vale per i file nuovi (0o600 per i token). */
+export function saveJson(file: string, data: unknown, mode = 0o644): void {
+  mkdirSync(dirname(file), { recursive: true })
+  const tmp = `${file}.tmp`
+  writeFileSync(tmp, JSON.stringify(data, null, 2), { mode })
+  renameSync(tmp, file)
 }
 
 export function addRecent(list: string[], path: string): string[] {
