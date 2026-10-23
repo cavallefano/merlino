@@ -24,6 +24,7 @@ registerBranchActions()
 
 // Carattere e tab del codice nei diff, dalle preferenze
 watchEffect(() => {
+  document.documentElement.lang = app.preferences.language
   const root = document.documentElement.style
   root.setProperty('--code-size', `${app.preferences.codeFontSize}px`)
   root.setProperty('--tab-size', String(app.preferences.tabSize))

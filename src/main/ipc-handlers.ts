@@ -32,6 +32,8 @@ import {
   unstageFiles,
 } from './git/working'
 import { editorLaunch, startApp, terminalLaunch } from './open-app'
+import { setLanguage } from './i18n'
+import { buildMenu } from './menu'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
 import {
@@ -137,6 +139,9 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   function applyPreferences(p: Preferences): void {
     nativeTheme.themeSource = p.theme
     autoFetch.schedule(p.autoFetchMinutes)
+    // La barra dei menu si ricostruisce nella lingua scelta (costa poco, e le preferenze cambiano di rado)
+    setLanguage(p.language)
+    buildMenu((id) => send(Channels.menuAction, id))
   }
   applyPreferences(settings.get().preferences)
 

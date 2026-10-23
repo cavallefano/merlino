@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { type Lang, LANGUAGES } from '../../../shared/i18n'
 import type { ThemePreference } from '../../../shared/types'
 import { useAppStore } from '../../stores/app'
+import { t } from '../../i18n'
 import PrefNumber from './PrefNumber.vue'
 
 const app = useAppStore()
@@ -15,6 +17,16 @@ const checked = (e: Event) => (e.target as HTMLInputElement).checked
 <template>
   <form class="settings-form" @submit.prevent>
     <h2>Aspetto</h2>
+    <label for="pref-language">{{ t('setting.language') }}</label>
+    <select
+      id="pref-language"
+      data-testid="pref-language"
+      :value="app.preferences.language"
+      @change="app.updatePreferences({ language: ($event.target as HTMLSelectElement).value as Lang })"
+    >
+      <!-- Ogni lingua col suo nome nella sua lingua -->
+      <option v-for="l in LANGUAGES" :key="l" :value="l">{{ t(`language.${l}`) }}</option>
+    </select>
     <label for="pref-theme">Tema</label>
     <select
       id="pref-theme"

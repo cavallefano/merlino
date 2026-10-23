@@ -1,4 +1,5 @@
 import { isAbsolute } from 'node:path'
+import { LANGUAGES } from '../shared/i18n'
 import { DIFF_ALGORITHMS } from '../shared/preferences'
 import type { CommitTemplate, DiffOptions, GitConfigKey, Operation, Preferences, RebaseStep, RepoCommand } from '../shared/types'
 import type { DiffRequest } from './git/diff'
@@ -191,6 +192,7 @@ export function preferences(current: Preferences, patch: unknown): Preferences {
   const p = { ...current, ...(typeof patch === 'object' && patch !== null ? patch : {}) } as Record<string, unknown>
   const subjectWarn = intIn(p.subjectWarn, "Avviso sull'oggetto", 20, 200)
   return {
+    language: oneOf(p.language, LANGUAGES, 'Language'),
     theme: oneOf(p.theme, ['system', 'light', 'dark'] as const, 'Tema'),
     autoFetchMinutes: intIn(p.autoFetchMinutes, 'Fetch automatico', 0, 60),
     fetchPrune: bool(p.fetchPrune, 'Prune'),
