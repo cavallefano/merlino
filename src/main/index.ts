@@ -28,6 +28,8 @@ function isDir(path: string): boolean {
 const argvPath = (argv: string[], cwd: string) => pathFromArgv(argv, cwd, app.getAppPath(), isDir)
 
 let win: BrowserWindow | null = null
+/** Test E2E: finestra mai mostrata e app mai in primo piano, così chi usa il computer non perde il focus. */
+const hidden = process.env.MERLINO_E2E === '1'
 
 function createWindow(): BrowserWindow {
   const w = new BrowserWindow({
@@ -42,9 +44,13 @@ function createWindow(): BrowserWindow {
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
+      // Nascosta continua a disegnare (grafo, diff) come se fosse visibile
+      backgroundThrottling: !hidden,
     },
   })
-  w.once('ready-to-show', () => w.show())
+  w.once('ready-to-show', () => {
+    if (!hidden) w.show()
+  })
   w.on('closed', () => {
     win = null
   })
@@ -71,6 +77,8 @@ if (!app.requestSingleInstanceLock()) {
   })
 
   void app.whenReady().then(() => {
+    // macOS: senza icona nel Dock l'app non si attiva e non ruba il focus
+    if (hidden) app.dock?.hide()
     const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'))
     const ipc = registerIpc(() => win, settings, argvPath(process.argv, process.cwd()))
     buildMenu((id) => win?.webContents.send(Channels.menuAction, id))
