@@ -4,6 +4,7 @@ import type { CheckState, CiStatus } from '../../shared/types'
 import { popup } from '../actions/branches'
 import { formatDate, formatShortDate } from '../history/format'
 import { t, tn } from '../i18n'
+import { SIZES, useLayout } from '../layout'
 import { headLabel } from '../pull-requests/model'
 import { type PullRequestTab, usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
@@ -11,10 +12,12 @@ import CiChecks from './CiChecks.vue'
 import CommitDetail from './CommitDetail.vue'
 import DiffView from './DiffView.vue'
 import MarkdownView from './MarkdownView.vue'
+import PaneSplitter from './PaneSplitter.vue'
 
 const props = defineProps<{ root: string }>()
 const prs = usePullRequestStore(props.root)
 const repo = useRepoStore(props.root)
+const layout = useLayout()
 const TABS: PullRequestTab[] = ['conversation', 'commits', 'changes', 'checks']
 const STATES: CheckState[] = ['failed', 'running', 'queued', 'passed', 'skipped', 'cancelled']
 const SYMBOL: Record<CheckState | CiStatus['summary'], string> = { passed: '✓', failed: '✕', running: '●', queued: '○', skipped: '–', cancelled: '–', none: '' }
@@ -142,7 +145,7 @@ function more() {
         <p v-if="prs.changesError" class="error note">{{ t('pr.changesFailed', { reason: prs.changesError }) }}</p>
         <p v-else-if="!prs.changes" class="muted note">{{ t('pr.loadingChanges') }}</p>
         <template v-else>
-          <ul class="files">
+          <ul class="files" :style="{ height: `${layout.prFiles}px` }">
             <li
               v-for="f in prs.changes.files"
               :key="f.path"
@@ -155,15 +158,26 @@ function more() {
               <span class="stat"><span class="plus">+{{ f.added ?? '–' }}</span> <span class="minus">−{{ f.deleted ?? '–' }}</span></span>
             </li>
           </ul>
-          <div class="diff-bar">
-            <span class="path muted">{{ prs.file?.path }}</span>
-            <button @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
-            <label>
-              <input type="checkbox" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
-              {{ t('diff.ignoreWhitespace') }}
-            </label>
+          <PaneSplitter
+            v-model="layout.prFiles"
+            orientation="row"
+            :default-value="SIZES.prFiles.default"
+            :min="SIZES.prFiles.min"
+            :min-after="120"
+            :label="t('layout.resize')"
+            data-testid="split-files"
+          />
+          <div class="diff-area">
+            <div class="diff-bar">
+              <span class="path muted">{{ prs.file?.path }}</span>
+              <button @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
+              <label>
+                <input type="checkbox" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
+                {{ t('diff.ignoreWhitespace') }}
+              </label>
+            </div>
+            <DiffView v-if="prs.diff" :diff="prs.diff" :split="repo.diffOptions.split" @force="prs.loadDiff(true)" />
           </div>
-          <DiffView v-if="prs.diff" :diff="prs.diff" :split="repo.diffOptions.split" @force="prs.loadDiff(true)" />
         </template>
       </div>
     </template>
@@ -206,7 +220,8 @@ h2 { margin: 0 0 6px; font-size: 15px; overflow-wrap: anywhere; }
 .list li:hover { background: var(--bg-hover); }
 .subject { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list .muted { font-size: 12px; white-space: nowrap; }
-.files { max-height: 30%; margin: 0; padding: 4px 0; overflow: auto; list-style: none; border-bottom: 1px solid var(--border); }
+.files { flex: 0 1 auto; min-height: 48px; margin: 0; padding: 4px 0; overflow: auto; list-style: none; }
+.diff-area { flex: 1 1 0; min-height: 120px; display: flex; flex-direction: column; }
 .files li { display: flex; align-items: center; gap: 8px; padding: 2px 12px; cursor: default; }
 .files li:hover { background: var(--bg-hover); }
 .files li.selected { background: var(--bg-hover); font-weight: 600; }

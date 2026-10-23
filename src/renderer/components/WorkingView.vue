@@ -5,13 +5,16 @@ import { shortcuts } from '../../shared/shortcuts'
 import type { CommitTemplate, WorkingArea, WorkingFile } from '../../shared/types'
 import { registry } from '../actions/builtin'
 import { dropTarget, fileDragSource } from '../drag/drag'
+import { SIZES, useLayout } from '../layout'
 import { useAppStore } from '../stores/app'
 import { useRepoStore } from '../stores/repo'
+import PaneSplitter from './PaneSplitter.vue'
 import StageDiff from './StageDiff.vue'
 import TemplatePicker from './TemplatePicker.vue'
 
 const props = defineProps<{ root: string }>()
 const repo = useRepoStore(props.root)
+const layout = useLayout()
 const showStash = ref(false)
 const stashMessage = ref('')
 const stashUntracked = ref(false)
@@ -141,7 +144,7 @@ async function createStash() {
       </form>
     </div>
 
-    <div class="files">
+    <div class="files" :style="{ height: `${layout.workingFiles}px` }">
       <p v-if="!sections.length" class="muted empty">{{ t('working.none') }}</p>
       <section
         v-for="section in sections"
@@ -187,14 +190,25 @@ async function createStash() {
     </div>
 
     <template v-if="repo.working && repo.workingDiff">
-      <div class="diff-bar">
-        <span class="path muted">{{ repo.working.file.path }}</span>
-        <label>
-          <input type="checkbox" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
-          {{ t('diff.ignoreWhitespace') }}
-        </label>
+      <PaneSplitter
+        v-model="layout.workingFiles"
+        orientation="row"
+        :default-value="SIZES.workingFiles.default"
+        :min="SIZES.workingFiles.min"
+        :min-after="120"
+        :label="t('layout.resize')"
+        data-testid="split-files"
+      />
+      <div class="diff-area">
+        <div class="diff-bar">
+          <span class="path muted">{{ repo.working.file.path }}</span>
+          <label>
+            <input type="checkbox" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
+            {{ t('diff.ignoreWhitespace') }}
+          </label>
+        </div>
+        <StageDiff :root="root" :diff="repo.workingDiff" />
       </div>
-      <StageDiff :root="root" :diff="repo.workingDiff" />
     </template>
   </section>
 </template>
@@ -211,7 +225,8 @@ textarea { font: 12px/1.4 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; c
 .commit-actions, .stash { display: flex; align-items: center; gap: 10px; font-size: 12px; }
 .stash input:not([type]) { flex: 1; }
 kbd { opacity: 0.8; margin-left: 4px; }
-.files { max-height: 35%; overflow: auto; border-bottom: 1px solid var(--border); }
+.files { flex: 0 1 auto; min-height: 48px; overflow: auto; }
+.diff-area { flex: 1 1 0; min-height: 120px; display: flex; flex-direction: column; }
 .files section header { display: flex; align-items: center; gap: 6px; padding: 4px 12px; background: var(--bg-alt); font-size: 12px; position: sticky; top: 0; }
 .files header button, .actions button { padding: 0 8px; font-size: 11px; }
 .files ul { margin: 0; padding: 2px 0; list-style: none; }

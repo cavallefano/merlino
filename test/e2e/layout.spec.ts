@@ -55,3 +55,17 @@ test('layout verticale dalle impostazioni, ritorno all\'orizzontale dal pulsante
   await expect(page.getByTestId('pref-panelLayout')).toHaveValue('horizontal')
   await app.close()
 })
+
+test('divisore fra file e diff nel dettaglio del commit', async () => {
+  const repo = makeRepo(1)
+  const { app, page } = await launch([repo])
+  const files = page.locator('.detail .files')
+  await expect(page.getByTestId('file-row')).toHaveCount(1)
+  const height = async () => Math.round((await files.boundingBox())?.height ?? 0)
+  expect(await height()).toBe(140)
+  await drag(page, 'split-files', 0, 60)
+  await expect.poll(height).toBe(200)
+  await page.getByTestId('split-files').dblclick()
+  await expect.poll(height).toBe(140)
+  await app.close()
+})
