@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { DiffOptions, FileDiff, PatchMode, StashEntry, WorkingArea } from '../../shared/types'
 import { diffFlags, type DiffRequest, limitedDiff } from './diff'
+import { t } from '../i18n'
 import type { GitRunner } from './runner'
 
 const write = { write: true }
@@ -91,7 +92,7 @@ export async function stashFiles(runner: GitRunner, paths: string[], untracked: 
 /** Applica alla cartella di lavoro le modifiche di un file in un commit (o stash), rispetto al primo genitore. */
 export async function applyFileChanges(runner: GitRunner, sha: string, path: string): Promise<void> {
   const patch = (await runner.run(['show', '--format=', '--binary', '--diff-merges=first-parent', sha, '--', path])).stdout
-  if (!patch.trim()) throw new Error(`Nessuna modifica di ${path} da applicare`)
+  if (!patch.trim()) throw new Error(t('error.noChangesToApply', { path }))
   await runner.run(['apply', '-'], { ...write, stdin: patch })
 }
 

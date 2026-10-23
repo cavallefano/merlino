@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import type { CommandLogEntry, GitErrorInfo } from '../../shared/types'
+import { t } from '../i18n'
 import { explain } from './errors'
 
 export interface RunOptions {
@@ -76,7 +77,7 @@ export class GitRunner {
         if (exitCode !== null && ok) {
           resolve({ stdout, stderr, exitCode })
         } else {
-          const message = explain(errText, stdout) ?? `git ${args[0] ?? ''} è fallito (exit ${exitCode})`
+          const message = explain(errText, stdout) ?? t('error.gitFailed', { command: args[0] ?? '', code: String(exitCode) })
           reject(new GitError({ args, exitCode, stderr, message }))
         }
       }

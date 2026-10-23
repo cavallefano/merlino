@@ -49,7 +49,7 @@ describe('GitRunner onProgress e operazioni in corso', () => {
     writeFileSync(join(repo, 'file1.txt'), 'main\n')
     git(repo, 'commit', '-q', '-am', 'main')
     const runner = runnerFor(repo)
-    await expect(runner.run(['merge', 'altro'])).rejects.toThrow(/^Ci sono conflitti/)
+    await expect(runner.run(['merge', 'altro'])).rejects.toThrow(/^There are conflicts/)
     expect(await readStatus(runner)).toMatchObject({ operation: 'merge', conflicted: [{ path: 'file1.txt', status: 'U' }] })
     git(repo, 'merge', '--abort')
     expect((await readStatus(runner)).operation).toBeNull()

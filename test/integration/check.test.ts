@@ -32,7 +32,7 @@ describe('checkGit', () => {
   it('eseguibile inesistente', async () => {
     const r = await checkGit('/percorso/inesistente/git')
     expect(r).toMatchObject({ ok: false, version: null })
-    expect(r.error).toContain('non trovato')
+    expect(r.error).toContain('not found')
   })
 
   it.skipIf(process.platform === 'win32')('versione troppo vecchia', async () => {

@@ -1,10 +1,13 @@
 import { Menu, type MenuItemConstructorOptions } from 'electron'
+import type { MessageKey } from '../shared/i18n'
 import { shortcuts, toAccelerator } from '../shared/shortcuts'
+import { t } from './i18n'
 
 /** Barra dei menu: ogni voce manda al renderer l'id di un'azione del registro. Le scorciatoie le gestisce il renderer. */
 export function buildMenu(run: (actionId: string) => void): void {
   const isMac = process.platform === 'darwin'
-  const action = (label: string, id: string): MenuItemConstructorOptions => ({
+  // Stessa etichetta della palette (chiave action.<id>), salvo dove indicato
+  const action = (id: string, label = t(`action.${id}` as MessageKey)): MenuItemConstructorOptions => ({
     id,
     label,
     accelerator: shortcuts[id] && toAccelerator(shortcuts[id]),
@@ -13,7 +16,7 @@ export function buildMenu(run: (actionId: string) => void): void {
       if (!event?.triggeredByAccelerator) run(id)
     },
   })
-  const quit: MenuItemConstructorOptions[] = isMac ? [] : [{ type: 'separator' }, { role: 'quit', label: 'Esci' }]
+  const quit: MenuItemConstructorOptions[] = isMac ? [] : [{ type: 'separator' }, { role: 'quit', label: t('menu.quit') }]
 
   const template: MenuItemConstructorOptions[] = [
     ...(isMac
@@ -21,50 +24,50 @@ export function buildMenu(run: (actionId: string) => void): void {
           {
             label: 'Merlino',
             submenu: [
-              { role: 'about', label: 'Informazioni su Merlino' },
+              { role: 'about', label: t('menu.about') },
               { type: 'separator' },
-              action('Impostazioni…', 'settings.open'),
+              action('settings.open'),
               { type: 'separator' },
-              { role: 'services', label: 'Servizi' },
+              { role: 'services', label: t('menu.services') },
               { type: 'separator' },
-              { role: 'hide', label: 'Nascondi Merlino' },
-              { role: 'hideOthers', label: 'Nascondi altre' },
-              { role: 'unhide', label: 'Mostra tutte' },
+              { role: 'hide', label: t('menu.hide') },
+              { role: 'hideOthers', label: t('menu.hideOthers') },
+              { role: 'unhide', label: t('menu.unhide') },
               { type: 'separator' },
-              { role: 'quit', label: 'Esci da Merlino' },
+              { role: 'quit', label: t('menu.quitMac') },
             ],
           } as MenuItemConstructorOptions,
         ]
       : []),
     {
-      label: 'File',
+      label: t('menu.file'),
       submenu: [
-        action('Apri repository…', 'repo.open'),
-        action('Nuovo repository…', 'repo.init'),
-        action('Clona repository…', 'repo.clone'),
-        action('Apri nel terminale', 'repo.openTerminal'),
+        action('repo.open'),
+        action('repo.init'),
+        action('repo.clone'),
+        action('repo.openTerminal'),
         { type: 'separator' },
-        action('Chiudi tab', 'tab.close'),
-        ...(isMac ? [] : [{ type: 'separator' } as MenuItemConstructorOptions, action('Impostazioni…', 'settings.open')]),
+        action('tab.close'),
+        ...(isMac ? [] : [{ type: 'separator' } as MenuItemConstructorOptions, action('settings.open')]),
         ...quit,
       ],
     },
     { role: 'editMenu' },
     {
-      label: 'Vista',
+      label: t('menu.view'),
       submenu: [
-        action('Command palette', 'palette.open'),
-        action('Cerca nella storia', 'history.search'),
-        action('Output', 'output.toggle'),
-        action('Aggiorna', 'repo.refresh'),
+        action('palette.open'),
+        action('history.search'),
+        action('output.toggle', t('menu.output')),
+        action('repo.refresh'),
         { type: 'separator' },
         { role: 'toggleDevTools' },
       ],
     },
     {
-      label: 'Finestra',
+      label: t('menu.window'),
       role: 'window',
-      submenu: [action('Tab successiva', 'tab.next'), action('Tab precedente', 'tab.prev'), { type: 'separator' }, { role: 'minimize' }, { role: 'zoom' }],
+      submenu: [action('tab.next'), action('tab.prev'), { type: 'separator' }, { role: 'minimize' }, { role: 'zoom' }],
     },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

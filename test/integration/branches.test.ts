@@ -95,7 +95,7 @@ describe('remote', () => {
     git(a, 'push', '-q')
     commitFile(b, 'b.txt', 'b\n', 'da b')
     await fetch(runnerFor(b), () => {})
-    await expect(push(runnerFor(b), 'origin', false, () => {})).rejects.toThrow(/^Push rifiutato/)
+    await expect(push(runnerFor(b), 'origin', false, () => {})).rejects.toThrow(/^Push rejected/)
     await push(runnerFor(b), 'origin', true, () => {})
     expect(git(bare, 'log', '--format=%s', '-1').trim()).toBe('da b')
   })
@@ -122,7 +122,7 @@ describe('integrazione dei cambiamenti', () => {
     commitFile(repo, 'file1.txt', 'altro\n', 'altro')
     git(repo, 'switch', '-q', 'main')
     commitFile(repo, 'file1.txt', 'main\n', 'main')
-    await expect(merge(r, 'altro', true)).rejects.toThrow(/^Ci sono conflitti/)
+    await expect(merge(r, 'altro', true)).rejects.toThrow(/^There are conflicts/)
     expect((await readStatus(r)).operation).toBe('merge')
     writeFileSync(join(repo, 'file1.txt'), 'risolto\n')
     git(repo, 'add', 'file1.txt')
@@ -179,7 +179,7 @@ describe('integrazione dei cambiamenti', () => {
 
     const linear = makeRepo(3)
     const first = git(linear, 'rev-parse', 'HEAD~1').trim()
-    await expect(rebaseInteractive(runnerFor(linear), first, [{ sha: first, action: 'pick' }])).rejects.toThrow(/non corrispondono/)
+    await expect(rebaseInteractive(runnerFor(linear), first, [{ sha: first, action: 'pick' }])).rejects.toThrow(/no longer match/)
   })
 })
 

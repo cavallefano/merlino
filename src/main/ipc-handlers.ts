@@ -32,7 +32,7 @@ import {
   unstageFiles,
 } from './git/working'
 import { editorLaunch, startApp, terminalLaunch } from './open-app'
-import { setLanguage } from './i18n'
+import { setLanguage, t } from './i18n'
 import { buildMenu } from './menu'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
@@ -92,7 +92,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
 
   async function open(path: string): Promise<Result<RepoInfo>> {
     try {
-      if (!isDirectory(path)) throw new Error(`Cartella non trovata: ${path}`)
+      if (!isDirectory(path)) throw new Error(t('error.folderNotFound', { path }))
       const info = await readRepoInfo(new GitRunner(gitPath, path, onLog))
       if (!sessions.has(info.root)) {
         const session = new RepoSession(info.root, gitPath, onLog)
@@ -114,7 +114,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   async function withSession<T>(root: unknown, fn: (session: RepoSession) => Promise<T> | T): Promise<Result<T>> {
     try {
       const session = sessions.get(str(root, 'root'))
-      if (!session) throw new Error('Repository non aperto')
+      if (!session) throw new Error(t('error.repoNotOpen'))
       return { ok: true, value: await fn(session) }
     } catch (e) {
       return fail(e)
@@ -170,7 +170,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.handle(Channels.saveCommitTemplates, (_e, value: unknown) =>
     attempt(() => {
       const commitTemplates = validateTemplates(value)
-      const ids = new Set(commitTemplates.map((t) => t.id))
+      const ids = new Set(commitTemplates.map((x) => x.id))
       // I predefiniti dei template eliminati se ne vanno con loro
       const defaultTemplates = Object.fromEntries(Object.entries(settings.get().defaultTemplates).filter(([, id]) => ids.has(id)))
       return settings.update({ commitTemplates, defaultTemplates })
@@ -183,9 +183,9 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
       if (id === null) {
         delete defaultTemplates[repo]
       } else {
-        const t = str(id, 'id')
-        if (!commitTemplates.some((x) => x.id === t)) throw new TypeError('Template non trovato')
-        defaultTemplates[repo] = t
+        const templateId = str(id, 'id')
+        if (!commitTemplates.some((x) => x.id === templateId)) throw new TypeError(t('error.templateNotFound'))
+        defaultTemplates[repo] = templateId
       }
       return settings.update({ defaultTemplates })
     }),
@@ -272,7 +272,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.handle(Channels.commit, (_e, root: unknown, message: unknown, amend: unknown) =>
     withSession(root, (s) => {
       const m = text(message, 'message')
-      if (!m.trim()) throw new TypeError('Il messaggio di commit è vuoto')
+      if (!m.trim()) throw new TypeError(t('error.emptyCommitMessage'))
       return commit(s.runner, m, amend === true)
     }),
   )
@@ -295,8 +295,8 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.handle(Channels.rebaseRange, (_e, root: unknown, commit: unknown) => withSession(root, (s) => rebaseRange(s.runner, sha(commit))))
   ipcMain.handle(Channels.clone, async (_e, url: unknown, parent: unknown) => {
     try {
-      const dir = str(parent, 'cartella')
-      if (!isAbsolute(dir) || !isDirectory(dir)) throw new Error(`Cartella non trovata: ${dir}`)
+      const dir = str(parent, t('field.folder'))
+      if (!isAbsolute(dir) || !isDirectory(dir)) throw new Error(t('error.folderNotFound', { path: dir }))
       return { ok: true, value: await clone(gitPath, gitUrl(url), dir, onLog, progress(dir)) }
     } catch (e) {
       return fail(e)
@@ -317,7 +317,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.on(Channels.startDrag, (e, root: unknown, item: unknown) => {
     try {
       const session = sessions.get(str(root, 'root'))
-      if (!session) throw new Error('Repository non aperto')
+      if (!session) throw new Error(t('error.repoNotOpen'))
       const v = (typeof item === 'object' && item !== null ? item : {}) as { path?: unknown; sha?: unknown }
       const target = v.sha === undefined ? { path: relPath(v.path) } : { path: relPath(v.path), sha: sha(v.sha) }
       e.sender.startDrag({ file: dragFile(gitPath(), session.root, target), icon: DRAG_ICON })
@@ -329,9 +329,9 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.handle(Channels.pickApp, async () => {
     const options: Electron.OpenDialogOptions =
       process.platform === 'darwin'
-        ? { defaultPath: '/Applications', properties: ['openFile'], filters: [{ name: 'Applicazioni', extensions: ['app'] }] }
+        ? { defaultPath: '/Applications', properties: ['openFile'], filters: [{ name: t('dialog.applications'), extensions: ['app'] }] }
         : process.platform === 'win32'
-          ? { properties: ['openFile'], filters: [{ name: 'Programmi', extensions: ['exe'] }] }
+          ? { properties: ['openFile'], filters: [{ name: t('dialog.programs'), extensions: ['exe'] }] }
           : { properties: ['openFile'] }
     const w = win()
     const r = w ? await dialog.showOpenDialog(w, options) : await dialog.showOpenDialog(options)
