@@ -68,6 +68,8 @@ test('push su un remote bare e pull dei commit pushati da un secondo clone', asy
 test('tag annotato creato dal menu del commit e pushato dalla sidebar', async () => {
   const { bare, clone } = makeRemotePair()
   const { app, page } = await launch([clone])
+  // I tag partono chiusi nella sidebar
+  await page.getByTestId('tags-header').click()
   await chooseNextMenuItem(app, 'Create Tag Here…')
   await page.getByTestId('commit-row').first().click({ button: 'right' })
   await page.getByTestId('prompt-field-name').fill('v1.0')

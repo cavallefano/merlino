@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { clamp, readLayout, SIZES } from '../../src/renderer/layout'
 
-const defaults = { sidebar: 220, list: 0.55, listVertical: 0.4, commitFiles: 140, workingFiles: 180, prFiles: 160, dialog: null }
+const defaults = { sidebar: 220, list: 0.55, listVertical: 0.4, commitFiles: 140, workingFiles: 180, prFiles: 160, dialog: null, closedSections: ['tags'] }
 
 describe('clamp', () => {
   it('tiene il valore fra i limiti', () => {
@@ -30,6 +30,12 @@ describe('readLayout', () => {
   it('scarta un popup troppo piccolo o malformato', () => {
     expect(readLayout(JSON.stringify({ dialog: { width: 100, height: 600 } })).dialog).toBeNull()
     expect(readLayout(JSON.stringify({ dialog: 'grande' })).dialog).toBeNull()
+  })
+
+  it('sezioni chiuse: solo gli id validi; senza un array, i tag', () => {
+    expect(readLayout(JSON.stringify({ closedSections: ['remotes', 'boh', 3] })).closedSections).toEqual(['remotes'])
+    expect(readLayout(JSON.stringify({ closedSections: [] })).closedSections).toEqual([])
+    expect(readLayout(JSON.stringify({ closedSections: 'tags' })).closedSections).toEqual(['tags'])
   })
 
   it('i predefiniti stanno nei limiti', () => {

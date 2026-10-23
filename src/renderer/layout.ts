@@ -1,5 +1,9 @@
 import { reactive, watch } from 'vue'
 
+/** Sezioni comprimibili della sidebar. */
+export const SIDEBAR_SECTIONS = ['branches', 'remotes', 'tags', 'stashes'] as const
+export type SidebarSection = (typeof SIDEBAR_SECTIONS)[number]
+
 /**
  * Misure dei pannelli: una comodità dell'interfaccia, non un'impostazione, quindi nel localStorage.
  * Il layout orizzontale o verticale invece è la preferenza panelLayout.
@@ -17,9 +21,11 @@ export interface Layout {
   prFiles: number
   /** Misura del popup del diff; null = l'85% della finestra. */
   dialog: { width: number; height: number } | null
+  /** Sezioni della sidebar chiuse; al primo avvio i tag, che di solito sono tanti. */
+  closedSections: SidebarSection[]
 }
 
-export type LayoutSize = Exclude<keyof Layout, 'dialog'>
+export type LayoutSize = Exclude<keyof Layout, 'dialog' | 'closedSections'>
 
 /** Predefiniti e valori ammessi nel localStorage; i limiti al trascinamento dipendono dalla finestra e li applica il divisore. */
 export const SIZES: Record<LayoutSize, { min: number; max: number; default: number }> = {
@@ -51,7 +57,7 @@ export function readLayout(text: string | null): Layout {
   } catch {
     // JSON rovinato: valori predefiniti
   }
-  const layout = { dialog: null } as Layout
+  const layout = { dialog: null, closedSections: ['tags'] } as Layout
   for (const key of Object.keys(SIZES) as LayoutSize[]) {
     const { min, max, default: fallback } = SIZES[key]
     const v = saved[key]
@@ -62,6 +68,8 @@ export function readLayout(text: string | null): Layout {
     const { width, height } = d as Record<string, unknown>
     if (inRange(width, DIALOG_MIN.width, 10_000) && inRange(height, DIALOG_MIN.height, 10_000)) layout.dialog = { width, height }
   }
+  const closed = saved.closedSections
+  if (Array.isArray(closed)) layout.closedSections = SIDEBAR_SECTIONS.filter((s) => closed.includes(s))
   return layout
 }
 
