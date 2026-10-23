@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { computed, onMounted, ref, watch } from 'vue'
 import { registry } from '../actions/builtin'
 import { fuzzy } from '../actions/registry'
@@ -40,7 +41,7 @@ function onKey(e: KeyboardEvent) {
 <template>
   <div class="backdrop" @mousedown.self="close">
     <div class="palette">
-      <input ref="input" v-model="query" data-testid="palette-input" placeholder="Cerca un comando…" @keydown="onKey" />
+      <input ref="input" v-model="query" data-testid="palette-input" :placeholder="t('palette.placeholder')" @keydown="onKey" />
       <ul>
         <li
           v-for="(a, i) in items"
@@ -52,7 +53,7 @@ function onKey(e: KeyboardEvent) {
           <span>{{ a.title }}</span>
           <kbd v-if="a.keys">{{ registry.keyLabel(a.keys) }}</kbd>
         </li>
-        <li v-if="!items.length" class="muted">Nessun comando</li>
+        <li v-if="!items.length" class="muted">{{ t('palette.empty') }}</li>
       </ul>
     </div>
   </div>

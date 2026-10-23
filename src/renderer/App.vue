@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from './i18n'
 import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { registerBranchActions } from './actions/branches'
 import { registerBuiltinActions, registry } from './actions/builtin'
@@ -73,7 +74,7 @@ onUnmounted(() => {
 
 <template>
   <div class="app" @dragover="onDragOver" @drop.prevent="onDrop">
-    <div v-if="!app.git" class="center muted">Avvio…</div>
+    <div v-if="!app.git" class="center muted">{{ t('app.starting') }}</div>
     <SettingsView v-else-if="app.settingsSection" />
     <GitMissing v-else-if="!app.git.ok" />
     <template v-else>
@@ -81,7 +82,7 @@ onUnmounted(() => {
       <div v-if="app.cloneProgress" class="clone-bar muted" data-testid="clone-progress">{{ app.cloneProgress }}</div>
       <div v-if="app.error" class="error-bar">
         <span>{{ app.error }}</span>
-        <button aria-label="Chiudi errore" @click="app.error = null">×</button>
+        <button :aria-label="t('common.closeError')" @click="app.error = null">×</button>
       </div>
       <main class="main">
         <RepoView v-if="app.active" :key="app.active" :root="app.active" />

@@ -19,7 +19,7 @@ test('branch dal menu del commit, checkout dalla sidebar, merge con conflitto ri
   const rows = page.getByTestId('commit-row')
   await expect(rows).toHaveCount(2)
 
-  await chooseNextMenuItem(app, 'Crea branch qui…')
+  await chooseNextMenuItem(app, 'Create Branch Here…')
   await rows.filter({ hasText: 'commit 1' }).click({ button: 'right' })
   await page.getByTestId('prompt-field-name').fill('feature/conflitto')
   await page.getByTestId('prompt-field-checkout').uncheck()
@@ -28,10 +28,10 @@ test('branch dal menu del commit, checkout dalla sidebar, merge con conflitto ri
   await expect(page.getByTestId('repo-branch')).toHaveText('feature/conflitto')
 
   commitFile(repo, 'file1.txt', 'feature\n', 'modifica su feature')
-  await chooseNextMenuItem(app, 'Merge nel branch corrente')
+  await chooseNextMenuItem(app, 'Merge into Current Branch')
   await page.getByTestId('branch-item').filter({ hasText: 'main' }).click({ button: 'right' })
   const banner = page.getByTestId('operation-banner')
-  await expect(banner).toContainText('Merge in corso')
+  await expect(banner).toContainText('Merge in progress')
   await expect(page.getByTestId('op-continue')).toBeDisabled()
 
   await page.getByTestId('working-row').click()
@@ -68,7 +68,7 @@ test('push su un remote bare e pull dei commit pushati da un secondo clone', asy
 test('tag annotato creato dal menu del commit e pushato dalla sidebar', async () => {
   const { bare, clone } = makeRemotePair()
   const { app, page } = await launch([clone])
-  await chooseNextMenuItem(app, 'Crea tag qui…')
+  await chooseNextMenuItem(app, 'Create Tag Here…')
   await page.getByTestId('commit-row').first().click({ button: 'right' })
   await page.getByTestId('prompt-field-name').fill('v1.0')
   await page.getByTestId('prompt-field-message').fill('prima release')
@@ -77,7 +77,7 @@ test('tag annotato creato dal menu del commit e pushato dalla sidebar', async ()
   await expect(page.getByTestId('commit-row').first()).toContainText('v1.0')
   expect(git(clone, 'cat-file', '-t', 'v1.0').trim()).toBe('tag')
 
-  await chooseNextMenuItem(app, 'Push su origin')
+  await chooseNextMenuItem(app, 'Push to origin')
   await page.getByTestId('tag-item').click({ button: 'right' })
   await expect.poll(() => git(bare, 'tag', '--list')).toContain('v1.0')
   await app.close()
@@ -103,7 +103,7 @@ test('clona dalla schermata iniziale e apre il repo in una tab', async () => {
 test('rebase interattivo dal menu del commit: squash di due commit e reword', async () => {
   const repo = makeRepo(4)
   const { app, page } = await launch([repo])
-  await chooseNextMenuItem(app, 'Rebase interattivo da qui…')
+  await chooseNextMenuItem(app, 'Interactive Rebase from Here…')
   await page.getByTestId('commit-row').filter({ hasText: 'commit 2' }).click({ button: 'right' })
   const rows = page.getByTestId('rebase-row')
   await expect(rows).toHaveCount(3)

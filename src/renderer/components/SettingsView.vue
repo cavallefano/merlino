@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { MessageKey } from '../../shared/i18n'
+import { t } from '../i18n'
 import { type Component, computed, onMounted, onUnmounted } from 'vue'
 import { type SettingsSection, useAppStore } from '../stores/app'
 import CommitSettings from './settings/CommitSettings.vue'
@@ -8,12 +10,12 @@ import GitSettings from './settings/GitSettings.vue'
 import IntegrationSettings from './settings/IntegrationSettings.vue'
 
 const app = useAppStore()
-const SECTIONS: { id: SettingsSection; title: string; component: Component }[] = [
-  { id: 'general', title: 'Generale', component: GeneralSettings },
-  { id: 'commit', title: 'Commit', component: CommitSettings },
-  { id: 'diff', title: 'Diff', component: DiffSettings },
-  { id: 'integrations', title: 'Integrazioni', component: IntegrationSettings },
-  { id: 'git', title: 'Git', component: GitSettings },
+const SECTIONS: { id: SettingsSection; title: MessageKey; component: Component }[] = [
+  { id: 'general', title: 'settings.general', component: GeneralSettings },
+  { id: 'commit', title: 'settings.commit', component: CommitSettings },
+  { id: 'diff', title: 'settings.diff', component: DiffSettings },
+  { id: 'integrations', title: 'settings.integrations', component: IntegrationSettings },
+  { id: 'git', title: 'settings.git', component: GitSettings },
 ]
 const current = computed(() => SECTIONS.find((s) => s.id === app.settingsSection) ?? SECTIONS[0])
 
@@ -28,23 +30,23 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 <template>
   <section class="settings" data-testid="settings">
     <nav>
-      <h1>Impostazioni</h1>
+      <h1>{{ t('settings.title') }}</h1>
       <button
         v-for="s in SECTIONS"
         :key="s.id"
         :class="{ active: current?.id === s.id }"
         :data-testid="`settings-${s.id}`"
         @click="app.settingsSection = s.id"
-      >{{ s.title }}</button>
+      >{{ t(s.title) }}</button>
     </nav>
     <div class="content">
       <header>
-        <h2>{{ current?.title }}</h2>
-        <button class="close" aria-label="Chiudi le impostazioni" data-testid="settings-close" @click="app.settingsSection = null">×</button>
+        <h2>{{ current && t(current.title) }}</h2>
+        <button class="close" :aria-label="t('settings.close')" data-testid="settings-close" @click="app.settingsSection = null">×</button>
       </header>
       <p v-if="app.error" class="error message">
         <span>{{ app.error }}</span>
-        <button aria-label="Chiudi errore" @click="app.error = null">×</button>
+        <button :aria-label="t('common.closeError')" @click="app.error = null">×</button>
       </p>
       <component :is="current?.component" />
     </div>

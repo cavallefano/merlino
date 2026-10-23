@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { t } from '../i18n'
 import { type PromptRequest, type PromptValues, useAppStore } from '../stores/app'
 
 const props = defineProps<{ request: PromptRequest }>()
@@ -27,7 +28,7 @@ onMounted(() => dialog.value?.showModal())
         </label>
       </template>
       <footer>
-        <button type="button" data-testid="prompt-cancel" @click="app.closePrompt(null)">Annulla</button>
+        <button type="button" data-testid="prompt-cancel" @click="app.closePrompt(null)">{{ t('common.cancel') }}</button>
         <button class="primary" data-testid="prompt-ok">{{ request.confirm }}</button>
       </footer>
     </form>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { computed, reactive } from 'vue'
 import type { StashEntry } from '../../shared/types'
 import { branchMenu, remoteBranchMenu, remoteMenu, tagMenu } from '../actions/branches'
@@ -56,7 +57,7 @@ const branchRows = computed(() =>
     sha: b.sha,
     current: b.current,
     track: [b.ahead && `↑${b.ahead}`, b.behind && `↓${b.behind}`].filter(Boolean).join(' '),
-    title: b.upstream ? `${b.name} → ${b.upstream}${b.gone ? ' (non esiste più sul remote)' : ''}` : b.name,
+    title: !b.upstream ? b.name : b.gone ? t('sidebar.upstreamGone', { name: b.name, upstream: b.upstream }) : `${b.name} → ${b.upstream}`,
     testid: 'branch-item',
     open: () => !b.current && repo.git({ kind: 'checkoutBranch', name: b.name }),
     menu: () => branchMenu(repo, b),
@@ -94,14 +95,14 @@ const remoteRows = computed(() =>
 
 const tagRows = computed(() =>
   (repo.refs?.tags ?? []).map(
-    (t): Row => ({ key: t.name, depth: 0, label: t.name, sha: t.sha, testid: 'tag-item', menu: () => tagMenu(repo, t), drag: { kind: 'tag', name: t.name } }),
+    (tag): Row => ({ key: tag.name, depth: 0, label: tag.name, sha: tag.sha, testid: 'tag-item', menu: () => tagMenu(repo, tag), drag: { kind: 'tag', name: tag.name } }),
   ),
 )
 
 const sections = computed(() => [
-  { title: 'Branch', rows: branchRows.value, empty: 'Nessun branch', drop: { kind: 'branchesHeader' } as DropTarget, testid: 'branches-header' },
-  { title: 'Remote', rows: remoteRows.value, empty: 'Nessun remote', drop: undefined, testid: 'remotes-header' },
-  { title: 'Tag', rows: tagRows.value, empty: 'Nessun tag', drop: { kind: 'tagsHeader' } as DropTarget, testid: 'tags-header' },
+  { title: t('sidebar.branches'), rows: branchRows.value, empty: t('sidebar.noBranches'), drop: { kind: 'branchesHeader' } as DropTarget, testid: 'branches-header' },
+  { title: t('sidebar.remotes'), rows: remoteRows.value, empty: t('sidebar.noRemotes'), drop: undefined, testid: 'remotes-header' },
+  { title: t('sidebar.tags'), rows: tagRows.value, empty: t('sidebar.noTags'), drop: { kind: 'tagsHeader' } as DropTarget, testid: 'tags-header' },
 ])
 
 /** Attributi di drag & drop di una riga o di un'intestazione. */
@@ -115,15 +116,15 @@ function click(row: Row) {
 }
 
 function drop(stash: StashEntry) {
-  if (window.confirm(`Eliminare lo stash "${stash.message}"? Non si può annullare.`)) void repo.stashAction('drop', stash.ref)
+  if (window.confirm(t('stash.confirmDrop', { message: stash.message }))) void repo.stashAction('drop', stash.ref)
 }
 </script>
 
 <template>
   <aside class="sidebar">
-    <section v-for="s in sections" :key="s.title">
-      <h3 v-bind="dnd(undefined, s.drop)" :data-testid="s.testid" @click="toggle(s.title)">{{ s.title }}</h3>
-      <template v-if="!collapsed.has(s.title)">
+    <section v-for="s in sections" :key="s.testid">
+      <h3 v-bind="dnd(undefined, s.drop)" :data-testid="s.testid" @click="toggle(s.testid)">{{ s.title }}</h3>
+      <template v-if="!collapsed.has(s.testid)">
         <p v-if="!s.rows.length" class="muted empty">{{ s.empty }}</p>
         <ul>
           <li
@@ -146,9 +147,9 @@ function drop(stash: StashEntry) {
       </template>
     </section>
     <section>
-      <h3 v-bind="dnd(undefined, { kind: 'stashHeader' })" data-testid="stash-header" @click="toggle('Stash')">Stash <span class="muted">{{ repo.stashes.length }}</span></h3>
+      <h3 v-bind="dnd(undefined, { kind: 'stashHeader' })" data-testid="stash-header" @click="toggle('Stash')">{{ t('sidebar.stashes') }} <span class="muted">{{ repo.stashes.length }}</span></h3>
       <template v-if="!collapsed.has('Stash')">
-        <p v-if="!repo.stashes.length" class="muted empty">Nessuno stash</p>
+        <p v-if="!repo.stashes.length" class="muted empty">{{ t('sidebar.noStashes') }}</p>
         <ul>
           <li
             v-for="s in repo.stashes"
@@ -161,9 +162,9 @@ function drop(stash: StashEntry) {
           >
             <span class="name">{{ s.message }}</span>
             <span class="actions" @click.stop>
-              <button data-testid="stash-apply" title="Applica" @click="repo.stashAction('apply', s.ref)">Applica</button>
-              <button data-testid="stash-pop" title="Applica ed elimina" @click="repo.stashAction('pop', s.ref)">Pop</button>
-              <button data-testid="stash-drop" title="Elimina" @click="drop(s)">✕</button>
+              <button data-testid="stash-apply" :title="t('stash.apply')" @click="repo.stashAction('apply', s.ref)">{{ t('stash.apply') }}</button>
+              <button data-testid="stash-pop" :title="t('stash.applyAndDelete')" @click="repo.stashAction('pop', s.ref)">Pop</button>
+              <button data-testid="stash-drop" :title="t('stash.delete')" @click="drop(s)">✕</button>
             </span>
           </li>
         </ul>

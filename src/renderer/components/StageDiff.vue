@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t, tn } from '../i18n'
 import { computed } from 'vue'
 import { changedKeys, lineKey } from '../../shared/patch'
 import type { DiffLine, FileDiff } from '../../shared/types'
@@ -22,14 +23,13 @@ function html(line: DiffLine): string {
 }
 
 const sign = (line: DiffLine) => (line.type === 'add' ? '+' : line.type === 'del' ? '−' : ' ')
-const confirmDiscard = (what: string) => window.confirm(`Scartare ${what}? Le modifiche andranno perse.`)
 
 function discardHunk(hunk: number) {
-  if (confirmDiscard('questo blocco')) void repo.applyLines('discard', changedKeys(props.diff, hunk))
+  if (window.confirm(t('stage.confirmDiscardHunk'))) void repo.applyLines('discard', changedKeys(props.diff, hunk))
 }
 
 function discardLines() {
-  if (confirmDiscard(`${repo.selectedLines.size} righe`)) void repo.applyLines('discard')
+  if (window.confirm(tn('stage.confirmDiscardLines', repo.selectedLines.size))) void repo.applyLines('discard')
 }
 
 function onLine(e: MouseEvent, hunk: number, index: number, line: DiffLine) {
@@ -40,27 +40,27 @@ function onLine(e: MouseEvent, hunk: number, index: number, line: DiffLine) {
 <template>
   <div class="stage-diff">
     <div v-if="repo.selectedLines.size" class="selection">
-      <span>{{ repo.selectedLines.size }} righe selezionate</span>
+      <span>{{ tn('stage.linesSelected', repo.selectedLines.size) }}</span>
       <template v-if="area === 'unstaged'">
-        <button data-testid="lines-stage" @click="repo.applyLines('stage')">Aggiungi righe</button>
-        <button data-testid="lines-discard" @click="discardLines">Scarta righe</button>
+        <button data-testid="lines-stage" @click="repo.applyLines('stage')">{{ t('stage.stageLines') }}</button>
+        <button data-testid="lines-discard" @click="discardLines">{{ t('stage.discardLines') }}</button>
       </template>
-      <button v-else data-testid="lines-unstage" @click="repo.applyLines('unstage')">Togli righe</button>
-      <button @click="repo.clearSelection()">Annulla</button>
+      <button v-else data-testid="lines-unstage" @click="repo.applyLines('unstage')">{{ t('stage.unstageLines') }}</button>
+      <button @click="repo.clearSelection()">{{ t('common.cancel') }}</button>
     </div>
-    <p v-if="diff.binary" class="note muted">File binario</p>
-    <p v-else-if="diff.tooLarge" class="note muted">Diff troppo grande per essere mostrato</p>
-    <p v-else-if="!diff.hunks.length" class="note muted">Nessuna modifica al contenuto</p>
+    <p v-if="diff.binary" class="note muted">{{ t('diff.binary') }}</p>
+    <p v-else-if="diff.tooLarge" class="note muted">{{ t('diff.tooLargeToShow') }}</p>
+    <p v-else-if="!diff.hunks.length" class="note muted">{{ t('diff.noContentChanges') }}</p>
     <div v-else class="hunks">
       <template v-for="(h, hi) in diff.hunks" :key="hi">
         <div class="hunk">
           <span class="header">{{ h.header }}</span>
           <template v-if="editable">
             <template v-if="area === 'unstaged'">
-              <button data-testid="hunk-stage" @click="repo.applyLines('stage', changedKeys(diff, hi))">Aggiungi blocco</button>
-              <button data-testid="hunk-discard" @click="discardHunk(hi)">Scarta blocco</button>
+              <button data-testid="hunk-stage" @click="repo.applyLines('stage', changedKeys(diff, hi))">{{ t('stage.stageHunk') }}</button>
+              <button data-testid="hunk-discard" @click="discardHunk(hi)">{{ t('stage.discardHunk') }}</button>
             </template>
-            <button v-else data-testid="hunk-unstage" @click="repo.applyLines('unstage', changedKeys(diff, hi))">Togli blocco</button>
+            <button v-else data-testid="hunk-unstage" @click="repo.applyLines('unstage', changedKeys(diff, hi))">{{ t('stage.unstageHunk') }}</button>
           </template>
         </div>
         <div

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { computed } from 'vue'
 import { formatDate } from '../history/format'
 import { useRepoStore } from '../stores/repo'
@@ -18,7 +19,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
 
 <template>
   <section class="detail">
-    <p v-if="!repo.detail || !commit" class="muted center">Seleziona un commit</p>
+    <p v-if="!repo.detail || !commit" class="muted center">{{ t('detail.selectCommit') }}</p>
     <template v-else>
       <header class="head">
         <div class="message" data-testid="commit-message">
@@ -26,7 +27,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           <pre v-if="body">{{ body }}</pre>
         </div>
         <dl>
-          <dt>Autore</dt>
+          <dt>{{ t('detail.author') }}</dt>
           <dd>{{ commit.author }} &lt;{{ commit.authorEmail }}&gt; · {{ formatDate(commit.authorTime) }}</dd>
           <template v-if="showCommitter">
             <dt>Committer</dt>
@@ -35,10 +36,10 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           <dt>SHA</dt>
           <dd>
             <code>{{ commit.sha }}</code>
-            <button class="small" data-testid="copy-sha" @click="copy(commit.sha)">Copia</button>
+            <button class="small" data-testid="copy-sha" @click="copy(commit.sha)">{{ t('detail.copy') }}</button>
           </dd>
           <template v-if="commit.parents.length">
-            <dt>Genitori</dt>
+            <dt>{{ t('detail.parents') }}</dt>
             <dd>
               <a v-for="p in commit.parents" :key="p" href="#" class="parent" @click.prevent="repo.select(p)">{{ p.slice(0, 7) }}</a>
             </dd>
@@ -64,10 +65,10 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
       </ul>
       <div class="diff-bar">
         <span class="path muted">{{ repo.selectedFile?.path }}</span>
-        <button data-testid="diff-split" @click="repo.toggleSplit()">{{ repo.diffOptions.split ? 'Unificato' : 'Affiancato' }}</button>
+        <button data-testid="diff-split" @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
         <label>
           <input type="checkbox" data-testid="diff-whitespace" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
-          Ignora spazi
+          {{ t('diff.ignoreWhitespace') }}
         </label>
       </div>
       <DiffView v-if="repo.diff" :diff="repo.diff" :split="repo.diffOptions.split" @force="repo.loadDiff(true)" />

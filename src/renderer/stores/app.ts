@@ -1,3 +1,4 @@
+import { translate } from '../../shared/i18n'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import type { Result } from '../../shared/ipc'
@@ -173,13 +174,17 @@ export const useAppStore = defineStore('app', () => {
   }
 
   async function cloneRepo() {
-    const values = await prompt({ title: 'Clona repository', fields: [{ key: 'url', label: 'URL' }], confirm: 'Scegli la cartella…' })
+    const values = await prompt({
+      title: translate(preferences.value.language, 'clone.title'),
+      fields: [{ key: 'url', label: 'URL' }],
+      confirm: translate(preferences.value.language, 'clone.chooseFolder'),
+    })
     const url = String(values?.url ?? '').trim()
     if (!url) return
     const parent = await window.api.pickRepoFolder(preferences.value.cloneFolder ?? undefined)
     if (!parent) return
     cloneParent = parent
-    cloneProgress.value = 'Clone in corso…'
+    cloneProgress.value = translate(preferences.value.language, 'clone.inProgress')
     const r = await window.api.clone(url, parent)
     cloneParent = null
     cloneProgress.value = null

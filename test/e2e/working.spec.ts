@@ -19,7 +19,7 @@ test('stage di un file e commit con ⌘↩, poi amend', async () => {
   await page.getByTestId('commit-subject').fill('primo commit dalla ui')
   await page.keyboard.press(`${mod}+Enter`)
   await expect(page.getByTestId('commit-row').first()).toContainText('primo commit dalla ui')
-  await expect(page.getByTestId('working-row')).toContainText('Nessuna modifica')
+  await expect(page.getByTestId('working-row')).toContainText('No changes')
 
   writeFileSync(join(repo, 'file1.txt'), 'ancora\n')
   await page.getByTestId('working-row').click()

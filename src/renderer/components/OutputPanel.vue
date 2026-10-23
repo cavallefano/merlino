@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { dateLocale } from '../../shared/i18n'
+import { t } from '../i18n'
 import { nextTick, ref, watch } from 'vue'
 import { useAppStore } from '../stores/app'
 
 const app = useAppStore()
 const list = ref<HTMLElement | null>(null)
-const time = (t: number) => new Date(t).toLocaleTimeString()
+const time = (ms: number) => new Date(ms).toLocaleTimeString(dateLocale(app.preferences.language))
 
 watch(
   () => app.log.length,
@@ -21,12 +23,12 @@ watch(
     <header>
       <strong>Output</strong>
       <span class="spacer" />
-      <button aria-label="Chiudi output" @click="app.outputOpen = false">×</button>
+      <button :aria-label="t('output.close')" @click="app.outputOpen = false">×</button>
     </header>
     <ol ref="list">
       <li v-for="e in app.log" :key="e.id" :class="{ failed: !e.ok }">
         <span class="muted">{{ time(e.startedAt) }}</span>
-        <code>{{ e.args.length ? `git ${e.args.join(' ')}` : 'errore interfaccia' }}</code>
+        <code>{{ e.args.length ? `git ${e.args.join(' ')}` : t('output.uiError') }}</code>
         <span class="muted">{{ e.durationMs }} ms</span>
         <span v-if="!e.ok && e.exitCode !== null" class="error">exit {{ e.exitCode }}</span>
         <pre v-if="!e.ok && e.stderr">{{ e.stderr }}</pre>

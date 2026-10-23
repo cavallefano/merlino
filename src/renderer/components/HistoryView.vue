@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t, tn } from '../i18n'
 import { ref } from 'vue'
 import { useRepoStore } from '../stores/repo'
 import CommitList from './CommitList.vue'
@@ -23,10 +24,10 @@ function onKey(e: KeyboardEvent) {
       <input
         v-model="text"
         data-testid="history-search"
-        placeholder="Cerca: testo, author:, path:, message:, contents:"
+        :placeholder="t('history.searchPlaceholder')"
         @keydown="onKey"
       />
-      <span class="muted count">{{ repo.history.total }} commit</span>
+      <span class="muted count">{{ tn('history.commitCount', repo.history.total) }}</span>
     </div>
     <CommitList :root="root" />
   </section>

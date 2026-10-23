@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { shortcuts } from '../../shared/shortcuts'
 import { useAppStore } from '../stores/app'
 import { useRepoStore } from '../stores/repo'
@@ -10,7 +11,7 @@ export function registerWorkingActions(): void {
   const hasChanges = () => (repo()?.changeCount ?? 0) > 0
 
   registry.register(
-    { id: 'working.show', title: 'Modifiche locali', when: () => app.active !== null, run: () => repo()?.selectWorking() },
+    { id: 'working.show', get title() { return t('action.working.show') }, when: () => app.active !== null, run: () => repo()?.selectWorking() },
     {
       id: 'working.commit',
       title: 'Commit',
@@ -20,7 +21,7 @@ export function registerWorkingActions(): void {
     },
     {
       id: 'commit.template',
-      title: 'Applica un template di commit…',
+      get title() { return t('action.commit.template') },
       when: () => app.active !== null,
       run: async () => {
         const r = repo()
@@ -29,17 +30,17 @@ export function registerWorkingActions(): void {
         r.templatePicker = 'button'
       },
     },
-    { id: 'working.stageAll', title: 'Aggiungi tutto allo stage', when: hasChanges, run: () => repo()?.stageEverything() },
+    { id: 'working.stageAll', get title() { return t('action.working.stageAll') }, when: hasChanges, run: () => repo()?.stageEverything() },
     {
       id: 'working.unstageAll',
-      title: 'Togli tutto dallo stage',
+      get title() { return t('action.working.unstageAll') },
       when: () => (repo()?.status?.staged.length ?? 0) > 0,
       run: () => repo()?.unstageEverything(),
     },
-    { id: 'stash.push', title: 'Stash delle modifiche', when: hasChanges, run: () => repo()?.stashPush('', false) },
+    { id: 'stash.push', get title() { return t('action.stash.push') }, when: hasChanges, run: () => repo()?.stashPush('', false) },
     {
       id: 'stash.pop',
-      title: "Pop dell'ultimo stash",
+      get title() { return t('action.stash.pop') },
       when: () => (repo()?.stashes.length ?? 0) > 0,
       run: () => repo()?.stashAction('pop', 'stash@{0}'),
     },

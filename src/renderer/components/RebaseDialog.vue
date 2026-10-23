@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { computed, onMounted, ref } from 'vue'
 import type { RebaseAction } from '../../shared/types'
 import { useRepoStore } from '../stores/repo'
@@ -21,8 +22,8 @@ onMounted(() => dialog.value?.showModal())
 
 const problem = computed(() => {
   const first = rows.value.findLast((r) => r.action !== 'drop')
-  if (first?.action === 'squash' || first?.action === 'fixup') return 'Il primo commit applicato (il più in basso) non può essere squash o fixup.'
-  if (rows.value.some((r) => r.action === 'reword' && !r.message.trim())) return 'Il messaggio di un reword è vuoto.'
+  if (first?.action === 'squash' || first?.action === 'fixup') return t('rebase.firstSquash')
+  if (rows.value.some((r) => r.action === 'reword' && !r.message.trim())) return t('rebase.emptyReword')
   return null
 })
 
@@ -57,8 +58,8 @@ async function start() {
 <template>
   <dialog ref="dialog" data-testid="rebase-dialog" @cancel.prevent="close">
     <form @submit.prevent="start">
-      <h2>Rebase interattivo</h2>
-      <p class="muted">Il commit più recente è in alto; git applica le righe dal basso verso l'alto.</p>
+      <h2>{{ t('rebase.title') }}</h2>
+      <p class="muted">{{ t('rebase.hint') }}</p>
       <ol>
         <li v-for="(row, i) in rows" :key="row.sha" data-testid="rebase-row">
           <div class="line">
@@ -71,8 +72,8 @@ async function start() {
             </select>
             <code>{{ row.sha.slice(0, 7) }}</code>
             <span class="subject" :class="{ dropped: row.action === 'drop' }">{{ row.subject }}</span>
-            <button type="button" aria-label="Sposta su" :disabled="i === 0" @click="move(i, -1)">↑</button>
-            <button type="button" aria-label="Sposta giù" :disabled="i === rows.length - 1" @click="move(i, 1)">↓</button>
+            <button type="button" :aria-label="t('rebase.moveUp')" :disabled="i === 0" @click="move(i, -1)">↑</button>
+            <button type="button" :aria-label="t('rebase.moveDown')" :disabled="i === rows.length - 1" @click="move(i, 1)">↓</button>
           </div>
           <textarea v-if="row.action === 'reword'" v-model="row.message" data-testid="rebase-message" rows="3" />
         </li>
@@ -80,8 +81,8 @@ async function start() {
       <footer>
         <span class="error">{{ problem }}</span>
         <span class="spacer" />
-        <button type="button" @click="close">Annulla</button>
-        <button class="primary" data-testid="rebase-start" :disabled="!!problem">Avvia</button>
+        <button type="button" @click="close">{{ t('common.cancel') }}</button>
+        <button class="primary" data-testid="rebase-start" :disabled="!!problem">{{ t('rebase.start') }}</button>
       </footer>
     </form>
   </dialog>

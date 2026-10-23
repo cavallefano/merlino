@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { computed, onMounted, ref, watch } from 'vue'
 import type { CommitTemplate } from '../../shared/types'
 import { fuzzy } from '../actions/registry'
@@ -52,25 +53,25 @@ function manage() {
       ref="input"
       v-model="search"
       data-testid="template-search"
-      placeholder="Cerca un template…"
+      :placeholder="t('template.search')"
       @keydown="onKey"
       @blur="emit('close')"
     />
     <ul>
       <li
-        v-for="(t, i) in items"
-        :key="t.id"
+        v-for="(tpl, i) in items"
+        :key="tpl.id"
         :class="{ active: i === index }"
         data-testid="template-item"
-        @mousedown.prevent="emit('choose', t)"
+        @mousedown.prevent="emit('choose', tpl)"
         @mousemove="index = i"
       >
-        <span class="name">{{ t.name }}</span>
-        <span v-if="t.id === repo.defaultTemplate?.id" class="muted">predefinito</span>
+        <span class="name">{{ tpl.name }}</span>
+        <span v-if="tpl.id === repo.defaultTemplate?.id" class="muted">{{ t('template.default') }}</span>
       </li>
-      <li v-if="!items.length" class="muted">Nessun template</li>
+      <li v-if="!items.length" class="muted">{{ t('template.none') }}</li>
     </ul>
-    <button type="button" class="manage" data-testid="template-manage" @mousedown.prevent="manage">Gestisci template…</button>
+    <button type="button" class="manage" data-testid="template-manage" @mousedown.prevent="manage">{{ t('template.manage') }}</button>
   </div>
 </template>
 

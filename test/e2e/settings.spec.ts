@@ -30,7 +30,7 @@ test('Impostazioni: ⌘, apre, il tema arriva a nativeTheme, Esc chiude; senza "
   await app.close()
 
   const again = await launch([], userData)
-  await expect(again.page.getByRole('button', { name: 'Apri repository…' })).toBeVisible()
+  await expect(again.page.getByText('Open Repository…')).toBeVisible()
   await expect(again.page.getByTestId('tab')).toHaveCount(0)
   expect(await again.app.evaluate(({ nativeTheme }) => nativeTheme.themeSource)).toBe('dark')
   await again.app.close()
@@ -41,7 +41,7 @@ test('sezione Git: nome ed email finiscono nella config globale (temporanea)', a
   writeFileSync(global, '')
   const { app, page } = await launch([], tempUserData(), { GIT_CONFIG_GLOBAL: global })
   // Prima che l'app abbia finito l'avvio la scorciatoia non è ancora registrata
-  await expect(page.getByRole('button', { name: 'Apri repository…' })).toBeVisible()
+  await expect(page.getByText('Open Repository…')).toBeVisible()
   await page.keyboard.press(`${mod}+Comma`)
   await page.getByTestId('settings-git').click()
   await page.getByTestId('git-user.name').fill('Ada Lovelace')
