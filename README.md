@@ -1,68 +1,86 @@
+<div align="center">
+
+<img src="build/icon.svg" width="128" height="128" alt="Merlino app icon: a lowercase m drawn with branch lines and an amber commit wheel at its foot, on an indigo tile">
+
 # Merlino
 
-A fast, keyboard-friendly desktop Git client for macOS, Windows and Linux.
+**Your git, at a glance.**
 
-Merlino drives the `git` you already have installed, so your hooks, commit signing, credential helpers, LFS and config keep working exactly as they do on the command line. It is built with Electron, Vue 3 and TypeScript.
+A fast, keyboard-first Git client for macOS, Windows and Linux.<br>
+History, local changes, branches and pull requests, on top of the git you already use.
 
-> **Status:** early development (v0.1). The interface is available in English and Italian. Packages for macOS, Windows and Linux are on the [Releases](https://github.com/cavallefano/merlino/releases) page (see [Installation](#installation)).
+<a href="https://github.com/cavallefano/merlino/releases/latest"><img src="https://img.shields.io/badge/Download_Merlino-bba5ff?style=for-the-badge" alt="Download Merlino"></a>
 
-## Features
+[![License: MIT](https://img.shields.io/badge/license-MIT-4b2fb5?style=flat-square)](LICENSE)
+[![Electron 45](https://img.shields.io/badge/Electron-45-4b2fb5?style=flat-square&logo=electron)](https://www.electronjs.org)
+[![Vue 3](https://img.shields.io/badge/Vue-3-4b2fb5?style=flat-square&logo=vuedotjs)](https://vuejs.org)
+[![TypeScript 6](https://img.shields.io/badge/TypeScript-6-4b2fb5?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![Platforms](https://img.shields.io/badge/platform-macOS_%7C_Windows_%7C_Linux-4b2fb5?style=flat-square)](#download)
 
-### History
-- Commit graph of every branch, remote branch and tag, in date order, with colored lanes. Commits are filled squares, merges are hollow squares.
-- Two-line rows: subject, author, date, ref badges (local branches, remote branches, tags) and the number of changed files.
-- Stays fluid on very large repositories: the first screen of a 100,000-commit history appears in under 2 seconds and only visible rows are drawn.
-- Search with prefixes: `author:`, `path:`, `message:`, `contents:`. Plain text searches messages.
-- Commit details: author and committer with dates, clickable parents, full message, changed files with added/removed lines.
-- Diffs:
-  - unified or side-by-side;
-  - syntax highlighting and word-level changes;
-  - optional whitespace ignoring;
-  - very large files are shown only on request, binary files are summarized.
-- A "local changes" row always at the top, linked to `HEAD` with a dashed line.
+</div>
 
-### Local changes and commits
-- Stage, unstage and discard per file, per hunk or per single line; stage or unstage everything in one click.
-- Add untracked files to `.gitignore`.
-- Commit composer:
-  - subject and body, with configurable length guides;
-  - commit with <kbd>⌘</kbd><kbd>↩</kbd> / <kbd>Ctrl</kbd>+<kbd>Enter</kbd>;
-  - amend, with the previous message preloaded.
-- **Commit templates**:
-  - a library of named templates, plus a default template per repository;
-  - Git's own `commit.template` is honored too;
-  - `{branch}` and `{ticket}` variables (e.g. `feature/7hq2xk4mp-login` → `7hq2xk4mp`), and `#` comment lines are stripped;
-  - insert a template with the Template button or by typing `/` in the subject.
-- Stashes: create (optionally including untracked files), inspect, apply, pop, drop.
-- Merge, rebase, cherry-pick and revert in progress:
-  - a banner with Continue, Skip and Abort;
-  - the list of conflicted files, with "Open" and "Mark as resolved";
-  - conflict markers visible in the diff.
+<br>
 
-### Branches, tags and remotes
-- Sidebar with local branches grouped in folders (with ahead/behind counts), remotes and their branches, tags and stashes.
-- Branches: create (from `HEAD` or any commit), check out (remote branches get a local tracking branch), rename, delete, set or unset the upstream.
-- Integrating changes:
-  - merge (fast-forward or `--no-ff`), rebase, cherry-pick, revert;
-  - reset soft, mixed or hard;
-  - **interactive rebase**: reorder, pick, reword, edit, squash, fixup, drop.
-- Tags: lightweight or annotated; create, delete, push.
-- Remotes:
-  - clone, fetch (optionally pruning deleted branches), pull (your `pull.rebase`, or explicitly rebase or merge);
-  - push: sets the upstream on the first push; force push uses `--force-with-lease`;
-  - add and remove remotes;
-  - progress is shown in the toolbar, and open repositories can be fetched automatically in the background.
-- Clear messages for the usual failures: missing credentials, rejected push, a leftover `index.lock`, conflicts, divergent branches.
-- Destructive operations always ask first: discarding changes, hard reset, deleting an unmerged branch or a remote branch, force push, dropping a stash.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/history-dark.jpg">
+  <img src="docs/assets/screenshots/history-light.jpg" alt="Merlino showing a repository: branches and tags in the sidebar, the commit graph with merges and tags, and the diff of the selected commit with syntax highlighting">
+</picture>
 
-### Drag and drop
-Drop to run the action; hold <kbd>⌥</kbd> (<kbd>Alt</kbd> on Windows/Linux) for the alternative. A label next to the cursor tells you what will happen before you let go.
+## Why Merlino
+
+Git clients tend to trade speed for depth. Merlino keeps both for the work you do every day: reading history, shaping commits, moving branches around and getting pull requests merged.
+
+- **Your git.** Every operation runs the `git` you already have, so hooks, LFS, signing, credential helpers and your config behave exactly as they do in the terminal.
+- **Fast on big repositories.** The first screen of a 100,000-commit history appears in under 2 seconds, and only the visible rows are drawn.
+- **Keyboard first.** `⌘⇧P` reaches every action with fuzzy search. The same actions live in the menu bar and in the context menus, with their shortcuts.
+- **Direct manipulation.** Drop a branch on the current one to merge it, a commit to cherry-pick it, files between sections to stage them. Hold `⌥` for the alternative.
+- **Pull requests inside.** GitHub and GitLab: read the conversation and the changes, follow running pipelines, merge, check out and create, without leaving the app.
+
+## A quick tour
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/assets/screenshots/changes-light.jpg" alt="Local changes with staged, changed and untracked files, two lines selected in the diff and a commit message being written"></td>
+    <td width="50%"><img src="docs/assets/screenshots/pull-requests-dark.jpg" alt="Pull requests in dark theme: a list with a running pipeline progress bar, and the Checks tab with 40 jobs grouped by stage"></td>
+  </tr>
+  <tr>
+    <td><b>Local changes.</b> Stage, unstage or discard a file, a hunk or single lines, then commit with <code>⌘↩</code>. Templates fill in the message from the branch and its ticket.</td>
+    <td><b>Pull requests.</b> Running pipelines show their progress right in the list. The Checks tab groups hundreds of jobs by stage or workflow.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/screenshots/rebase-dark.jpg" alt="Interactive rebase dialog in dark theme with a reword, a squash and three picks"></td>
+    <td><img src="docs/assets/screenshots/palette-light.jpg" alt="Command palette filtered by pull, with Pull, Pull (rebase), Pull (merge), Show Pull Requests and New Pull Request"></td>
+  </tr>
+  <tr>
+    <td><b>Interactive rebase.</b> Reorder, reword, squash, fix up, edit or drop commits in one dialog, with no editor to configure.</td>
+    <td><b>Command palette.</b> <code>⌘⇧P</code> searches every action and shows its shortcut.</td>
+  </tr>
+</table>
+
+## What you get
+
+| Area | Included today |
+| --- | --- |
+| History | Commit graph of every branch, remote branch and tag, with colored lanes. Search by text, `author:`, `path:`, `message:` or `contents:`. Commit details with clickable parents. Diffs unified or side by side, with syntax highlighting, word-level changes and an option to ignore whitespace |
+| Local changes | Stage, unstage and discard by file, hunk or line. Add files to `.gitignore`. Commit composer with length guides, amend and templates (`{branch}`, `{ticket}`, and Git's own `commit.template`). Stashes, also of single files. A banner to continue, skip or abort a merge, rebase, cherry-pick or revert with conflicts |
+| Branches and remotes | Branches in folders with ahead/behind counts. Create, check out, rename, delete, set the upstream. Merge, rebase, cherry-pick, revert, reset and interactive rebase. Tags. Clone, fetch (also in the background), pull, push with `--force-with-lease`, remotes |
+| Drag and drop | Merge, rebase, cherry-pick, revert, push, fast-forward, set the upstream, stage, stash and apply by dragging, with a label that says what will happen. Files from any commit can be dragged to other apps |
+| Pull requests | GitHub (also Enterprise) and GitLab (also self-hosted) with a personal access token. List with search, filters and CI status. Conversation in Markdown, commits and changes read with your git. Pipelines with progress and jobs by stage. Comment, check out (forks too), merge with the methods the repository allows, close, reopen, create |
+| Everyday use | Tabs restored at launch. Open a repository from the dialog, by dropping its folder or from the command line. Command palette, menu bar and context menus with the same actions. An output panel with every git command. Open in your terminal or editor |
+| Settings | Language (English or Italian), theme, automatic fetch, commit guides and templates, diff view and algorithm, editor and terminal, accounts, and your global Git identity, signing and pull strategy |
+| Quality | Clear messages for the usual git failures. A confirmation before every destructive operation. A sandboxed interface that can only call validated operations. Tested against real git: unit, integration and end-to-end |
+
+<details>
+<summary><b>All drag and drop gestures</b></summary>
+
+Drop to run the action; hold <kbd>⌥</kbd> (<kbd>Alt</kbd> on Windows and Linux) for the alternative.
 
 | Drag | Onto | Action | With <kbd>⌥</kbd> |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | A branch (local or remote) | The current branch | Merge it into the current branch | Rebase the current branch onto it |
 | A remote branch | Another local branch | Fast-forward it, without checking it out | Set it as upstream |
 | A local branch | A remote, or one of its branches | Push it (and set the upstream) | Set the upstream only |
+| A local branch | "Pull Requests" | New pull request from it | |
 | A commit | The current branch or the local changes | Cherry-pick | Revert |
 | A commit, branch or tag | The "Branches" header | New branch from there | |
 | A commit | The "Tags" header | New tag on it | |
@@ -72,111 +90,110 @@ Drop to run the action; hold <kbd>⌥</kbd> (<kbd>Alt</kbd> on Windows/Linux) fo
 | A file from a commit or stash | The local changes | Apply just that file's changes | |
 | Any file | Outside Merlino (Finder, editor, chat…) | The file (from a commit: its content at that commit) | |
 
-### Pull requests
-- GitHub (including Enterprise) and GitLab (including self-hosted), connected with a personal access token in Settings → Accounts. Each remote uses the account for its server, or the one you pick from the remote's menu.
-- A list of pull requests (merge requests on GitLab) with search over title, description, author and branch, an Open / Merged / Closed / All filter, and CI status; running pipelines show a progress bar with finished jobs, the current stage and the elapsed time.
-- Details: the conversation (descriptions and comments in Markdown, commits in between), the commits and the changes of the whole pull request, read with your own git without adding refs to your history, and a Checks tab with the jobs grouped by stage (GitLab) or workflow (GitHub), with a filter for long pipelines.
-- Comment, check out (pull requests from forks become `pr/<n>`), merge with the methods the repository allows, close and reopen.
-- Create a pull request from a branch (its menu, the command palette, or by dropping it on "Pull Requests"); the branch is pushed first if needed.
-- <kbd>⌘</kbd><kbd>1</kbd> / <kbd>⌘</kbd><kbd>2</kbd> switch between History and Pull Requests.
+</details>
 
-### Everyday use
-- Several repositories open in tabs, restored on the next launch. Open a repository from the dialog, by dropping a folder on the window, or by passing a folder to the app on the command line.
-- Command palette (<kbd>⌘</kbd><kbd>⇧</kbd><kbd>P</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) with fuzzy search over every action. The same actions appear in the menu bar and in native context menus.
-- Output panel listing every git command Merlino ran, with its exit code and error output.
-- Open the repository in your terminal, or conflicted files in your editor.
-
-### Settings
-| Section | What you can set |
-|---|---|
-| General | Language: English or Italian, applied immediately (menus included). Theme: system, light or dark. Automatic fetch interval, pruning, reopening tabs at launch |
-| Commit | Subject and body length guides, commit templates and the default per repository |
-| Diff | Initial view, whitespace, context lines, diff algorithm, code font size, tab width |
-| Integrations | External editor and terminal |
-| Accounts | GitHub and GitLab accounts for pull requests: add (with a personal access token), remove |
-| Git | Git executable; your global name and email; commit signing (GPG or SSH, key); pull strategy; default branch for new repositories; default clone folder |
-
-The Git section edits your global Git configuration, so the same values apply on the command line and in other tools.
-
-## Keyboard shortcuts
+<details>
+<summary><b>Keyboard shortcuts</b></summary>
 
 | Action | macOS | Windows / Linux |
-|---|---|---|
+| --- | --- | --- |
 | Command palette | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>P</kbd> | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> |
 | Open repository | <kbd>⌘</kbd><kbd>O</kbd> | <kbd>Ctrl</kbd>+<kbd>O</kbd> |
 | Refresh | <kbd>⌘</kbd><kbd>R</kbd> | <kbd>Ctrl</kbd>+<kbd>R</kbd> |
-| Search history | <kbd>⌘</kbd><kbd>F</kbd> | <kbd>Ctrl</kbd>+<kbd>F</kbd> |
+| Search history or pull requests | <kbd>⌘</kbd><kbd>F</kbd> | <kbd>Ctrl</kbd>+<kbd>F</kbd> |
 | History / Pull requests | <kbd>⌘</kbd><kbd>1</kbd> / <kbd>⌘</kbd><kbd>2</kbd> | <kbd>Ctrl</kbd>+<kbd>1</kbd> / <kbd>Ctrl</kbd>+<kbd>2</kbd> |
-| Commit | <kbd>⌘</kbd><kbd>↩</kbd> | <kbd>Ctrl</kbd>+<kbd>Enter</kbd> |
+| Commit, or send a comment | <kbd>⌘</kbd><kbd>↩</kbd> | <kbd>Ctrl</kbd>+<kbd>Enter</kbd> |
 | Settings | <kbd>⌘</kbd><kbd>,</kbd> | <kbd>Ctrl</kbd>+<kbd>,</kbd> |
 | Output panel | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>O</kbd> | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> |
 | Close tab | <kbd>⌘</kbd><kbd>W</kbd> | <kbd>Ctrl</kbd>+<kbd>W</kbd> |
 | Next / previous tab | <kbd>⌃</kbd><kbd>Tab</kbd> / <kbd>⌃</kbd><kbd>⇧</kbd><kbd>Tab</kbd> | <kbd>Ctrl</kbd>+<kbd>Tab</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd> |
 
-## How it works
+</details>
 
-- **Your git, not a reimplementation.** Every operation runs the system `git` (2.35 or newer) as a separate process. There is no libgit2, so hooks, LFS, signing and credential helpers behave as they do in your terminal. Write operations on a repository are queued, so they never overlap.
-- **Locked-down renderer.** The interface runs sandboxed with context isolation. It can only call named, typed operations that the main process validates one by one: branch names, SHAs and paths are checked, and the interface can never pass arbitrary arguments to git.
-- **No telemetry.** Besides what git itself does (clone, fetch, pull, push), Merlino only contacts the GitHub and GitLab servers of the accounts you connect, with the token you gave it. Tokens are encrypted with the system keychain (on Linux without a keychain, Electron can only use weak encryption) and never reach the interface or the logs.
+## Download
 
-## Installation
-
-Download the package for your system from the [Releases](https://github.com/cavallefano/merlino/releases) page. You also need git 2.35 or newer.
+Get the package for your system from the [Releases](https://github.com/cavallefano/merlino/releases) page. Merlino needs git 2.35 or newer.
 
 | System | Package |
-|---|---|
+| --- | --- |
 | macOS, Apple Silicon | `Merlino-<version>-mac-arm64.dmg` |
 | macOS, Intel | `Merlino-<version>-mac-x64.dmg` |
 | Windows | `Merlino-<version>-windows-setup.exe` |
 | Linux | `Merlino-<version>-linux-x86_64.AppImage`, or `Merlino-<version>-linux-amd64.deb` for Debian and Ubuntu |
 
 The packages are not signed with a developer certificate, so the first launch needs a confirmation:
-- **macOS**: open the app once, then go to System Settings → Privacy & Security and click "Open Anyway".
-- **Windows**: in the SmartScreen dialog, click "More info", then "Run anyway".
-- **Linux**: `chmod +x Merlino-*.AppImage` and run it, or install the package with `sudo apt install ./Merlino-*-linux-amd64.deb`.
 
-### Build from source
+- **macOS:** open the app once, then go to System Settings → Privacy & Security and click "Open Anyway".
+- **Windows:** in the SmartScreen dialog, click "More info", then "Run anyway".
+- **Linux:** `chmod +x Merlino-*.AppImage` and run it, or install the package with `sudo apt install ./Merlino-*-linux-amd64.deb`.
 
-Requirements: git 2.35 or newer, and a recent Node.js (CI uses Node.js 24) to build.
+## How it works
+
+- **Your git, not a reimplementation.** Every operation runs the system `git` as a separate process. There is no libgit2, so hooks, LFS, signing and credential helpers behave as they do in your terminal. Write operations on a repository are queued, so they never overlap.
+- **Locked-down interface.** The interface runs sandboxed with context isolation. It can only call named, typed operations that the main process validates one by one: branch names, SHAs and paths are checked, and the interface can never pass arbitrary arguments to git.
+- **No telemetry.** Besides what git itself does (clone, fetch, pull, push), Merlino only contacts the GitHub and GitLab servers of the accounts you connect, with the token you gave it. Tokens are encrypted with the system keychain (on Linux without a keychain, Electron can only use weak encryption) and never reach the interface or the logs.
+
+## Tech stack
+
+| Layer | Choices |
+| --- | --- |
+| Desktop | Electron 45 with a sandboxed renderer and context isolation, electron-vite, electron-builder |
+| Interface | Vue 3, Pinia, TypeScript 6, highlight.js, marked and DOMPurify |
+| Git | The system `git` 2.35 or newer, run as a process with queued writes; `@parcel/watcher` for changes on disk |
+| Services | GitHub and GitLab REST APIs through Electron's network stack, tokens encrypted with `safeStorage` |
+| Quality | TypeScript strict, ESLint, vue-tsc, Vitest on real git repositories, Playwright end-to-end tests with a hidden window |
+| Delivery | GitHub Actions: packages for macOS, Windows and Linux on every version tag |
+
+## Build from source
+
+You need git 2.35 or newer and Node.js 24.
 
 ```bash
 git clone https://github.com/cavallefano/merlino.git
 cd merlino
 npm install
-npm run dist
+npm run dev     # the app with hot reload
+npm run dist    # packages for this system, in dist/
 ```
 
-`npm run dist` builds for the current platform, into `dist/`:
-- macOS: `.dmg`;
-- Windows: NSIS installer;
-- Linux: AppImage and `.deb`.
+<details>
+<summary><b>All commands</b></summary>
 
-## Development
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Run the app with hot reload |
+| `npm run build` | Build main process, preload and interface into `out/` |
+| `npm run dist` | Package for the current system into `dist/` (`.dmg`, NSIS installer, or AppImage and `.deb`) |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript and vue-tsc |
+| `npm test` | Unit and integration tests, on real git with temporary repositories |
+| `npm run test:e2e` | Build, then end-to-end tests on the Electron app with a hidden window |
+| `MERLINO_PERF=1 npx vitest run test/integration/history-perf.test.ts` | The 100,000-commit performance test |
+| `npx electron scripts/make-icons.mjs` | Regenerate the app icons from `build/icon.svg` (macOS) |
+| `MERLINO_SCREENSHOTS=1 npx playwright test test/e2e/readme-screenshots.spec.ts` | Regenerate the screenshots of this page, after `npx electron-vite build` (macOS) |
 
-```bash
-npm install
-npm run dev          # run the app with hot reload
-npm run lint && npm run typecheck
-npm test             # unit and integration tests (they run real git on temporary repositories)
-npm run test:e2e     # build, then Playwright end-to-end tests on the Electron app
+End-to-end tests never show a window or steal focus, and no test touches your own `~/.gitconfig`: tests that need a global config point `GIT_CONFIG_GLOBAL` at a temporary file.
+
+</details>
+
+<details>
+<summary><b>Repository layout</b></summary>
+
 ```
-
-- End-to-end tests run with the app window hidden (`MERLINO_E2E=1`), so they never steal focus while you keep working.
-- No test ever touches your own `~/.gitconfig`: tests that need a global config point `GIT_CONFIG_GLOBAL` at a temporary file.
-- The 100,000-commit performance test is opt-in: `MERLINO_PERF=1 npx vitest run test/integration/history-perf.test.ts`.
-
-### Project layout
-
-```
-src/main/       Electron main process: git runner and parsers, IPC handlers, settings, menus
+src/main/       Electron main process: git runner and parsers, GitHub and GitLab clients, IPC, settings, menus
 src/preload/    the typed bridge exposed to the interface (window.api)
 src/renderer/   Vue 3 interface: components, Pinia stores, actions, drag and drop
-src/shared/     types and IPC contract shared by main and renderer; translations in src/shared/i18n/
+src/shared/     types and IPC contract shared by main and interface; translations in src/shared/i18n/
+build/          app icon (icon.svg is the source)
+scripts/        icon generator and other maintenance scripts
 test/           unit, integration (real git) and end-to-end (Playwright) tests
-docs/           design specs and implementation plans (in Italian)
+docs/           design specs and implementation plans (in Italian), screenshots
 ```
 
-## Releasing
+</details>
+
+<details>
+<summary><b>Releasing</b></summary>
 
 From an up-to-date `main`:
 
@@ -189,16 +206,27 @@ The tag starts the **Release** workflow: lint, type checks and unit and integrat
 
 For a test build without a release, run the workflow by hand (Actions → Release → Run workflow, or `gh workflow run release.yml`): the packages are attached to the run as artifacts.
 
+</details>
+
 ## Roadmap
 
-1. Three-way merge tool.
-2. Blame, file history and a tree view of the repository.
-3. Submodules, worktrees, git flow and custom commands.
-4. Pull/merge requests and team integrations.
+- [x] History: commit graph, search, commit details and diffs
+- [x] Local changes: line staging, commit composer with templates, stashes, operations with conflicts
+- [x] Branches, tags and remotes, with interactive rebase
+- [x] Drag and drop for every common operation
+- [x] Settings, in English and Italian
+- [x] Pull and merge requests: list, conversation, changes, merge, check out, create
+- [x] Pipelines with progress and jobs by stage
+- [x] Packages for macOS, Windows and Linux on GitHub Releases
+- [ ] Reviews: approve, request changes, comments on diff lines
+- [ ] Three-way merge tool
+- [ ] Blame, file history and a tree view of the repository
+- [ ] Submodules, worktrees, git flow and custom commands
 
 ## Contributing
 
 Issues and pull requests are welcome.
+
 - Please run `npm run lint`, `npm run typecheck`, `npm test` and `npm run test:e2e` before opening a pull request.
 - Every new interface text goes in `src/shared/i18n/en.ts` and in `it.ts` (see [Translations](#translations)).
 - Commit messages follow the `feat:` / `fix:` / `docs:` / `test:` style used in the history.
@@ -208,6 +236,7 @@ Issues and pull requests are welcome.
 Interface texts live in `src/shared/i18n/`: `en.ts` is the reference, every other language has the same keys.
 
 To add a language:
+
 1. Copy `it.ts` to a new file (for example `fr.ts`), name the export after the language and translate the texts. Keep the `{placeholders}` as they are; plurals use the `.one` / `.other` keys.
 2. In `src/shared/i18n/index.ts`, add the language code to `Lang` and `LANGUAGES`, the dictionary to `dictionaries`, and its date locale to `dateLocale`.
 3. Add its name, written in that language, as `language.<code>` in every dictionary.
@@ -216,4 +245,4 @@ To add a language:
 
 ## License
 
-Merlino is released under the [MIT License](LICENSE).
+Merlino is free software under the [MIT License](LICENSE). You can use, modify and redistribute it, also in commercial products, as long as you keep the copyright notice.
