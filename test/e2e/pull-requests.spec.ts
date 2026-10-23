@@ -1,7 +1,10 @@
 import { expect, type Page, test } from '@playwright/test'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { git } from '../helpers/repo'
 import { demoPulls, demoRepo, fakeHosting } from './fake-hosting'
 import { launch, tempUserData } from './launch'
+import { chooseNextMenuItem } from './menu'
 
 const mod = process.platform === 'darwin' ? 'Meta' : 'Control'
 
@@ -152,6 +155,38 @@ test('merge: metodi del repo, messaggio proposto, SHA mostrato; poi la PR è uni
     commit_title: 'Add the login page (#1)',
   })
   await expect(page.getByTestId('pr-row')).toHaveCount(1)
+  await app.close()
+  await server.close()
+})
+
+test('nuova pull request dal menu del branch: titolo dal commit, push del branch, poi la PR si apre', async () => {
+  const { repo, server, app, page } = await start()
+  git(repo.clone, 'switch', '-q', '-c', 'feature/search')
+  writeFileSync(join(repo.clone, 'search.txt'), 'search\n')
+  git(repo.clone, 'add', '.')
+  git(repo.clone, 'commit', '-q', '-m', 'Add search\n\nWith filters.')
+  git(repo.clone, 'switch', '-q', 'main')
+  await addAccount(page, 'git.example.com')
+  await expect(page.getByTestId('branch-item').filter({ hasText: /^search$/ })).toBeVisible()
+
+  await chooseNextMenuItem(app, 'Create Pull Request from feature/search…')
+  await page.getByTestId('branch-item').filter({ hasText: /^search$/ }).click({ button: 'right' })
+  await expect(page.getByTestId('create-base')).toHaveValue('main')
+  await expect(page.getByTestId('create-title')).toHaveValue('Add search')
+  await expect(page.getByTestId('create-body')).toHaveValue('With filters.')
+  await expect(page.getByTestId('create-push')).toContainText('feature/search')
+  await page.getByTestId('create-draft').check()
+  await page.getByTestId('create-confirm').click()
+
+  await expect(page.getByTestId('pr-title')).toContainText('Add search')
+  expect(git(repo.bare, 'branch', '--list', 'feature/search').trim()).toBe('feature/search')
+  expect(server.requests.find((r) => r.line === 'POST /api/v3/repos/acme/demo-app/pulls')?.body).toEqual({
+    title: 'Add search',
+    body: 'With filters.',
+    head: 'feature/search',
+    base: 'main',
+    draft: true,
+  })
   await app.close()
   await server.close()
 })

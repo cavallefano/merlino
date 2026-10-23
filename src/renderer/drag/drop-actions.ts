@@ -19,6 +19,7 @@ export type DropTarget =
   | { kind: 'stashHeader' }
   | { kind: 'working' }
   | { kind: 'area'; area: 'staged' | 'unstaged' }
+  | { kind: 'pullRequests' }
 
 export type DropOperation =
   | { type: 'git'; command: RepoCommand }
@@ -26,6 +27,7 @@ export type DropOperation =
   | { type: 'createTag'; sha: string }
   | { type: 'stage' | 'unstage'; files: WorkingFile[] }
   | { type: 'stash'; action: 'apply' | 'pop'; ref: string }
+  | { type: 'createPullRequest'; branch: string }
 
 export interface DropContext {
   /** null con HEAD staccato. */
@@ -101,6 +103,8 @@ export function dropAction(source: DragSource, target: DropTarget, alt: boolean,
       const paths = source.files.flatMap((f) => (f.oldPath ? [f.oldPath, f.path] : [f.path]))
       return git(l('drop.stash', { files: fileLabel(source.files, ctx.lang) }), { kind: 'stashFiles', paths, untracked: source.area === 'untracked' })
     }
+    case 'pullRequests':
+      return source.kind === 'branch' ? { label: l('drop.pullRequest', { branch: source.name }), operation: { type: 'createPullRequest', branch: source.name } } : null
     case 'working':
       if (source.kind === 'commit') return commitOnHead(source.sha, alt, ctx)
       if (source.kind === 'stash') {

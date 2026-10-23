@@ -132,7 +132,12 @@ function drop(stash: StashEntry) {
   <aside class="sidebar">
     <nav class="pages">
       <button :class="{ active: repo.page === 'history' }" data-testid="page-history" @click="repo.page = 'history'">{{ t('page.history') }}</button>
-      <button :class="{ active: repo.page === 'pullRequests' }" data-testid="page-pull-requests" @click="repo.page = 'pullRequests'">
+      <button
+        v-bind="dnd(undefined, { kind: 'pullRequests' })"
+        :class="{ active: repo.page === 'pullRequests' }"
+        data-testid="page-pull-requests"
+        @click="repo.page = 'pullRequests'"
+      >
         <span class="name">{{ t('page.pullRequests') }}</span>
         <span v-if="prs.openCount !== null" class="track">{{ prs.openCount }}</span>
       </button>

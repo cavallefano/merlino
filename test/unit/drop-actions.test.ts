@@ -23,6 +23,15 @@ const file = (path: string): WorkingFile => ({ path, status: 'M' })
 const act = (s: DragSource, t: DropTarget, alt = false) => dropAction(s, t, alt, ctx)
 
 describe('dropAction', () => {
+  it('branch locale sulla voce Pull requests: nuova pull request', () => {
+    expect(act(branch('feature/a'), { kind: 'pullRequests' })).toEqual({
+      label: 'New pull request from feature/a…',
+      operation: { type: 'createPullRequest', branch: 'feature/a' },
+    })
+    expect(act(remoteBranch('main'), { kind: 'pullRequests' })).toBeNull()
+    expect(act(commit, { kind: 'pullRequests' })).toBeNull()
+  })
+
   it('branch sul corrente: merge; con ⌥ rebase', () => {
     expect(act(branch('feature/a'), { kind: 'branch', name: 'main' })).toEqual({
       label: 'Merge feature/a into main',
