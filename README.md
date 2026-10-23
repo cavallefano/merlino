@@ -4,7 +4,7 @@ A fast, keyboard-friendly desktop Git client for macOS, Windows and Linux.
 
 Merlino drives the `git` you already have installed, so your hooks, commit signing, credential helpers, LFS and config keep working exactly as they do on the command line. It is built with Electron, Vue 3 and TypeScript.
 
-> **Status:** early development (v0.1). The interface is available in English and Italian. No prebuilt releases yet: build it from source (see [Installation](#installation)).
+> **Status:** early development (v0.1). The interface is available in English and Italian. Packages for macOS, Windows and Linux are on the [Releases](https://github.com/cavallefano/merlino/releases) page (see [Installation](#installation)).
 
 ## Features
 
@@ -121,6 +121,22 @@ The Git section edits your global Git configuration, so the same values apply on
 
 ## Installation
 
+Download the package for your system from the [Releases](https://github.com/cavallefano/merlino/releases) page. You also need git 2.35 or newer.
+
+| System | Package |
+|---|---|
+| macOS, Apple Silicon | `Merlino-<version>-mac-arm64.dmg` |
+| macOS, Intel | `Merlino-<version>-mac-x64.dmg` |
+| Windows | `Merlino-<version>-windows-setup.exe` |
+| Linux | `Merlino-<version>-linux-x86_64.AppImage`, or `Merlino-<version>-linux-amd64.deb` for Debian and Ubuntu |
+
+The packages are not signed with a developer certificate, so the first launch needs a confirmation:
+- **macOS**: open the app once, then go to System Settings → Privacy & Security and click "Open Anyway".
+- **Windows**: in the SmartScreen dialog, click "More info", then "Run anyway".
+- **Linux**: `chmod +x Merlino-*.AppImage` and run it, or install the package with `sudo apt install ./Merlino-*-linux-amd64.deb`.
+
+### Build from source
+
 Requirements: git 2.35 or newer, and a recent Node.js (CI uses Node.js 24) to build.
 
 ```bash
@@ -134,8 +150,6 @@ npm run dist
 - macOS: `.dmg`;
 - Windows: NSIS installer;
 - Linux: AppImage and `.deb`.
-
-The builds are not code-signed yet. On macOS, open the app the first time with right click → Open.
 
 ## Development
 
@@ -161,6 +175,19 @@ src/shared/     types and IPC contract shared by main and renderer; translations
 test/           unit, integration (real git) and end-to-end (Playwright) tests
 docs/           design specs and implementation plans (in Italian)
 ```
+
+## Releasing
+
+From an up-to-date `main`:
+
+```bash
+npm version minor        # or patch / major: updates package.json, commits and tags vX.Y.Z
+git push --follow-tags
+```
+
+The tag starts the **Release** workflow: lint, type checks and unit and integration tests, then a draft release "Merlino X.Y.Z" with generated notes, and the packages built on macOS, Windows and Linux. Review the draft on GitHub and publish it. The tag must match the version in `package.json`, otherwise the workflow stops.
+
+For a test build without a release, run the workflow by hand (Actions → Release → Run workflow, or `gh workflow run release.yml`): the packages are attached to the run as artifacts.
 
 ## Roadmap
 

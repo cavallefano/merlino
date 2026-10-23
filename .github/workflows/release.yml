@@ -1,0 +1,87 @@
+# Release: al push di un tag vX.Y.Z compila i pacchetti su macOS, Windows e Linux e li carica in una release in bozza.
+# Avvio a mano (Actions → Release → Run workflow): compila e basta, i pacchetti restano come artifact della run.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # Il binario di Electron di npm non serve: ai test no, e electron-builder scarica il suo
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Il tag è la versione di package.json
+        if: github.ref_type == 'tag'
+        run: |
+          expected="v$(node -p "require('./package.json').version")"
+          if [ "$expected" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Il tag $GITHUB_REF_NAME non corrisponde alla versione di package.json ($expected)"
+            exit 1
+          fi
+      - name: Release in bozza
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --draft --title "Merlino ${GITHUB_REF_NAME#v}" --generate-notes
+
+  build:
+    needs: check
+    strategy:
+      # Un sistema che fallisce non ferma gli altri
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            args: --mac --arm64 --x64
+            files: dist/*.dmg
+          - os: windows-latest
+            args: --win --x64
+            files: dist/*.exe
+          - os: ubuntu-latest
+            args: --linux --x64
+            files: dist/*.AppImage dist/*.deb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx electron-vite build
+      # Il watcher nativo lo ricompila electron-builder per ogni architettura
+      - run: npx electron-builder ${{ matrix.args }} --publish never
+      - name: Pacchetti nella release
+        if: github.ref_type == 'tag'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" ${{ matrix.files }} --clobber
+      - name: Pacchetti come artifact della run
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          name: merlino-${{ runner.os }}
+          path: |
+            dist/*.dmg
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.deb
+          if-no-files-found: error
