@@ -1031,3 +1031,13 @@ git commit -m "feat: drag & drop di branch, commit, file e stash, con etichetta 
 - [ ] **Step 1:** `npm run lint && npm run typecheck && npm test && npm run test:e2e`, con la finestra nascosta. Expected: tutto verde.
 - [ ] **Step 2:** Screenshot con la finestra nascosta, su un repo di prova generato al momento, con nomi fittizi (branch, remote, tag e autori inventati): una destinazione evidenziata e l'etichetta durante un drag simulato (`dragover` creato nella pagina), in tema chiaro e scuro.
 - [ ] **Step 3:** Annota l'esito in fondo a questo piano, insieme alla prova a mano che resta all'utente: un file trascinato davvero nel Finder o in un editor. Commit.
+
+**Note dall'esecuzione:**
+- **Task 1–3**: come da piano; i test scritti prima del codice fallivano per i motivi attesi.
+- **Task 4**: `draggable` vale `true` e non `'true'`: i tipi di Vue vogliono un booleano.
+- **E2E** con la finestra nascosta: tutti e 6 i test di `drag.spec.ts` verdi alla prima esecuzione completa. Totale: 143 unit e di integrazione (più 1 saltato), 29 E2E.
+- **Task 5**:
+  - screenshot con la finestra nascosta su un repo di prova generato con nomi fittizi: `demo-backend`, `feature/login`, `feature/pagamenti`, autrici Ada Lovelace e Grace Hopper;
+  - quattro casi: branch su `main` (merge, in chiaro), con ⌥ (rebase, in scuro), commit sull'intestazione Tag (nuovo tag) e branch su `origin` (push);
+  - in tutti la destinazione è evidenziata e l'etichetta segue il cursore.
+- **Prova a mano che resta all'utente**: trascinare davvero un file nel Finder o in un editor. Con la finestra nascosta i test arrivano fino alla chiamata a `startDrag`.
