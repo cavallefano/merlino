@@ -42,7 +42,7 @@ Data: 2026-10-23 · Stato: approvato in brainstorming
 - **Aspetto**: una fascia di presa di 5 px con una linea di 1 px (`--border`); al passaggio e durante il trascinamento la linea prende il colore `--accent`. Cursore `col-resize` o `row-resize`.
 - **Trascinamento**: `pointerdown` con `setPointerCapture`, la misura segue il puntatore entro i limiti. Durante il trascinamento la selezione del testo è disattivata.
 - **Doppio clic**: la misura torna alla predefinita.
-- **Tastiera**: `role="separator"`, `aria-orientation`, `tabindex="0"`; le frecce spostano di 16 px (o di 0.02 per le frazioni).
+- **Tastiera**: `role="separator"`, `aria-orientation`, `tabindex="0"`; le frecce spostano di 16 px (anche per le frazioni, convertiti).
 - **Memoria**: le misure valgono per tutta l'app (tutte le schede e i repo) e restano dopo il riavvio. Sono una comodità dell'interfaccia, non un'impostazione: stanno nel `localStorage` alla chiave `merlino.layout`, come la scelta del remote delle PR, quindi sono di ogni utente del computer. Un valore mancante, non numerico o fuori dai limiti torna al predefinito.
 
 ## Layout orizzontale e verticale
@@ -83,9 +83,9 @@ Data: 2026-10-23 · Stato: approvato in brainstorming
 ## Architettura
 
 - **`src/renderer/layout.ts`**:
-  - funzioni pure: `clamp(value, min, max)`, `readLayout(text: string | null): Layout` (lettura tollerante, i valori non validi tornano ai predefiniti), `step(list, current, delta)` (file precedente o successivo, senza giro);
+  - funzioni pure: `clamp(value, min, max)` (serve anche per il file precedente o successivo, senza giro) e `readLayout(text: string | null): Layout` (lettura tollerante, i valori non validi tornano ai predefiniti);
   - tipo `Layout { sidebar; list; listVertical; commitFiles; workingFiles; prFiles; dialog: { width; height } | null }`;
-  - uno store Pinia `useLayoutStore` con lo stato reattivo, `reset(key)` e il salvataggio nel `localStorage` a ogni modifica.
+  - `useLayout()`: un oggetto reattivo condiviso, salvato nel `localStorage` a ogni modifica (il doppio clic sul divisore rimette il predefinito).
 - **Preferenza**: `panelLayout` in `Preferences` (`src/shared/types.ts`), `DEFAULT_PREFERENCES`, la validazione in `preferences()` di `src/main/validate.ts` e la select in `GeneralSettings.vue`.
 - **`Splitter.vue`**: props `orientation: 'col' | 'row'`, `modelValue`, `min`, `max`, `defaultValue`, `scale` (1 per i px, oppure la dimensione del contenitore per le frazioni). Emette `update:modelValue`.
 - **`RepoView.vue`**: la griglia (colonne in orizzontale; in verticale due colonne e la colonna destra divisa in righe) si calcola dal layout; i divisori stanno fra le aree.
@@ -99,7 +99,6 @@ Data: 2026-10-23 · Stato: approvato in brainstorming
 - **Unit** (`test/unit/layout.test.ts`):
   - `clamp`;
   - `readLayout` con `null`, JSON non valido, valori mancanti, non numerici o fuori dai limiti;
-  - `step` agli estremi e con il file corrente assente.
 - **Unit** (`test/unit/validate.test.ts`): `panelLayout` accetta solo `horizontal` e `vertical`.
 - **E2E** (finestra nascosta, `test/e2e/layout.spec.ts`):
   - trascinare il divisore della sidebar cambia la sua larghezza, e la misura resta dopo il reload; il doppio clic la riporta a 220 px;
