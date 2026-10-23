@@ -29,6 +29,7 @@ export const Channels = {
   updatePreferences: 'settings:update-preferences',
   gitGlobalConfig: 'git:global-config',
   pickApp: 'app:pick-app',
+  startDrag: 'app:start-drag',
   saveCommitTemplates: 'settings:save-templates',
   setDefaultTemplate: 'settings:set-default-template',
   gitCommitTemplate: 'repo:git-commit-template',
@@ -140,6 +141,8 @@ export interface Api {
   pickApp(): Promise<string | null>
   /** Apre il terminale scelto nelle Impostazioni (o quello predefinito) nella cartella del repo. */
   openInTerminal(root: string): Promise<Result<void>>
+  /** Avvia il drag nativo di un file (anche verso altre app); sincrona perché va chiamata dentro il dragstart. */
+  startDrag(root: string, item: { path: string; sha?: string }): Result<void>
   /** Menu contestuale nativo; restituisce l'id della voce scelta o null. */
   contextMenu(items: MenuItem[]): Promise<string | null>
   onProgress(cb: (event: { root: string; line: string }) => void): () => void

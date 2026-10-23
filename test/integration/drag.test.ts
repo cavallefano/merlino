@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { dragFile } from '../../src/main/drag-file'
 import { fastForward, pushBranch } from '../../src/main/git/branches'
 import { GitRunner } from '../../src/main/git/runner'
 import { applyFileChanges, stashFiles } from '../../src/main/git/working'
@@ -67,5 +68,20 @@ describe('operazioni del drag & drop', () => {
     await applyFileChanges(runnerFor(repo), git(repo, 'rev-parse', 'stash@{0}').trim(), 'file1.txt')
     expect(readFileSync(join(repo, 'file1.txt'), 'utf8')).toBe('1\naltro\n')
     await expect(applyFileChanges(runnerFor(repo), sha, 'file1.txt')).rejects.toThrow()
+  })
+})
+
+describe('file da trascinare fuori', () => {
+  it('modifiche: il file vero; commit: il contenuto di quel commit in una cartella temporanea', () => {
+    const repo = makeRepo(1)
+    const first = git(repo, 'rev-parse', 'HEAD').trim()
+    writeFileSync(join(repo, 'file1.txt'), 'dopo\n')
+    expect(dragFile('git', repo, { path: 'file1.txt' })).toBe(join(repo, 'file1.txt'))
+    const copy = dragFile('git', repo, { path: 'file1.txt', sha: first })
+    expect(copy).not.toBe(join(repo, 'file1.txt'))
+    expect(copy.endsWith('file1.txt')).toBe(true)
+    expect(readFileSync(copy, 'utf8')).toBe('1\n')
+    expect(() => dragFile('git', repo, { path: 'manca.txt' })).toThrow()
+    expect(() => dragFile('git', repo, { path: 'manca.txt', sha: first })).toThrow()
   })
 })
