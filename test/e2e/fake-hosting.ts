@@ -42,6 +42,7 @@ const JOB = { success: 'success', failure: 'failed', pending: 'running', queued:
 export async function fakeHosting(pulls: FakePull[]): Promise<FakeHosting> {
   const requests: FakeHosting['requests'] = []
   const now = () => new Date().toISOString()
+  const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString()
   const find = (n: string) => pulls.find((p) => p.number === Number(n))
   const withPull = (n: string, fn: (p: FakePull) => Reply): Reply => {
     const p = find(n)
@@ -212,8 +213,9 @@ export async function fakeHosting(pulls: FakePull[]): Promise<FakeHosting> {
               stage: c.stage ?? 'test',
               status: JOB[c.state],
               web_url: 'https://ci.example.com/job',
-              started_at: c.state === 'queued' ? null : '2026-10-20T10:00:00Z',
-              finished_at: c.state === 'success' || c.state === 'failure' ? '2026-10-20T10:02:00Z' : null,
+              // Tempi relativi a ora: i finiti sono durati 2 minuti, quelli in corso girano da 6
+              started_at: c.state === 'queued' ? null : minutesAgo(c.state === 'pending' ? 6 : 8),
+              finished_at: c.state === 'success' || c.state === 'failure' ? minutesAgo(6) : null,
             }))
             .reverse(),
         ]),

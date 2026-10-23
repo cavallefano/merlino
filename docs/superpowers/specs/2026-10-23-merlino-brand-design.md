@@ -37,7 +37,7 @@ In inglese, sul modello di quello di Daiquiri:
    - badge piccoli nell'indaco della piastrella: licenza MIT, Electron, Vue, TypeScript, piattaforme.
 2. **Screenshot principale**: chiaro e scuro con `<picture>`.
 3. **Why Merlino**: 5 punti in grassetto.
-4. **A quick tour**: tabella 2×2 di screenshot con didascalie (modifiche locali, pull request con le pipeline, rebase interattivo, Impostazioni).
+4. **A quick tour**: tabella 2×2 di screenshot con didascalie (modifiche locali, pull request con le pipeline, rebase interattivo, palette dei comandi).
 5. **What you get**: tabella per area (storia, modifiche locali, branch e remote, drag & drop, pull request, uso quotidiano, impostazioni, qualità). In `<details>` i gesti del drag & drop e le scorciatoie.
 6. **Download**: i pacchetti per sistema e il primo avvio di un'app non firmata.
 7. **How it works**, **Tech stack** (tabella).
@@ -51,7 +51,7 @@ In inglese, sul modello di quello di Daiquiri:
   - Un repo di prova con nomi fittizi (`demo-app`, autori Ada Lovelace, Grace Hopper, Alan Turing, Katherine Johnson), branch, merge e tag.
   - Il server finto per le pull request, con una pipeline in corso.
 - **Formato**: JPEG in `docs/assets/screenshots/`, larghi 1600 px (`sips` non scrive WebP).
-- **Immagini**: `history-light.jpg` e `history-dark.jpg` (principale), `changes-light.jpg`, `pull-requests-dark.jpg`, `rebase-dark.jpg`, `settings-light.jpg`.
+- **Immagini**: `history-light.jpg` e `history-dark.jpg` (principale), `changes-light.jpg`, `pull-requests-dark.jpg`, `rebase-dark.jpg`, `palette-light.jpg`.
 
 ## Piano
 
