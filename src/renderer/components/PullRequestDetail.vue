@@ -16,7 +16,7 @@ const prs = usePullRequestStore(props.root)
 const repo = useRepoStore(props.root)
 const TABS: PullRequestTab[] = ['conversation', 'commits', 'changes']
 const STATES: CheckState[] = ['failed', 'running', 'passed', 'skipped', 'cancelled']
-const SYMBOL: Record<CheckState | CiStatus['summary'], string> = { passed: '✓', failed: '✕', running: '●', skipped: '–', cancelled: '–', none: '' }
+const SYMBOL: Record<CheckState | CiStatus['summary'], string> = { passed: '✓', failed: '✕', running: '●', queued: '○', skipped: '–', cancelled: '–', none: '' }
 
 const d = computed(() => prs.detail)
 const ci = computed(() => (d.value ? prs.ci.get(d.value.head.sha) : undefined))

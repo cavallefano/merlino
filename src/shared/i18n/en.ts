@@ -294,6 +294,8 @@ export const en = {
   'ci.skipped.other': '{count} skipped',
   'ci.cancelled.one': '{count} cancelled',
   'ci.cancelled.other': '{count} cancelled',
+  'ci.queued.one': '{count} queued',
+  'ci.queued.other': '{count} queued',
   'ci.details': 'Details',
   'merge.title': 'Merge pull request #{number}',
   'merge.methodLabel': 'Method',

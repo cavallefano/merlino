@@ -55,31 +55,71 @@ describe('GitHub', () => {
     expect(d.timeline[2]).toMatchObject({ author: 'Ada' })
   })
 
-  it('CI: stati combinati e check run', async () => {
+  it('CI: check run con coda, gruppi per workflow nell\'ordine di creazione, poi app e altri controlli', async () => {
     const sha = 'a'.repeat(40)
+    const run = (name: string, status: string, conclusion: string | null, suite: number | null, app = 'GitHub Actions', started: string | null = null) => ({
+      name,
+      status,
+      conclusion,
+      html_url: null,
+      started_at: started,
+      completed_at: status === 'completed' ? '2026-10-20T10:05:00Z' : null,
+      check_suite: suite === null ? null : { id: suite },
+      app: { name: app },
+    })
     const { gh } = github([
-      ['GET', `/repos/acme/demo-app/commits/${sha}/status`, { statuses: [{ context: 'lint', state: 'success', target_url: 'https://ci.example.com/1' }] }],
+      ['GET', `/repos/acme/demo-app/commits/${sha}/status`, { statuses: [{ context: 'lint', state: 'success', target_url: 'https://ci.example.com/1', created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:01:00Z' }] }],
       [
         'GET',
         `/repos/acme/demo-app/commits/${sha}/check-runs?per_page=100`,
         {
+          total_count: 5,
           check_runs: [
-            { name: 'test', status: 'completed', conclusion: 'failure', html_url: null },
-            { name: 'build', status: 'in_progress', conclusion: null, html_url: null },
-            { name: 'docs', status: 'completed', conclusion: 'skipped', html_url: null },
+            run('e2e', 'queued', null, 20),
+            run('unit', 'in_progress', null, 10, 'GitHub Actions', '2026-10-20T10:02:00Z'),
+            run('build', 'completed', 'success', 10, 'GitHub Actions', '2026-10-20T10:00:00Z'),
+            run('coverage', 'completed', 'failure', 99, 'Codecov', '2026-10-20T10:03:00Z'),
+            run('deploy', 'waiting', null, 20),
+          ],
+        },
+      ],
+      [
+        'GET',
+        `/repos/acme/demo-app/actions/runs?head_sha=${sha}&per_page=100`,
+        {
+          total_count: 2,
+          workflow_runs: [
+            { name: 'E2E', check_suite_id: 20, created_at: '2026-10-20T10:01:00Z' },
+            { name: 'CI', check_suite_id: 10, created_at: '2026-10-20T10:00:00Z' },
           ],
         },
       ],
     ])
-    expect(await gh.checks('acme/demo-app', sha)).toEqual({
-      summary: 'failed',
-      checks: [
-        { name: 'lint', state: 'passed', url: 'https://ci.example.com/1' },
-        { name: 'test', state: 'failed', url: null },
-        { name: 'build', state: 'running', url: null },
-        { name: 'docs', state: 'skipped', url: null },
+    const ci = await gh.checks('acme/demo-app', sha)
+    expect(ci.summary).toBe('failed')
+    expect(ci.checks.map((c) => [c.group, c.name, c.state])).toEqual([
+      ['CI', 'build', 'passed'],
+      ['CI', 'unit', 'running'],
+      ['E2E', 'deploy', 'queued'],
+      ['E2E', 'e2e', 'queued'],
+      ['Codecov', 'coverage', 'failed'],
+      [null, 'lint', 'passed'],
+    ])
+    expect(ci.checks[0]).toMatchObject({ startedAt: Date.parse('2026-10-20T10:00:00Z') / 1000, finishedAt: Date.parse('2026-10-20T10:05:00Z') / 1000 })
+    expect(ci.checks[5]).toMatchObject({ url: 'https://ci.example.com/1', finishedAt: Date.parse('2026-10-20T10:01:00Z') / 1000 })
+  })
+
+  it('CI: senza Actions (actions/runs non risponde) i check run si raggruppano per app', async () => {
+    const sha = 'b'.repeat(40)
+    const { gh } = github([
+      ['GET', `/repos/acme/demo-app/commits/${sha}/status`, { statuses: [] }],
+      [
+        'GET',
+        `/repos/acme/demo-app/commits/${sha}/check-runs?per_page=100`,
+        { check_runs: [{ name: 'scan', status: 'completed', conclusion: 'success', html_url: null, started_at: null, completed_at: null, check_suite: { id: 1 }, app: { name: 'Scanner' } }] },
       ],
-    })
+    ])
+    expect((await gh.checks('acme/demo-app', sha)).checks).toMatchObject([{ name: 'scan', group: 'Scanner', state: 'passed' }])
   })
 
   it('merge: metodo, SHA e messaggio; poi cancella il branch, ma non quello di un fork', async () => {

@@ -52,22 +52,37 @@ describe('GitLab', () => {
     expect(d.timeline.map((x) => x.kind)).toEqual(['commit', 'comment'])
   })
 
-  it('CI: la pipeline dello SHA e i suoi job; senza pipeline nessun check', async () => {
+  it('CI: i job della pipeline per id, stage nell\'ordine della pipeline, coda, manuali saltati, tempi', async () => {
     const sha = 'a'.repeat(40)
+    const job = (id: number, name: string, stage: string, status: string, started: string | null = null) => ({
+      id,
+      name,
+      stage,
+      status,
+      web_url: `https://gitlab.example.com/j/${id}`,
+      started_at: started,
+      finished_at: null,
+    })
     const { gl } = gitlab([
       ['GET', `${P}/pipelines?sha=${sha}&per_page=1`, [{ id: 7 }]],
       [
         'GET',
         `${P}/pipelines/7/jobs?per_page=100`,
-        [
-          { name: 'lint', status: 'success', web_url: 'https://gitlab.example.com/j/1' },
-          { name: 'test', status: 'running', web_url: 'https://gitlab.example.com/j/2' },
-          { name: 'deploy', status: 'manual', web_url: 'https://gitlab.example.com/j/3' },
-        ],
+        // GitLab le dà dalla più recente
+        [job(5, 'deploy', 'deploy', 'manual'), job(4, 'e2e', 'test', 'pending'), job(3, 'unit', 'test', 'running', '2026-10-20T10:02:00Z'), job(2, 'lint', 'build', 'created'), job(1, 'compile', 'build', 'success', '2026-10-20T10:00:00Z')],
       ],
       ['GET', `${P}/pipelines?sha=${'c'.repeat(40)}&per_page=1`, []],
     ])
-    expect(await gl.checks('acme/demo-app', sha)).toMatchObject({ summary: 'running', checks: [{ state: 'passed' }, { state: 'running' }, { state: 'skipped' }] })
+    const ci = await gl.checks('acme/demo-app', sha)
+    expect(ci.summary).toBe('running')
+    expect(ci.checks.map((c) => [c.group, c.name, c.state])).toEqual([
+      ['build', 'compile', 'passed'],
+      ['build', 'lint', 'queued'],
+      ['test', 'unit', 'running'],
+      ['test', 'e2e', 'queued'],
+      ['deploy', 'deploy', 'skipped'],
+    ])
+    expect(ci.checks[2]).toMatchObject({ startedAt: Date.parse('2026-10-20T10:02:00Z') / 1000, finishedAt: null, url: 'https://gitlab.example.com/j/3' })
     expect(await gl.checks('acme/demo-app', 'c'.repeat(40))).toEqual({ summary: 'none', checks: [] })
   })
 

@@ -296,6 +296,8 @@ export const it: Messages = {
   'ci.skipped.other': '{count} saltati',
   'ci.cancelled.one': '{count} annullato',
   'ci.cancelled.other': '{count} annullati',
+  'ci.queued.one': '{count} in coda',
+  'ci.queued.other': '{count} in coda',
   'ci.details': 'Dettagli',
   'merge.title': 'Merge della pull request #{number}',
   'merge.methodLabel': 'Metodo',

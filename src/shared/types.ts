@@ -388,12 +388,17 @@ export interface HostingRepo {
   deleteBranch: boolean
 }
 
-export type CheckState = 'passed' | 'failed' | 'running' | 'skipped' | 'cancelled'
+export type CheckState = 'passed' | 'failed' | 'running' | 'queued' | 'skipped' | 'cancelled'
 
 export interface Check {
   name: string
   state: CheckState
   url: string | null
+  /** Stage (GitLab) o workflow (GitHub); null per gli altri controlli. */
+  group: string | null
+  /** Secondi dall'epoch; null se il job non è partito o non è finito. */
+  startedAt: number | null
+  finishedAt: number | null
 }
 
 export interface CiStatus {
