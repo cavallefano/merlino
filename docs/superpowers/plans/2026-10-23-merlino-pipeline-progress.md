@@ -794,7 +794,7 @@ test('GitLab: pipeline in corso con 40 job, barra nella lista e controlli per st
   await expect(page.getByTestId('ci-job')).toHaveCount(24)
   await page.getByTestId('ci-filter').fill('deploy:1')
   await expect(page.getByTestId('ci-group')).toHaveCount(1)
-  await expect(page.getByTestId('ci-job')).toHaveText([/deploy:1\b/, /deploy:10/, /deploy:11/, /deploy:12/])
+  await expect(page.getByTestId('ci-job').locator('.name')).toHaveText(['deploy:1', 'deploy:10', 'deploy:11', 'deploy:12'])
   await app.close()
   await server.close()
 })
