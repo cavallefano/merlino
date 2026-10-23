@@ -118,6 +118,8 @@ test('file di un commit verso altre app: startDrag riceve il contenuto di quel c
     }
   })
   await page.getByTestId('commit-row').filter({ hasText: 'commit 1' }).click()
+  // Il dettaglio arriva dopo il clic: prima i file sono ancora quelli del commit selezionato all'avvio
+  await expect(page.getByTestId('commit-message')).toContainText('commit 1')
   await page.getByTestId('file-row').dispatchEvent('dragstart')
   const dragged = await app.evaluate(() => (globalThis as unknown as { dragged?: string }).dragged)
   expect(dragged && readFileSync(dragged, 'utf8')).toBe('1\n')
