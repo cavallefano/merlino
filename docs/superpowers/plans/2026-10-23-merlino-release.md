@@ -258,3 +258,15 @@ Note di esecuzione in fondo a questo piano, poi:
 git add README.md docs
 git commit -m "docs: installazione dai pacchetti delle release e come si fa una release"
 ```
+
+---
+
+## Note di esecuzione
+
+- **Commit**: Task 1 `7881300`, Task 2 `fcbc2ba`, Task 3 in questo commit.
+- **Verifica in locale**:
+  - il `.dmg` x64 compilato sul Mac Intel si chiama `Merlino-0.1.0-mac-x64.dmg`;
+  - `codesign` dà `Signature=adhoc` e la verifica `--deep --strict` passa;
+  - il YAML del workflow si legge, con i job `check` e `build` e gli eventi `push` (tag) e `workflow_dispatch`;
+  - lint, typecheck e test unit e di integrazione verdi.
+- **Da provare dopo il merge in `main`**: l'avvio a mano del workflow (le build su Windows e Linux e l'arm64 di macOS non si possono provare da qui), poi la prima release `v0.1.0`.
