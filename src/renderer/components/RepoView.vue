@@ -4,15 +4,19 @@ import { computed, onMounted } from 'vue'
 import type { MessageKey } from '../../shared/i18n'
 import type { Operation } from '../../shared/types'
 import { push } from '../actions/branches'
+import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
 import CommitDetail from './CommitDetail.vue'
 import HistoryView from './HistoryView.vue'
+import PullRequestDetail from './PullRequestDetail.vue'
+import PullRequestList from './PullRequestList.vue'
 import RebaseDialog from './RebaseDialog.vue'
 import RepoSidebar from './RepoSidebar.vue'
 import WorkingView from './WorkingView.vue'
 
 const props = defineProps<{ root: string }>()
 const repo = useRepoStore(props.root)
+const prs = usePullRequestStore(props.root)
 
 const OPERATIONS: Record<Operation, MessageKey> = {
   merge: 'operation.merge',
@@ -36,6 +40,8 @@ function step(s: 'continue' | 'skip' | 'abort') {
 
 onMounted(() => {
   if (!repo.history.version) void repo.refresh()
+  // Il numero delle pull request aperte, per la sidebar
+  if (!prs.remotes.length) void prs.refresh()
 })
 </script>
 
@@ -66,9 +72,15 @@ onMounted(() => {
     </div>
     <div class="panes">
       <RepoSidebar :root="root" />
-      <HistoryView :root="root" />
-      <WorkingView v-if="repo.view === 'working'" :root="root" />
-      <CommitDetail v-else :root="root" />
+      <template v-if="repo.page === 'pullRequests'">
+        <PullRequestList :root="root" />
+        <PullRequestDetail :root="root" />
+      </template>
+      <template v-else>
+        <HistoryView :root="root" />
+        <WorkingView v-if="repo.view === 'working'" :root="root" />
+        <CommitDetail v-else :root="root" />
+      </template>
     </div>
     <RebaseDialog v-if="repo.rebasePlan" :root="root" />
   </section>

@@ -16,7 +16,7 @@ export function registerWorkingActions(): void {
       id: 'working.commit',
       title: 'Commit',
       keys: shortcuts['working.commit'],
-      when: () => repo()?.view === 'working' && repo()?.canCommit === true,
+      when: () => repo()?.page === 'history' && repo()?.view === 'working' && repo()?.canCommit === true,
       run: () => repo()?.commitChanges(),
     },
     {

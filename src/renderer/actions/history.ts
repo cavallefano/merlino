@@ -16,7 +16,8 @@ export function registerHistoryActions(): void {
       get title() { return t('action.history.search') },
       keys: shortcuts['history.search'],
       when: () => app.active !== null,
-      run: () => document.querySelector<HTMLInputElement>('[data-testid="history-search"]')?.focus(),
+      // Nelle pull request cerca fra quelle
+      run: () => document.querySelector<HTMLInputElement>('[data-testid="history-search"], [data-testid="pr-search"]')?.focus(),
     },
     { id: 'commit.copySha', get title() { return t('action.commit.copySha') }, when: hasCommit, run: () => navigator.clipboard.writeText(repo()?.detail?.commit.sha ?? '') },
     { id: 'commit.copyMessage', get title() { return t('action.commit.copyMessage') }, when: hasCommit, run: () => navigator.clipboard.writeText(repo()?.detail?.message ?? '') },
