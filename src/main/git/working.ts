@@ -83,6 +83,18 @@ export async function stashPush(runner: GitRunner, message: string, includeUntra
   await runner.run(['stash', 'push', ...(includeUntracked ? ['-u'] : []), ...(message ? ['-m', message] : [])], write)
 }
 
+/** Stash solo dei percorsi indicati (-u per includere i non tracciati). */
+export async function stashFiles(runner: GitRunner, paths: string[], untracked: boolean): Promise<void> {
+  await runner.run(['stash', 'push', ...(untracked ? ['-u'] : []), '--', ...paths], write)
+}
+
+/** Applica alla cartella di lavoro le modifiche di un file in un commit (o stash), rispetto al primo genitore. */
+export async function applyFileChanges(runner: GitRunner, sha: string, path: string): Promise<void> {
+  const patch = (await runner.run(['show', '--format=', '--binary', '--diff-merges=first-parent', sha, '--', path])).stdout
+  if (!patch.trim()) throw new Error(`Nessuna modifica di ${path} da applicare`)
+  await runner.run(['apply', '-'], { ...write, stdin: patch })
+}
+
 export async function stashAction(runner: GitRunner, action: 'apply' | 'pop' | 'drop', ref: string): Promise<void> {
   await runner.run(['stash', action, '-q', ref], write)
 }

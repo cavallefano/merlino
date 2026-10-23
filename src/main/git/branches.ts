@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Commit, CommandLogEntry, Operation, RebaseStep, RepoCommand } from '../../shared/types'
 import { LOG_FORMAT, parseLog } from './log'
-import { GitRunner } from './runner'
+import { GitError, GitRunner } from './runner'
+import { applyFileChanges, stashFiles } from './working'
 
 const write = { write: true }
 type Progress = (line: string) => void
@@ -87,6 +88,23 @@ export async function push(r: GitRunner, remote: string, force: boolean, onProgr
   const upstream = await r.run(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], { okCodes: [0, 128] })
   const lease = force ? ['--force-with-lease'] : []
   await run(r, upstream.exitCode === 0 ? ['push', '--progress', ...lease] : ['push', '--progress', ...lease, '-u', remote, 'HEAD'], onProgress)
+}
+
+/** Push di un branch qualsiasi (anche non corrente), con upstream. */
+export const pushBranch = (r: GitRunner, remote: string, branch: string, remoteBranch: string, onProgress: Progress) =>
+  run(r, ['push', '--progress', '-u', remote, `refs/heads/${branch}:refs/heads/${remoteBranch}`], onProgress)
+
+/** Aggiorna un branch non corrente senza checkout, solo in fast-forward. */
+export async function fastForward(r: GitRunner, branch: string, from: string): Promise<void> {
+  try {
+    await run(r, ['fetch', '.', `${from}:refs/heads/${branch}`])
+  } catch (e) {
+    // git lo segnala come "[rejected]", che explain() tradurrebbe in un push rifiutato
+    if (e instanceof GitError && /rejected|non-fast-forward/.test(e.info.stderr)) {
+      throw new GitError({ ...e.info, message: `${branch} non si può aggiornare in fast-forward da ${from}: fai checkout e merge` })
+    }
+    throw e
+  }
 }
 
 export const addRemote = (r: GitRunner, name: string, url: string) => run(r, ['remote', 'add', name, url])
@@ -202,6 +220,14 @@ export function runCommand(r: GitRunner, c: RepoCommand, onProgress: Progress, p
       return addRemote(r, c.name, c.url)
     case 'removeRemote':
       return removeRemote(r, c.name)
+    case 'pushBranch':
+      return pushBranch(r, c.remote, c.branch, c.remoteBranch, onProgress)
+    case 'fastForward':
+      return fastForward(r, c.branch, c.from)
+    case 'stashFiles':
+      return stashFiles(r, c.paths, c.untracked)
+    case 'applyFileChanges':
+      return applyFileChanges(r, c.sha, c.path)
     case 'rebaseInteractive':
       return rebaseInteractive(r, c.sha, c.steps)
   }

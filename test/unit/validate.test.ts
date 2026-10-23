@@ -16,6 +16,23 @@ describe('validazione degli argomenti dal renderer', () => {
     expect(() => gitUrl('--upload-pack=touch /tmp/x')).toThrow()
   })
 
+  it('comandi del drag & drop', () => {
+    expect(repoCommand({ kind: 'pushBranch', remote: 'origin', branch: 'feature/a', remoteBranch: 'feature/a' })).toEqual({
+      kind: 'pushBranch',
+      remote: 'origin',
+      branch: 'feature/a',
+      remoteBranch: 'feature/a',
+    })
+    expect(repoCommand({ kind: 'stashFiles', paths: ['a.txt'], untracked: 1 })).toEqual({ kind: 'stashFiles', paths: ['a.txt'], untracked: false })
+    for (const bad of [
+      { kind: 'pushBranch', remote: 'origin', branch: 'a:b', remoteBranch: 'a' },
+      { kind: 'fastForward', branch: '-x', from: 'origin/main' },
+      { kind: 'stashFiles', paths: ['../fuori'] },
+      { kind: 'stashFiles', paths: [] },
+      { kind: 'applyFileChanges', sha: 'HEAD', path: 'a.txt' },
+    ]) expect(() => repoCommand(bad)).toThrow()
+  })
+
   it('comandi: tiene solo i campi della variante e rifiuta i tipi sconosciuti', () => {
     expect(repoCommand({ kind: 'push', remote: 'origin', force: 'yes', extra: 1 })).toEqual({ kind: 'push', remote: 'origin', force: false })
     expect(repoCommand({ kind: 'reset', sha: 'abc1234', mode: 'hard' })).toEqual({ kind: 'reset', sha: 'abc1234', mode: 'hard' })
