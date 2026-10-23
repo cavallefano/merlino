@@ -244,6 +244,12 @@ To add a language:
 
 `npm test` checks that every translation has the same placeholders as English and no empty text.
 
+## Support the project
+
+Merlino is free and always will be. If it saves you time, you can leave a tip: it helps keep the project going.
+
+<a href='https://ko-fi.com/Q8F229BNA3' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
 ## License
 
 Merlino is free software under the [MIT License](LICENSE). You can use, modify and redistribute it, also in commercial products, as long as you keep the copyright notice.
