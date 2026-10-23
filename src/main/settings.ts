@@ -11,6 +11,8 @@ const DEFAULTS: AppSettings = {
   preferences: DEFAULT_PREFERENCES,
   commitTemplates: [],
   defaultTemplates: {},
+  accounts: [],
+  remoteAccounts: {},
 }
 const MAX_RECENT = 10
 
