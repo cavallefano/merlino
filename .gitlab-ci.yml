@@ -1,0 +1,14 @@
+# Lint, typecheck, test unit e di integrazione su Linux.
+# macOS e Windows si provano a mano prima di ogni release (vedi spec).
+test:
+  image: node:24
+  cache:
+    key:
+      files: [package-lock.json]
+    paths: [.npm/]
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - npm run lint
+    - npm run typecheck
+    - npm test
