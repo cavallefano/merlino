@@ -61,6 +61,8 @@ html, body, #app { height: 100%; margin: 0; background: var(--bg); color: var(--
 button { font: inherit; color: inherit; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 5px; padding: 4px 10px; cursor: pointer; }
 button:hover { background: var(--bg-hover); }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button.link { padding: 0; border: 0; background: none; color: var(--accent); }
+button.link:hover { background: none; text-decoration: underline; }
 button:disabled { opacity: 0.5; cursor: default; }
 input { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 5px 8px; }
 input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
@@ -76,6 +78,11 @@ dialog { padding: 16px; color: inherit; background: var(--bg); border: 1px solid
 dialog::backdrop { background: rgb(0 0 0 / 0.25); }
 dialog h2 { margin: 0 0 12px; font-size: 15px; }
 dialog footer { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+/* Campi dei dialog: etichetta sopra, a tutta larghezza */
+dialog .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 12px; }
+dialog .field > span { color: var(--fg-muted); }
+dialog .field textarea { font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 5px 8px; resize: vertical; }
+dialog .check { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
 
 /* Moduli delle Impostazioni */
 select { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 4px 6px; }

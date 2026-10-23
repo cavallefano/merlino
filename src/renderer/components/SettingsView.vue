@@ -3,6 +3,7 @@ import type { MessageKey } from '../../shared/i18n'
 import { t } from '../i18n'
 import { type Component, computed, onMounted, onUnmounted } from 'vue'
 import { type SettingsSection, useAppStore } from '../stores/app'
+import AccountSettings from './settings/AccountSettings.vue'
 import CommitSettings from './settings/CommitSettings.vue'
 import DiffSettings from './settings/DiffSettings.vue'
 import GeneralSettings from './settings/GeneralSettings.vue'
@@ -15,6 +16,7 @@ const SECTIONS: { id: SettingsSection; title: MessageKey; component: Component }
   { id: 'commit', title: 'settings.commit', component: CommitSettings },
   { id: 'diff', title: 'settings.diff', component: DiffSettings },
   { id: 'integrations', title: 'settings.integrations', component: IntegrationSettings },
+  { id: 'accounts', title: 'settings.accounts', component: AccountSettings },
   { id: 'git', title: 'settings.git', component: GitSettings },
 ]
 const current = computed(() => SECTIONS.find((s) => s.id === app.settingsSection) ?? SECTIONS[0])
