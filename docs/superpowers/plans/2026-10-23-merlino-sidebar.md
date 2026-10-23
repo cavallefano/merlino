@@ -714,3 +714,20 @@ git commit -m "docs: screenshot del README con la nuova sidebar e note di esecuz
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
+
+---
+
+## Note di esecuzione
+
+- **Commit**: Task 1 `80b1bc2`, Task 2 `f0826ea`, Task 3 in questo commit.
+- **Deviazioni dal piano**:
+  - due E2E esistenti cercavano la riga di un branch col testo esatto (`^main$`, `^search$`). Ora la riga del branch corrente contiene anche HEAD, quindi il filtro guarda il nome della riga (`.name`): l'helper `branchItem` in `drag.spec.ts` e il Finish in `flow.spec.ts`;
+  - la voce Local Changes è anche una destinazione del drag & drop, come la riga "Local changes" in cima alla storia.
+- **Licenza delle icone**: il commento `/*! … */` di `AppIcon.vue` resta nel bundle (`out/renderer/assets/index-*.js`).
+- **Screenshot**:
+  - sidebar in chiaro e in scuro, con la finestra nascosta: allineamento, HEAD, separatori, voce attiva, locali colorati e remoti grigi, una sola riga evidenziata;
+  - i 6 screenshot del README rigenerati: ora mostrano anche il pulsante ⤢ e quello del layout.
+- **Verifica**:
+  - lint e typecheck puliti;
+  - 210 test unit e di integrazione (1 saltato), di cui 1 nuovo in `layout.test.ts`;
+  - 49 E2E con la finestra nascosta (1 saltato: gli screenshot del README), di cui 3 nuovi in `sidebar.spec.ts`.
