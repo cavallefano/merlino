@@ -1386,3 +1386,21 @@ Screenshot nascosti dei tre dialog in inglese e in italiano (spec temporanea, no
 git add README.md docs
 git commit -m "docs: git flow nel README e note di esecuzione"
 ```
+
+---
+
+## Note di esecuzione
+
+- **Commit**: Task 1 `4ce944c`, Task 2 `ed86566`, Task 3 `211ceb1`, Task 4 `6fb62f7`, Task 5 in questo commit.
+- **Scelte prese durante il lavoro** (spec aggiornata):
+  - Release e hotfix tornano in develop (o nella release aperta) con il merge del **tag**, come git-flow-avh, non del branch: così develop contiene il tag e `git describe` funziona. Le destinazioni dopo la prima risultano "già unite" quando contengono il tag.
+  - Il branch si cancella con `git branch -D` se è nell'ultima destinazione: `-d` rifiuta un branch pubblicato con commit non ancora pushati, anche se è già unito in develop.
+  - Il riepilogo del Finish segue l'ordine vero: merge nella prima destinazione, tag, merge del tag nelle altre.
+  - Nel dialog di init il suggerimento dice da dove nasce develop: dal suo branch remoto, se c'è (e lo segue), altrimenti dalla produzione.
+  - Il tag sul commit che ha portato il branch in produzione (`--first-parent --ancestry-path`) è stato provato su git 2.50, con commit su main prima e dopo il merge e con il fast-forward.
+- **Verifica**:
+  - lint e typecheck puliti;
+  - 203 test unit e di integrazione (1 saltato: le prestazioni, opzionale), di cui 10 di integrazione su git flow;
+  - 41 E2E con la finestra nascosta, di cui 2 nuovi su git flow;
+  - screenshot nascosti dei tre dialog, in inglese e in italiano.
+  - `graph.test.ts` ("invarianti su 2000 commit casuali", seme fisso) è fallito una volta su una suite completa e poi è passato 6 volte su 6. È un timeout sotto carico, già presente prima di questo lavoro.
