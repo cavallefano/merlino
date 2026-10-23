@@ -4,10 +4,13 @@ import { computed } from 'vue'
 import { formatDate } from '../history/format'
 import { useRepoStore } from '../stores/repo'
 import { fileDragSource } from '../drag/drag'
+import { SIZES, useLayout } from '../layout'
 import DiffView from './DiffView.vue'
+import PaneSplitter from './PaneSplitter.vue'
 
 const props = defineProps<{ root: string }>()
 const repo = useRepoStore(props.root)
+const layout = useLayout()
 const commit = computed(() => repo.detail?.commit)
 const lines = computed(() => repo.detail?.message.split('\n') ?? [])
 const body = computed(() => lines.value.slice(1).join('\n').trim())
@@ -46,7 +49,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           </template>
         </dl>
       </header>
-      <ul class="files">
+      <ul class="files" :style="{ height: `${layout.commitFiles}px` }">
         <li
           v-for="f in repo.detail.files"
           :key="f.path"
@@ -54,6 +57,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           data-testid="file-row"
           v-bind="fileDragSource(repo, { kind: 'commitFile', sha: commit.sha, path: f.path }, { path: f.path, sha: commit.sha })"
           @click="repo.selectFile(f)"
+          @dblclick="repo.diffDialog = 'commit'"
         >
           <span class="status" :class="f.status">{{ f.status }}</span>
           <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
@@ -63,15 +67,27 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           </span>
         </li>
       </ul>
-      <div class="diff-bar">
-        <span class="path muted">{{ repo.selectedFile?.path }}</span>
-        <button data-testid="diff-split" @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
-        <label>
-          <input type="checkbox" data-testid="diff-whitespace" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
-          {{ t('diff.ignoreWhitespace') }}
-        </label>
+      <PaneSplitter
+        v-model="layout.commitFiles"
+        orientation="row"
+        :default-value="SIZES.commitFiles.default"
+        :min="SIZES.commitFiles.min"
+        :min-after="120"
+        :label="t('layout.resize')"
+        data-testid="split-files"
+      />
+      <div class="diff-area">
+        <div class="diff-bar">
+          <span class="path muted">{{ repo.selectedFile?.path }}</span>
+          <button data-testid="diff-popup" :aria-label="t('diff.expand')" :title="t('diff.expand')" @click="repo.diffDialog = 'commit'">⤢</button>
+          <button data-testid="diff-split" @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
+          <label>
+            <input type="checkbox" data-testid="diff-whitespace" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
+            {{ t('diff.ignoreWhitespace') }}
+          </label>
+        </div>
+        <DiffView v-if="repo.diff" :diff="repo.diff" :split="repo.diffOptions.split" @force="repo.loadDiff(true)" />
       </div>
-      <DiffView v-if="repo.diff" :diff="repo.diff" :split="repo.diffOptions.split" @force="repo.loadDiff(true)" />
     </template>
   </section>
 </template>
@@ -85,7 +101,8 @@ dt { color: var(--fg-muted); }
 dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .small { padding: 0 6px; font-size: 11px; }
 .parent { margin-right: 8px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
-.files { max-height: 25%; margin: 0; padding: 4px 0; overflow: auto; list-style: none; border-bottom: 1px solid var(--border); }
+.files { flex: 0 1 auto; min-height: 48px; margin: 0; padding: 4px 0; overflow: auto; list-style: none; }
+.diff-area { flex: 1 1 0; min-height: 120px; display: flex; flex-direction: column; }
 .files li { display: flex; align-items: center; gap: 8px; padding: 2px 12px; cursor: default; }
 .files li:hover { background: var(--bg-hover); }
 .files li.selected { background: var(--bg-hover); font-weight: 600; }

@@ -95,11 +95,13 @@ describe('preferenze', () => {
     expect(preferences(DEFAULT_PREFERENCES, { theme: 'dark', extra: 1 })).toEqual({ ...DEFAULT_PREFERENCES, theme: 'dark' })
     expect(preferences(DEFAULT_PREFERENCES, { bodyGuide: 0 }).bodyGuide).toBe(0)
     expect(preferences(DEFAULT_PREFERENCES, { editorApp: '/Applications/Code.app' }).editorApp).toBe('/Applications/Code.app')
+    expect(preferences(DEFAULT_PREFERENCES, { panelLayout: 'vertical' }).panelLayout).toBe('vertical')
   })
 
   it('rifiuta valori fuori intervallo, tipi sbagliati e vincoli fra campi violati', () => {
     for (const bad of [
       { theme: 'blu' },
+      { panelLayout: 'diagonal' },
       { autoFetchMinutes: 61 },
       { autoFetchMinutes: 1.5 },
       { diffContext: 0 },

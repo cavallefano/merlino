@@ -249,6 +249,7 @@ export function preferences(current: Preferences, patch: unknown): Preferences {
   return {
     language: oneOf(p.language, LANGUAGES, t('setting.language')),
     theme: oneOf(p.theme, ['system', 'light', 'dark'] as const, t('setting.theme')),
+    panelLayout: oneOf(p.panelLayout, ['horizontal', 'vertical'] as const, t('setting.panelLayout')),
     autoFetchMinutes: intIn(p.autoFetchMinutes, t('setting.autoFetch'), 0, 60),
     fetchPrune: bool(p.fetchPrune, t('setting.prune')),
     restoreTabs: bool(p.restoreTabs, t('setting.restoreTabs')),

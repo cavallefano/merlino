@@ -33,5 +33,10 @@ export function registerBuiltinActions(): void {
     },
     { id: 'settings.open', get title() { return t('action.settings.open') }, keys: shortcuts['settings.open'], run: () => { app.settingsSection ??= 'general' } },
     { id: 'output.toggle', get title() { return t('action.output.toggle') }, keys: shortcuts['output.toggle'], run: () => { app.outputOpen = !app.outputOpen } },
+    {
+      id: 'layout.toggle',
+      get title() { return t('action.layout.toggle') },
+      run: () => app.updatePreferences({ panelLayout: app.preferences.panelLayout === 'vertical' ? 'horizontal' : 'vertical' }),
+    },
   )
 }
