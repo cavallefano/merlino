@@ -40,11 +40,19 @@ export function parseRefs(out: string, remoteConfig: string): RefsSnapshot {
   return { branches, remotes: [...remotes.values()], tags }
 }
 
+// exit 1: nessun remote configurato
+const readRemoteConfig = async (runner: GitRunner): Promise<string> =>
+  (await runner.run(['config', '--get-regexp', '^remote\\..*\\.url$'], { okCodes: [0, 1] })).stdout
+
 export async function readRefs(runner: GitRunner): Promise<RefsSnapshot> {
   const [refs, config] = await Promise.all([
     runner.run(['for-each-ref', `--format=${REFS_FORMAT}`, 'refs/heads', 'refs/remotes', 'refs/tags']),
-    // exit 1: nessun remote configurato
-    runner.run(['config', '--get-regexp', '^remote\\..*\\.url$'], { okCodes: [0, 1] }),
+    readRemoteConfig(runner),
   ])
-  return parseRefs(refs.stdout, config.stdout)
+  return parseRefs(refs.stdout, config)
+}
+
+/** I remote con l'URL configurato, senza le riscritture insteadOf. */
+export async function readRemotes(runner: GitRunner): Promise<{ name: string; url: string }[]> {
+  return parseRefs('', await readRemoteConfig(runner)).remotes.map(({ name, url }) => ({ name, url }))
 }

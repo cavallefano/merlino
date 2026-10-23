@@ -38,6 +38,12 @@ export function parseNumstat(out: string): Map<string, Pick<FileChange, 'added' 
   return map
 }
 
+/** File cambiati, dall'output di --name-status -z e --numstat -z dello stesso diff. */
+export function fileChanges(nameStatus: string, numstat: string): FileChange[] {
+  const counts = parseNumstat(numstat)
+  return parseNameStatus(nameStatus).map((f) => ({ ...f, ...(counts.get(f.path) ?? { added: null, deleted: null }) }))
+}
+
 export async function readCommitDetail(runner: GitRunner, sha: string): Promise<CommitDetail> {
   const changes = ['show', '--format=', '-z', '-M', '--diff-merges=first-parent']
   const [meta, nameStatus, numstat] = await Promise.all([
@@ -46,10 +52,9 @@ export async function readCommitDetail(runner: GitRunner, sha: string): Promise<
     runner.run([...changes, '--numstat', sha]),
   ])
   const parts = meta.stdout.split('\0')
-  const counts = parseNumstat(numstat.stdout)
   return {
     commit: parseLog(parts.slice(0, 10).join('\0'))[0],
     message: (parts[10] ?? '').trimEnd(),
-    files: parseNameStatus(nameStatus.stdout).map((f) => ({ ...f, ...(counts.get(f.path) ?? { added: null, deleted: null }) })),
+    files: fileChanges(nameStatus.stdout, numstat.stdout),
   }
 }
