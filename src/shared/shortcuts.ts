@@ -19,6 +19,8 @@ export const shortcuts: Record<string, Keys> = {
   'history.search': { key: 'f', mod: true },
   'working.commit': { key: 'Enter', mod: true },
   'settings.open': { key: ',', mod: true },
+  'view.history': { key: '1', mod: true },
+  'view.pullRequests': { key: '2', mod: true },
 }
 
 /** Formato degli acceleratori di Electron, es. CmdOrCtrl+Shift+P. */

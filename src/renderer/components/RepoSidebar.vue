@@ -6,10 +6,12 @@ import { branchMenu, remoteBranchMenu, remoteMenu, tagMenu } from '../actions/br
 import { dragSource, dropTarget } from '../drag/drag'
 import type { DragSource, DropTarget } from '../drag/drop-actions'
 import { treeRows } from '../history/branch-tree'
+import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
 
 const props = defineProps<{ root: string }>()
 const repo = useRepoStore(props.root)
+const prs = usePullRequestStore(props.root)
 
 interface Row {
   key: string
@@ -108,11 +110,17 @@ const sections = computed(() => [
 /** Attributi di drag & drop di una riga o di un'intestazione. */
 const dnd = (source?: DragSource, target?: DropTarget) => ({ ...(source ? dragSource(source) : {}), ...(target ? dropTarget(repo, target) : {}) })
 
-const isSelected = (sha: string | undefined) => repo.view === 'commit' && !!sha && repo.selected === sha
+const isSelected = (sha: string | undefined) => repo.page === 'history' && repo.view === 'commit' && !!sha && repo.selected === sha
+
+/** Un commit selezionato dalla sidebar si guarda nella storia. */
+function showCommit(sha: string) {
+  repo.page = 'history'
+  void repo.select(sha)
+}
 
 function click(row: Row) {
   if (row.folder) toggle(row.folder)
-  else if (row.sha) void repo.select(row.sha)
+  else if (row.sha) showCommit(row.sha)
 }
 
 function drop(stash: StashEntry) {
@@ -122,6 +130,18 @@ function drop(stash: StashEntry) {
 
 <template>
   <aside class="sidebar">
+    <nav class="pages">
+      <button :class="{ active: repo.page === 'history' }" data-testid="page-history" @click="repo.page = 'history'">{{ t('page.history') }}</button>
+      <button
+        v-bind="dnd(undefined, { kind: 'pullRequests' })"
+        :class="{ active: repo.page === 'pullRequests' }"
+        data-testid="page-pull-requests"
+        @click="repo.page = 'pullRequests'"
+      >
+        <span class="name">{{ t('page.pullRequests') }}</span>
+        <span v-if="prs.openCount !== null" class="track">{{ prs.openCount }}</span>
+      </button>
+    </nav>
     <section v-for="s in sections" :key="s.testid">
       <h3 v-bind="dnd(undefined, s.drop)" :data-testid="s.testid" @click="toggle(s.testid)">{{ s.title }}</h3>
       <template v-if="!collapsed.has(s.testid)">
@@ -158,7 +178,7 @@ function drop(stash: StashEntry) {
             :class="{ selected: isSelected(s.sha) }"
             :title="s.message"
             data-testid="stash-item"
-            @click="repo.select(s.sha)"
+            @click="showCommit(s.sha)"
           >
             <span class="name">{{ s.message }}</span>
             <span class="actions" @click.stop>
@@ -175,6 +195,10 @@ function drop(stash: StashEntry) {
 
 <style scoped>
 .sidebar { min-width: 0; min-height: 0; overflow: auto; background: var(--bg-alt); border-right: 1px solid var(--border); user-select: none; }
+.pages { display: flex; flex-direction: column; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.pages button { display: flex; align-items: center; gap: 4px; padding: 4px 16px; border: 0; border-radius: 0; background: transparent; text-align: left; }
+.pages button:hover { background: var(--bg-hover); }
+.pages button.active { background: var(--selected-bg); font-weight: 600; }
 h3 { margin: 0; padding: 8px 12px 4px; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--fg-muted); cursor: default; }
 ul { margin: 0; padding: 0; list-style: none; }
 li { display: flex; align-items: center; gap: 4px; padding: 3px 8px 3px 16px; cursor: default; }

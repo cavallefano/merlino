@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { addRecent, SettingsStore } from '../../src/main/settings'
 import { DEFAULT_PREFERENCES } from '../../src/shared/preferences'
 
-const base = { gitPath: 'git', openRepos: [], activeRepo: null, recentRepos: [], preferences: DEFAULT_PREFERENCES, commitTemplates: [], defaultTemplates: {} }
+const base = { gitPath: 'git', openRepos: [], activeRepo: null, recentRepos: [], preferences: DEFAULT_PREFERENCES, commitTemplates: [], defaultTemplates: {}, accounts: [], remoteAccounts: {} }
 const file = () => join(mkdtempSync(join(tmpdir(), 'merlino-settings-')), 'sub', 'settings.json')
 
 describe('SettingsStore', () => {

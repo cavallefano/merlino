@@ -29,6 +29,9 @@ export class GitError extends Error {
 
 let nextLogId = 1
 
+/** Id della prossima riga del log dei comandi (git e chiamate HTTP). */
+export const logId = (): number => nextLogId++
+
 /** Esegue git in una cartella. Le letture vanno in parallelo, le scritture in coda (niente conflitti su index.lock). */
 export class GitRunner {
   private writes: Promise<unknown> = Promise.resolve()
@@ -73,7 +76,7 @@ export class GitRunner {
         const ok = exitCode !== null && okCodes.includes(exitCode)
         // Alcuni errori (es. i conflitti di merge) git li scrive su stdout
         const stderr = ok || errText.trim() ? errText : stdout
-        this.log({ id: nextLogId++, repo: this.cwd, args, startedAt, durationMs: Date.now() - startedAt, exitCode, ok, stderr })
+        this.log({ id: logId(), repo: this.cwd, args, startedAt, durationMs: Date.now() - startedAt, exitCode, ok, stderr })
         if (exitCode !== null && ok) {
           resolve({ stdout, stderr, exitCode })
         } else {

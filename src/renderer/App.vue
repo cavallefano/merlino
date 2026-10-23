@@ -4,6 +4,7 @@ import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { registerBranchActions } from './actions/branches'
 import { registerBuiltinActions, registry } from './actions/builtin'
 import { registerHistoryActions } from './actions/history'
+import { registerPullRequestActions } from './actions/pull-requests'
 import { registerWorkingActions } from './actions/working'
 import CommandPalette from './components/CommandPalette.vue'
 import DropHint from './components/DropHint.vue'
@@ -22,6 +23,7 @@ registerBuiltinActions()
 registerHistoryActions()
 registerWorkingActions()
 registerBranchActions()
+registerPullRequestActions()
 
 // Carattere e tab del codice nei diff, dalle preferenze
 watchEffect(() => {

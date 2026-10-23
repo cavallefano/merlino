@@ -57,6 +57,8 @@ function define(root: string) {
     const countsTick = ref(0)
     const fileCounts = new Map<string, number>()
 
+    /** Cosa mostrano i pannelli centrale e destro: la storia o le pull request. */
+    const page = ref<'history' | 'pullRequests'>('history')
     const view = ref<'commit' | 'working'>('commit')
     const selected = ref<string | null>(null)
     const selectedIndex = ref(-1)
@@ -417,7 +419,7 @@ function define(root: string) {
     return {
       root, info, error, refresh,
       history, query, pagesTick, loadHistory, ensureRows, commitAt, rowAt, fileCountOf, search, move,
-      view, selected, selectedIndex, detail, selectedFile, diff, diffOptions, select, selectFile, loadDiff, toggleSplit, toggleWhitespace,
+      page, view, selected, selectedIndex, detail, selectedFile, diff, diffOptions, select, selectFile, loadDiff, toggleSplit, toggleWhitespace,
       status, stashes, working, workingDiff, selectedLines, subject, body, amend, changeCount, canCommit,
       selectWorking, selectWorkingFile, stage, unstage, discard, stageEverything, unstageEverything, ignore,
       applyLines, toggleLine, clearSelection, setAmend, commitChanges, stashPush, stashAction,

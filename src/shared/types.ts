@@ -23,6 +23,8 @@ export interface CommandLogEntry {
   exitCode: number | null
   ok: boolean
   stderr: string
+  /** Chiamata alle API di un servizio: args è [metodo, URL] ed exitCode lo stato HTTP. */
+  http?: boolean
 }
 
 export interface GitErrorInfo {
@@ -31,6 +33,8 @@ export interface GitErrorInfo {
   stderr: string
   /** Prima riga utile di stderr, da mostrare all'utente. */
   message: string
+  /** Errori dei servizi: 'auth' quando il token non è (più) valido, per proporre di aggiornarlo. */
+  code?: 'auth'
 }
 
 export interface RepoInfo {
@@ -92,6 +96,10 @@ export interface AppSettings {
   commitTemplates: CommitTemplate[]
   /** Radice del repo → id del template predefinito. */
   defaultTemplates: Record<string, string>
+  /** Account di GitHub e GitLab, senza token (stanno cifrati in tokens.json). */
+  accounts: HostingAccount[]
+  /** "<radice del repo>\n<remote>" → id dell'account scelto dal menu del remote. */
+  remoteAccounts: Record<string, string>
 }
 
 export interface CommitRef {
@@ -309,3 +317,115 @@ export type RepoCommand =
   | { kind: 'rebaseInteractive'; sha: string; steps: RebaseStep[] }
 
 export type MenuItem = { id: string; label: string; enabled?: boolean } | { separator: true }
+
+export type HostingService = 'github' | 'gitlab'
+
+/** Account di GitHub o GitLab; il token sta cifrato in tokens.json, mai qui. */
+export interface HostingAccount {
+  id: string
+  service: HostingService
+  /** Server, es. github.com o gitlab.example.com:8443 */
+  host: string
+  username: string
+}
+
+/** Un remote del repo e l'account che Merlino usa per le sue pull request. */
+export interface PullRequestRemote {
+  name: string
+  /** null se l'URL non è di un server (cartella locale, file://). */
+  host: string | null
+  account: HostingAccount | null
+}
+
+export type PullRequestState = 'open' | 'merged' | 'closed'
+export type PullRequestFilter = PullRequestState | 'all'
+
+export interface PullRequest {
+  number: number
+  title: string
+  body: string
+  author: string
+  state: PullRequestState
+  draft: boolean
+  head: { branch: string; sha: string }
+  base: { branch: string }
+  /** La PR viene da un altro repository. */
+  fork: boolean
+  /** Proprietario del fork (utente o gruppo); null se non è un fork o non è noto. */
+  headOwner: string | null
+  /** Secondi dall'epoch, come i commit. */
+  createdAt: number
+  updatedAt: number
+  /** null se il servizio non lo dice nella lista (GitHub). */
+  comments: number | null
+  url: string
+}
+
+export type TimelineItem =
+  | { kind: 'comment'; id: string; author: string; time: number; body: string }
+  | { kind: 'commit'; sha: string; author: string; time: number; subject: string }
+
+/** Perché il servizio non permette il merge. */
+export type MergeBlock = 'conflicts' | 'checks' | 'approvals' | 'draft' | 'discussions' | 'rebase' | 'blocked' | 'closed'
+
+export interface PullRequestDetail extends PullRequest {
+  /** Inizio della PR: GitHub base.sha, GitLab diff_refs.base_sha ('' se il servizio non lo dà ancora). */
+  baseSha: string
+  mergeBlock: MergeBlock | null
+  /** Commenti e commit in ordine di tempo. */
+  timeline: TimelineItem[]
+}
+
+export type MergeMethod = 'merge' | 'squash' | 'rebase' | 'ff'
+
+/** Impostazioni del repository sul server che servono a Merlino. */
+export interface HostingRepo {
+  defaultBranch: string
+  /** GitHub: fra merge, squash e rebase; GitLab: quello del progetto (merge o ff). */
+  methods: MergeMethod[]
+  /** Squash di GitLab; null su GitHub, dove è un metodo. */
+  squash: 'never' | 'optional' | 'default' | 'always' | null
+  deleteBranch: boolean
+}
+
+export type CheckState = 'passed' | 'failed' | 'running' | 'skipped' | 'cancelled'
+
+export interface Check {
+  name: string
+  state: CheckState
+  url: string | null
+}
+
+export interface CiStatus {
+  summary: 'passed' | 'failed' | 'running' | 'none'
+  checks: Check[]
+}
+
+export interface MergeOptions {
+  method: MergeMethod
+  /** Testa mostrata all'utente: se nel frattempo è cambiata, il servizio rifiuta. */
+  sha: string
+  /** '' = messaggio predefinito del servizio. */
+  message: string
+  /** Squash di GitLab (su GitHub è il metodo). */
+  squash: boolean
+  deleteBranch: boolean
+}
+
+export interface NewPullRequest {
+  /** Remote di destinazione. */
+  remote: string
+  base: string
+  /** Remote del branch con le modifiche: lo stesso o un fork sullo stesso server. */
+  headRemote: string
+  head: string
+  title: string
+  body: string
+  draft: boolean
+}
+
+/** Commit e file di una PR, letti con git dopo averne scaricato gli oggetti. */
+export interface PullRequestChanges {
+  commits: Commit[]
+  files: FileChange[]
+}

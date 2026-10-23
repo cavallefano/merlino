@@ -1,9 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { diffFlags } from '../../src/main/git/diff'
-import { commitTemplates, diffOptions, gitConfigEntry, gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
+import { commitTemplates, diffOptions, gitConfigEntry, gitUrl, limitedText, mergeOptions, newPullRequest, preferences, prNumber, refName, repoCommand, revision, server, token } from '../../src/main/validate'
 import { DEFAULT_PREFERENCES } from '../../src/shared/preferences'
 
 describe('validazione degli argomenti dal renderer', () => {
+  it('account e pull request', () => {
+    expect(server(' GitLab.Example.com:8443 ')).toBe('gitlab.example.com:8443')
+    for (const bad of ['https://github.com', 'github.com/acme', '-x', 'a b', '']) expect(() => server(bad)).toThrow()
+    expect(token(' ghp_abc ')).toBe('ghp_abc')
+    expect(() => token('ab cd')).toThrow()
+    expect(prNumber(42)).toBe(42)
+    for (const bad of [0, -1, 1.5, '3']) expect(() => prNumber(bad)).toThrow()
+    expect(() => limitedText('x'.repeat(11), 'testo', 10)).toThrow()
+    expect(() => limitedText('  ', 'testo', 10, true)).toThrow()
+    expect(mergeOptions({ method: 'squash', sha: 'abc1234', message: 'x', deleteBranch: 1 })).toEqual({ method: 'squash', sha: 'abc1234', message: 'x', squash: false, deleteBranch: false })
+    expect(() => mergeOptions({ method: 'octopus', sha: 'abc1234' })).toThrow()
+    expect(() => mergeOptions({ method: 'merge', sha: 'HEAD' })).toThrow()
+    const pr = { remote: 'origin', base: 'main', headRemote: 'origin', head: 'feature/a', title: ' Login ', draft: 'yes' }
+    expect(newPullRequest(pr)).toEqual({ remote: 'origin', base: 'main', headRemote: 'origin', head: 'feature/a', title: 'Login', body: '', draft: false })
+    for (const bad of [{ title: '   ' }, { title: 'x'.repeat(257) }, { head: '--force' }, { remote: 'a b' }]) expect(() => newPullRequest({ ...pr, ...bad })).toThrow()
+  })
+
   it('nomi di ref: niente opzioni travestite né caratteri non ammessi da git', () => {
     expect(refName('feature/login-2')).toBe('feature/login-2')
     for (const bad of ['--force', '-d', 'a b', 'a..b', 'a~1', 'a:b', 'x@{1}', 'a\tb']) expect(() => refName(bad)).toThrow()

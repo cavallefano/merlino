@@ -72,6 +72,14 @@ Drop to run the action; hold <kbd>⌥</kbd> (<kbd>Alt</kbd> on Windows/Linux) fo
 | A file from a commit or stash | The local changes | Apply just that file's changes | |
 | Any file | Outside Merlino (Finder, editor, chat…) | The file (from a commit: its content at that commit) | |
 
+### Pull requests
+- GitHub (including Enterprise) and GitLab (including self-hosted), connected with a personal access token in Settings → Accounts. Each remote uses the account for its server, or the one you pick from the remote's menu.
+- A list of pull requests (merge requests on GitLab) with search over title, description, author and branch, an Open / Merged / Closed / All filter, and CI status.
+- Details: the conversation (descriptions and comments in Markdown, commits in between), the commits and the changes of the whole pull request, read with your own git without adding refs to your history, and the list of checks.
+- Comment, check out (pull requests from forks become `pr/<n>`), merge with the methods the repository allows, close and reopen.
+- Create a pull request from a branch (its menu, the command palette, or by dropping it on "Pull Requests"); the branch is pushed first if needed.
+- <kbd>⌘</kbd><kbd>1</kbd> / <kbd>⌘</kbd><kbd>2</kbd> switch between History and Pull Requests.
+
 ### Everyday use
 - Several repositories open in tabs, restored on the next launch. Open a repository from the dialog, by dropping a folder on the window, or by passing a folder to the app on the command line.
 - Command palette (<kbd>⌘</kbd><kbd>⇧</kbd><kbd>P</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) with fuzzy search over every action. The same actions appear in the menu bar and in native context menus.
@@ -85,6 +93,7 @@ Drop to run the action; hold <kbd>⌥</kbd> (<kbd>Alt</kbd> on Windows/Linux) fo
 | Commit | Subject and body length guides, commit templates and the default per repository |
 | Diff | Initial view, whitespace, context lines, diff algorithm, code font size, tab width |
 | Integrations | External editor and terminal |
+| Accounts | GitHub and GitLab accounts for pull requests: add (with a personal access token), remove |
 | Git | Git executable; your global name and email; commit signing (GPG or SSH, key); pull strategy; default branch for new repositories; default clone folder |
 
 The Git section edits your global Git configuration, so the same values apply on the command line and in other tools.
@@ -97,6 +106,7 @@ The Git section edits your global Git configuration, so the same values apply on
 | Open repository | <kbd>⌘</kbd><kbd>O</kbd> | <kbd>Ctrl</kbd>+<kbd>O</kbd> |
 | Refresh | <kbd>⌘</kbd><kbd>R</kbd> | <kbd>Ctrl</kbd>+<kbd>R</kbd> |
 | Search history | <kbd>⌘</kbd><kbd>F</kbd> | <kbd>Ctrl</kbd>+<kbd>F</kbd> |
+| History / Pull requests | <kbd>⌘</kbd><kbd>1</kbd> / <kbd>⌘</kbd><kbd>2</kbd> | <kbd>Ctrl</kbd>+<kbd>1</kbd> / <kbd>Ctrl</kbd>+<kbd>2</kbd> |
 | Commit | <kbd>⌘</kbd><kbd>↩</kbd> | <kbd>Ctrl</kbd>+<kbd>Enter</kbd> |
 | Settings | <kbd>⌘</kbd><kbd>,</kbd> | <kbd>Ctrl</kbd>+<kbd>,</kbd> |
 | Output panel | <kbd>⌘</kbd><kbd>⇧</kbd><kbd>O</kbd> | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> |
@@ -107,7 +117,7 @@ The Git section edits your global Git configuration, so the same values apply on
 
 - **Your git, not a reimplementation.** Every operation runs the system `git` (2.35 or newer) as a separate process. There is no libgit2, so hooks, LFS, signing and credential helpers behave as they do in your terminal. Write operations on a repository are queued, so they never overlap.
 - **Locked-down renderer.** The interface runs sandboxed with context isolation. It can only call named, typed operations that the main process validates one by one: branch names, SHAs and paths are checked, and the interface can never pass arbitrary arguments to git.
-- **No telemetry, no accounts.** The only network traffic is what git itself does: clone, fetch, pull and push.
+- **No telemetry.** Besides what git itself does (clone, fetch, pull, push), Merlino only contacts the GitHub and GitLab servers of the accounts you connect, with the token you gave it. Tokens are encrypted with the system keychain (on Linux without a keychain, Electron can only use weak encryption) and never reach the interface or the logs.
 
 ## Installation
 

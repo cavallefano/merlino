@@ -4,6 +4,7 @@ import type { DropOperation } from '../drag/drop-actions'
 import { type PromptValues, useAppStore } from '../stores/app'
 import { useRepoStore } from '../stores/repo'
 import { registry } from './builtin'
+import { openCreatePullRequest } from './pull-requests'
 
 type Repo = ReturnType<typeof useRepoStore>
 /** Voce di un menu contestuale; null è un separatore. */
@@ -131,6 +132,8 @@ export async function performDrop(repo: Repo, op: DropOperation): Promise<unknow
       return repo.unstage(op.files)
     case 'stash':
       return repo.stashAction(op.action, op.ref)
+    case 'createPullRequest':
+      return openCreatePullRequest(repo, op.branch)
   }
 }
 
@@ -148,6 +151,8 @@ export function branchMenu(repo: Repo, b: BranchInfo) {
     { label: t('ctx.rename'), run: () => renameBranch(repo, b) },
     { label: t('ctx.setUpstream'), run: () => setUpstream(repo, b) },
     { label: t('ctx.delete'), enabled: other, run: () => deleteBranch(repo, b.name) },
+    null,
+    { label: t('ctx.createPullRequest', { branch: b.name }), run: () => openCreatePullRequest(repo, b.name) },
   ])
 }
 
@@ -160,8 +165,31 @@ export function remoteBranchMenu(repo: Repo, remote: RemoteInfo, b: RemoteBranch
   ])
 }
 
+/** Account per le pull request di un remote: Automatico (il primo dello stesso server) o uno scelto. */
+async function chooseAccount(repo: Repo, remote: RemoteInfo) {
+  const app = useAppStore()
+  const s = app.settings
+  if (!s) return
+  // Stessa chiave di accountKey nel main
+  const chosen = s.remoteAccounts[`${repo.root}\n${remote.name}`]
+  const set = async (id: string | null) => {
+    const r = await window.api.setRemoteAccount(repo.root, remote.name, id)
+    if (r.ok) app.settings = r.value
+    else repo.error = r.error.message
+  }
+  const mark = (on: boolean) => (on ? '✓ ' : '')
+  await popup([
+    { label: mark(!chosen) + t('account.automatic'), run: () => set(null) },
+    ...s.accounts.map((a) => ({ label: `${mark(a.id === chosen)}${a.username}@${a.host}`, run: () => set(a.id) })),
+    null,
+    { label: t('account.manage'), run: () => (app.settingsSection = 'accounts') },
+  ])
+}
+
 export function remoteMenu(repo: Repo, remote: RemoteInfo) {
   return popup([
+    { label: t('ctx.account'), run: () => chooseAccount(repo, remote) },
+    null,
     {
       label: t('ctx.remove'),
       run: () => window.confirm(t('remote.confirmRemove', { name: remote.name, url: remote.url })) && repo.git({ kind: 'removeRemote', name: remote.name }),

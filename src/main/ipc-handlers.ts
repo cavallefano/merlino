@@ -12,6 +12,7 @@ import { readCommitDetail } from './git/commit'
 import { readGitCommitTemplate } from './git/commit-template'
 import { readCommitFileDiff } from './git/diff'
 import { readGlobalConfig, setGlobalConfig } from './git/global-config'
+import { branchSummary, checkoutPullRequest, fetchPullRequest, readPullRequestChanges, readPullRequestFileDiff } from './git/pull-request'
 import { readRefs } from './git/refs'
 import { readRepoInfo } from './git/repo-info'
 import { GitError, GitRunner } from './git/runner'
@@ -31,27 +32,43 @@ import {
   unstageAll,
   unstageFiles,
 } from './git/working'
+import { addAccount, removeAccount, setRemoteAccount, type TokenStore } from './hosting/accounts'
+import { type Fetch, HostingError } from './hosting/http'
+import { connect, type Connection, createProvider, type HostingDeps, projectOf, pullRequestRemotes } from './hosting/pull-requests'
 import { editorLaunch, startApp, terminalLaunch } from './open-app'
 import { setLanguage, t } from './i18n'
 import { buildMenu } from './menu'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
 import {
+  accountId,
   commitTemplates as validateTemplates,
   diffOptions,
   fileRequest,
   gitConfigEntry,
   gitUrl,
+  HOSTING_SERVICES,
   int,
+  limitedText,
   list,
+  MAX_BODY,
+  mergeOptions,
+  newPullRequest,
   oneOf,
+  PR_FILTERS,
   preferences as validatePreferences,
+  prNumber,
+  pullRequestRefs,
+  refName,
   relPath,
   repoCommand,
+  revision,
+  server,
   sha,
   stashRef,
   str,
   text,
+  token,
   withOldPath,
 } from './validate'
 
@@ -65,7 +82,9 @@ const DRAG_ICON = nativeImage.createFromDataURL(
 function fail(e: unknown): { ok: false; error: GitErrorInfo } {
   if (e instanceof GitError) return { ok: false, error: e.info }
   const message = e instanceof Error ? e.message : String(e)
-  return { ok: false, error: { args: [], exitCode: null, stderr: message, message } }
+  // Il renderer propone "Aggiorna token…"
+  const code = e instanceof HostingError && e.kind === 'auth' ? { code: 'auth' as const } : {}
+  return { ok: false, error: { args: [], exitCode: null, stderr: message, message, ...code } }
 }
 
 function isDirectory(path: string): boolean {
@@ -76,7 +95,12 @@ function isDirectory(path: string): boolean {
   }
 }
 
-export function registerIpc(win: () => BrowserWindow | null, settings: SettingsStore, initialPath: string | null) {
+export function registerIpc(
+  win: () => BrowserWindow | null,
+  settings: SettingsStore,
+  initialPath: string | null,
+  hosting: { tokens: TokenStore; fetch: Fetch },
+) {
   const sessions = new Map<string, RepoSession>()
   const log: CommandLogEntry[] = []
   let pendingPath = initialPath
@@ -132,7 +156,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   // In silenzio: nessun avanzamento al renderer, gli errori (es. credenziali) restano nel log dei comandi
   const autoFetch = new AutoFetch(() => {
     const prune = settings.get().preferences.fetchPrune
-    for (const s of sessions.values()) gitFetch(s.runner, () => {}, prune).catch(() => {})
+    for (const s of sessions.values()) gitFetch(s.runner, () => {}, prune).then(() => send(Channels.fetched, s.root), () => {})
   })
 
   /** Effetti delle preferenze nel main: il tema (che segue anche il CSS con prefers-color-scheme) e il fetch automatico. */
@@ -290,7 +314,12 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   const progress = (root: string) => (line: string) => send(Channels.progress, { root, line })
   ipcMain.handle(Channels.refs, (_e, root: unknown) => withSession(root, (s) => readRefs(s.runner)))
   ipcMain.handle(Channels.command, (_e, root: unknown, command: unknown) =>
-    withSession(root, (s) => runCommand(s.runner, repoCommand(command), progress(s.root), settings.get().preferences.fetchPrune)),
+    withSession(root, async (s) => {
+      const c = repoCommand(command)
+      await runCommand(s.runner, c, progress(s.root), settings.get().preferences.fetchPrune)
+      // Dopo un fetch le pull request possono essere cambiate
+      if (c.kind === 'fetch' || c.kind === 'pull') send(Channels.fetched, s.root)
+    }),
   )
   ipcMain.handle(Channels.rebaseRange, (_e, root: unknown, commit: unknown) => withSession(root, (s) => rebaseRange(s.runner, sha(commit))))
   ipcMain.handle(Channels.clone, async (_e, url: unknown, parent: unknown) => {
@@ -353,6 +382,70 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   })
   ipcMain.handle(Channels.commitFileDiff, (_e, root: unknown, commit: unknown, file: unknown, options: unknown) =>
     withSession(root, (s) => readCommitFileDiff(s.runner, sha(commit), fileRequest(file), diffOptions(options))),
+  )
+
+  // --- Account e pull request: il token resta qui, il renderer passa solo root, remote, numeri, SHA e testi ---
+  const deps: HostingDeps = { settings, tokens: hosting.tokens, fetch: hosting.fetch, log: onLog }
+  /** Un'operazione sul servizio del remote, con il repo aperto. */
+  const onRemote = <T>(root: unknown, remote: unknown, fn: (c: Connection, s: RepoSession) => Promise<T>) =>
+    withSession(root, async (s) => fn(await connect(deps, s.runner, refName(remote)), s))
+
+  ipcMain.handle(Channels.addAccount, (_e, service: unknown, host: unknown, secret: unknown) =>
+    attempt(() => {
+      const draft = { service: oneOf(service, HOSTING_SERVICES, 'service'), host: server(host) }
+      const value = token(secret)
+      return addAccount(settings, hosting.tokens, draft, value, () => createProvider(deps, { ...draft, username: '' }, value, null).verify())
+    }),
+  )
+  ipcMain.handle(Channels.removeAccount, (_e, id: unknown) => attempt(() => removeAccount(settings, hosting.tokens, accountId(id))))
+  ipcMain.handle(Channels.setRemoteAccount, (_e, root: unknown, remote: unknown, id: unknown) =>
+    attempt(() => setRemoteAccount(settings, str(root, 'root'), refName(remote), id === null ? null : accountId(id))),
+  )
+  ipcMain.handle(Channels.prRemotes, (_e, root: unknown) => withSession(root, (s) => pullRequestRemotes(deps, s.runner)))
+  ipcMain.handle(Channels.prRepo, (_e, root: unknown, remote: unknown) => onRemote(root, remote, (c) => c.provider.repo(c.project)))
+  ipcMain.handle(Channels.prList, (_e, root: unknown, remote: unknown, filter: unknown) =>
+    onRemote(root, remote, (c) => c.provider.list(c.project, oneOf(filter, PR_FILTERS, 'filter'))),
+  )
+  ipcMain.handle(Channels.prDetail, (_e, root: unknown, remote: unknown, n: unknown) => onRemote(root, remote, (c) => c.provider.detail(c.project, prNumber(n))))
+  ipcMain.handle(Channels.prChecks, (_e, root: unknown, remote: unknown, commit: unknown) =>
+    onRemote(root, remote, (c) => c.provider.checks(c.project, sha(commit))),
+  )
+  ipcMain.handle(Channels.prChanges, (_e, root: unknown, remote: unknown, n: unknown, refs: unknown) =>
+    onRemote(root, remote, async (c, s) => {
+      const { base, baseSha, headSha } = pullRequestRefs(refs)
+      await fetchPullRequest(s.runner, c.remote, c.provider.pullRef(prNumber(n)), base, baseSha, headSha)
+      return readPullRequestChanges(s.runner, baseSha, headSha)
+    }),
+  )
+  ipcMain.handle(Channels.prFileDiff, (_e, root: unknown, base: unknown, head: unknown, file: unknown, options: unknown) =>
+    withSession(root, (s) => readPullRequestFileDiff(s.runner, sha(base), sha(head), fileRequest(file), diffOptions(options))),
+  )
+  ipcMain.handle(Channels.prComment, (_e, root: unknown, remote: unknown, n: unknown, body: unknown) =>
+    onRemote(root, remote, (c) => c.provider.comment(c.project, prNumber(n), limitedText(body, t('field.comment'), MAX_BODY, true))),
+  )
+  ipcMain.handle(Channels.prMerge, (_e, root: unknown, remote: unknown, n: unknown, options: unknown) =>
+    onRemote(root, remote, (c) => c.provider.merge(c.project, prNumber(n), mergeOptions(options))),
+  )
+  ipcMain.handle(Channels.prSetState, (_e, root: unknown, remote: unknown, n: unknown, state: unknown) =>
+    onRemote(root, remote, (c) => c.provider.setState(c.project, prNumber(n), oneOf(state, ['open', 'closed'] as const, 'state'))),
+  )
+  ipcMain.handle(Channels.prCreate, (_e, root: unknown, input: unknown) =>
+    withSession(root, async (s) => {
+      const pr = newPullRequest(input)
+      const c = await connect(deps, s.runner, pr.remote)
+      const head = await projectOf(s.runner, pr.headRemote)
+      if (head.host !== c.host) throw new Error(t('hosting.differentServer'))
+      return c.provider.create(c.project, head.path, pr)
+    }),
+  )
+  ipcMain.handle(Channels.prCheckout, (_e, root: unknown, remote: unknown, n: unknown, branch: unknown) =>
+    onRemote(root, remote, (c, s) => {
+      const number = prNumber(n)
+      return checkoutPullRequest(s.runner, c.remote, c.provider.pullRef(number), number, branch === null ? null : refName(branch))
+    }),
+  )
+  ipcMain.handle(Channels.prBranchSummary, (_e, root: unknown, base: unknown, head: unknown) =>
+    withSession(root, (s) => branchSummary(s.runner, revision(base), revision(head))),
   )
 
   return {
