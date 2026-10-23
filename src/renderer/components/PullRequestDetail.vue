@@ -7,6 +7,7 @@ import { t, tn } from '../i18n'
 import { headLabel } from '../pull-requests/model'
 import { type PullRequestTab, usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
+import CiChecks from './CiChecks.vue'
 import CommitDetail from './CommitDetail.vue'
 import DiffView from './DiffView.vue'
 import MarkdownView from './MarkdownView.vue'
@@ -14,9 +15,9 @@ import MarkdownView from './MarkdownView.vue'
 const props = defineProps<{ root: string }>()
 const prs = usePullRequestStore(props.root)
 const repo = useRepoStore(props.root)
-const TABS: PullRequestTab[] = ['conversation', 'commits', 'changes']
-const STATES: CheckState[] = ['failed', 'running', 'passed', 'skipped', 'cancelled']
-const SYMBOL: Record<CheckState | CiStatus['summary'], string> = { passed: '✓', failed: '✕', running: '●', skipped: '–', cancelled: '–', none: '' }
+const TABS: PullRequestTab[] = ['conversation', 'commits', 'changes', 'checks']
+const STATES: CheckState[] = ['failed', 'running', 'queued', 'passed', 'skipped', 'cancelled']
+const SYMBOL: Record<CheckState | CiStatus['summary'], string> = { passed: '✓', failed: '✕', running: '●', queued: '○', skipped: '–', cancelled: '–', none: '' }
 
 const d = computed(() => prs.detail)
 const ci = computed(() => (d.value ? prs.ci.get(d.value.head.sha) : undefined))
@@ -29,13 +30,11 @@ const ciText = computed(() =>
 )
 const state = computed(() => (d.value?.state === 'open' && d.value.draft ? 'draft' : (d.value?.state ?? 'open')))
 const commitCount = computed(() => prs.changes?.commits.length ?? d.value?.timeline.filter((x) => x.kind === 'commit').length ?? 0)
-const showChecks = ref(false)
 const comment = ref('')
 
 watch(
   () => prs.selected,
   () => {
-    showChecks.value = false
     comment.value = ''
   },
 )
@@ -43,6 +42,7 @@ watch(
 function tabLabel(tab: PullRequestTab): string {
   if (tab === 'conversation') return t('pr.tab.conversation')
   if (tab === 'commits') return `${t('pr.tab.commits')} (${commitCount.value})`
+  if (tab === 'checks') return ci.value ? `${t('pr.tab.checks')} (${ci.value.checks.length})` : t('pr.tab.checks')
   return prs.changes ? `${t('pr.tab.changes')} (${prs.changes.files.length})` : t('pr.tab.changes')
 }
 
@@ -79,17 +79,10 @@ function more() {
           <span class="state" :class="state" data-testid="pr-state">{{ t(`pr.state.${state}`) }}</span>
           <span>{{ d.author }}</span>
           <code>{{ headLabel(d) }} → {{ d.base.branch }}</code>
-          <button v-if="ci && ci.summary !== 'none'" class="link" :class="ci.summary" data-testid="pr-ci-summary" @click="showChecks = !showChecks">
+          <button v-if="ci && ci.summary !== 'none'" class="link" :class="ci.summary" data-testid="pr-ci-summary" @click="prs.setTab('checks')">
             {{ SYMBOL[ci.summary] }} {{ ciText }}
           </button>
         </div>
-        <ul v-if="showChecks && ci" class="checks" data-testid="pr-checks">
-          <li v-for="c in ci.checks" :key="c.name">
-            <span class="ci" :class="c.state">{{ SYMBOL[c.state] }}</span>
-            <span class="name">{{ c.name }}</span>
-            <a v-if="c.url" :href="c.url" target="_blank">{{ t('ci.details') }}</a>
-          </li>
-        </ul>
         <div class="actions">
           <button data-testid="pr-checkout" :disabled="!!repo.busy" @click="prs.checkout()">Checkout</button>
           <template v-if="d.state === 'open'">
@@ -140,6 +133,11 @@ function more() {
         </ul>
       </div>
 
+      <div v-else-if="prs.tab === 'checks'" class="pane">
+        <CiChecks v-if="ci" :status="ci" :now="prs.now" :pr="d.number" />
+        <p v-else class="muted note">{{ t('pr.loadingChecks') }}</p>
+      </div>
+
       <div v-else class="pane">
         <p v-if="prs.changesError" class="error note">{{ t('pr.changesFailed', { reason: prs.changesError }) }}</p>
         <p v-else-if="!prs.changes" class="muted note">{{ t('pr.loadingChanges') }}</p>
@@ -183,13 +181,9 @@ h2 { margin: 0 0 6px; font-size: 15px; overflow-wrap: anywhere; }
 .state.draft { background: var(--fg-muted); }
 .state.merged { background: #8250df; }
 .state.closed { background: var(--danger); }
-.link.failed, .ci.failed { color: var(--danger); }
-.link.running, .ci.running { color: #bf8700; }
-.link.passed, .ci.passed { color: #2da44e; }
-.checks { margin: 8px 0 0; padding: 0; list-style: none; font-size: 12px; }
-.checks li { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
-.checks .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ci { width: 12px; font-weight: 700; text-align: center; color: var(--fg-muted); }
+.link.failed { color: var(--danger); }
+.link.running { color: #bf8700; }
+.link.passed { color: #2da44e; }
 .actions { display: flex; gap: 6px; margin-top: 10px; }
 .actions button { padding: 2px 10px; }
 .tabs { display: flex; gap: 2px; padding: 4px 8px; border-bottom: 1px solid var(--border); }

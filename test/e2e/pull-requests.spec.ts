@@ -95,7 +95,10 @@ test('dettaglio: Markdown, check, commento con ⌘↩, commit e modifiche scaric
   await expect(page.locator('.markdown strong')).toHaveText('login')
   await expect(page.getByTestId('timeline-comment')).toContainText('Looks good')
   await page.getByTestId('pr-ci-summary').click()
-  await expect(page.getByTestId('pr-checks')).toContainText('test')
+  await expect(page.getByTestId('ci-group')).toContainText('Other checks')
+  await page.getByTestId('ci-group-head').click()
+  await expect(page.getByTestId('ci-job')).toContainText('test')
+  await page.getByTestId('pr-tab-conversation').click()
 
   await page.getByTestId('pr-comment').fill('Ship it')
   await page.getByTestId('pr-comment').press(`${mod}+Enter`)
@@ -201,6 +204,42 @@ test('GitLab: lista, dettaglio con le note e modifiche dalla merge request', asy
   await expect(page.getByTestId('timeline-comment')).toContainText('Looks good')
   await page.getByTestId('pr-tab-changes').click()
   await expect(page.getByTestId('pr-file')).toHaveText([/login\.txt/])
+  await app.close()
+  await server.close()
+})
+
+test('GitLab: pipeline in corso con 40 job, barra nella lista e controlli per stage con filtro', async () => {
+  const repo = demoRepo('gitlab.example.com', (n) => `refs/merge-requests/${n}/head`)
+  const pulls = demoPulls(repo)
+  // build finito, test in corso, deploy in coda: 15 finiti su 40
+  const jobs = (stage: string, n: number, state: (i: number) => 'success' | 'pending' | 'queued') =>
+    Array.from({ length: n }, (_, i) => ({ name: `${stage}:${i + 1}`, stage, state: state(i) }))
+  pulls[0].checks = [
+    ...jobs('build', 4, () => 'success'),
+    ...jobs('test', 24, (i) => (i < 11 ? 'success' : i < 14 ? 'pending' : 'queued')),
+    ...jobs('deploy', 12, () => 'queued'),
+  ]
+  const server = await fakeHosting(pulls)
+  const { app, page } = await launch([repo.clone], tempUserData(), { MERLINO_E2E_API: server.url })
+  await expect(page.getByTestId('commit-row').first()).toBeVisible()
+  await addAccount(page, 'gitlab.example.com', 'gitlab')
+  await page.getByTestId('page-pull-requests').click()
+
+  const row = page.getByTestId('pr-row').first()
+  await expect(row.getByTestId('ci-progress-text')).toContainText('15/40 · test')
+  await expect(row.getByTestId('ci-progress')).toHaveAttribute('title', '15 passed · 3 in progress · 22 queued')
+  // La pipeline della #2 è finita: solo l'icona
+  await expect(page.getByTestId('pr-row').nth(1).getByTestId('ci-progress')).toHaveCount(0)
+
+  await row.getByTestId('ci-progress').click()
+  await expect(page.getByTestId('pr-tab-checks')).toHaveClass(/active/)
+  await expect(page.getByTestId('pr-tab-checks')).toContainText('(40)')
+  await expect(page.getByTestId('ci-group')).toHaveCount(3)
+  // Aperto solo test, che ha job in corso
+  await expect(page.getByTestId('ci-job')).toHaveCount(24)
+  await page.getByTestId('ci-filter').fill('deploy:1')
+  await expect(page.getByTestId('ci-group')).toHaveCount(1)
+  await expect(page.getByTestId('ci-job').locator('.name')).toHaveText(['deploy:1', 'deploy:10', 'deploy:11', 'deploy:12'])
   await app.close()
   await server.close()
 })

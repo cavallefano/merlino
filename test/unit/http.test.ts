@@ -80,6 +80,12 @@ describe('HostingClient', () => {
     expect(await failure(client(github, new Error('ECONNRESET')).c.request('GET', '/x'))).toMatchObject({ kind: 'network', message: 'github.com is not responding' })
   })
 
+  it('paginazione di pagine che non sono array', async () => {
+    const page = (n: number, next?: number) => json({ items: [n] }, next ? { headers: { link: `<https://api.github.com/x?page=${next}>; rel="next"` } } : {})
+    const { c } = client(github, page(1, 2), page(2))
+    expect(await c.all('/x?page=1', 10, (p) => (p as { items: number[] }).items)).toEqual([1, 2])
+  })
+
   it('nextLink', () => {
     expect(nextLink(null)).toBeNull()
     expect(nextLink('<https://a.example/x?page=1>; rel="prev", <https://a.example/x?page=3>; rel="next"')).toBe('https://a.example/x?page=3')

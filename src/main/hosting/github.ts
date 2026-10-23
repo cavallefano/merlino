@@ -13,7 +13,7 @@ import type {
   TimelineItem,
 } from '../../shared/types'
 import type { HostingClient } from './http'
-import { byTime, ciSummary, type HostingProvider, pathSegments, seconds } from './provider'
+import { byTime, ciSummary, type HostingProvider, optionalSeconds, pathSegments, seconds } from './provider'
 
 // Le parti delle risposte di GitHub che Merlino usa
 interface GhUser {
@@ -62,10 +62,22 @@ interface GhRepo {
   delete_branch_on_merge?: boolean
 }
 interface GhStatus {
-  statuses: { context: string; state: string; target_url: string | null }[]
+  statuses: { context: string; state: string; target_url: string | null; created_at: string; updated_at: string }[]
 }
-interface GhCheckRuns {
-  check_runs: { name: string; status: string; conclusion: string | null; html_url: string | null }[]
+interface GhCheckRun {
+  name: string
+  status: string
+  conclusion: string | null
+  html_url: string | null
+  started_at: string | null
+  completed_at: string | null
+  check_suite: { id: number } | null
+  app: { name: string } | null
+}
+interface GhWorkflowRun {
+  name: string
+  check_suite_id: number
+  created_at: string
 }
 
 const STATUS: Record<string, CheckState> = { success: 'passed', failure: 'failed', error: 'failed', pending: 'running' }
@@ -150,18 +162,52 @@ export class GitHub implements HostingProvider {
   }
 
   async checks(project: string, sha: string): Promise<CiStatus> {
-    const commit = `/repos/${pathSegments(project)}/commits/${sha}`
-    const [status, runs] = await Promise.all([
+    const repo = `/repos/${pathSegments(project)}`
+    const commit = `${repo}/commits/${sha}`
+    const [status, runs, workflows] = await Promise.all([
       this.c.request<GhStatus>('GET', `${commit}/status`),
-      this.c.request<GhCheckRuns>('GET', `${commit}/check-runs?per_page=100`),
+      this.c.all<GhCheckRun>(`${commit}/check-runs?per_page=100`, 1000, (page) => (page as { check_runs: GhCheckRun[] }).check_runs),
+      // Senza Actions (o senza permessi) i check run si raggruppano per app
+      this.c
+        .all<GhWorkflowRun>(`${repo}/actions/runs?head_sha=${sha}&per_page=100`, 1000, (page) => (page as { workflow_runs: GhWorkflowRun[] }).workflow_runs)
+        .catch((): GhWorkflowRun[] => []),
     ])
+    const ordered = workflows.toSorted((a, b) => a.created_at.localeCompare(b.created_at))
+    const workflow = new Map(ordered.map((w) => [w.check_suite_id, w.name]))
+    const order = [...new Set(ordered.map((w) => w.name))]
     const checks: Check[] = [
-      ...status.statuses.map((s): Check => ({ name: s.context, state: STATUS[s.state] ?? 'running', url: s.target_url })),
-      ...runs.check_runs.map(
-        (r): Check => ({ name: r.name, state: r.status !== 'completed' ? 'running' : (CONCLUSION[r.conclusion ?? ''] ?? 'failed'), url: r.html_url }),
+      ...runs.map(
+        (r): Check => ({
+          name: r.name,
+          // queued, waiting, requested e pending sono in coda
+          state: r.status === 'completed' ? (CONCLUSION[r.conclusion ?? ''] ?? 'failed') : r.status === 'in_progress' ? 'running' : 'queued',
+          url: r.html_url,
+          group: workflow.get(r.check_suite?.id ?? -1) ?? r.app?.name ?? null,
+          startedAt: optionalSeconds(r.started_at),
+          finishedAt: optionalSeconds(r.completed_at),
+        }),
+      ),
+      ...status.statuses.map(
+        (s): Check => ({
+          name: s.context,
+          state: STATUS[s.state] ?? 'running',
+          url: s.target_url,
+          group: null,
+          startedAt: seconds(s.created_at),
+          finishedAt: s.state === 'pending' ? null : seconds(s.updated_at),
+        }),
       ),
     ]
-    return { summary: ciSummary(checks), checks }
+    // I workflow per creazione, poi le app per nome, infine gli altri controlli; nel gruppo per inizio e nome
+    const rank = (c: Check) => (c.group === null ? Infinity : order.includes(c.group) ? order.indexOf(c.group) : order.length)
+    const sorted = checks.toSorted(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        (a.group ?? '').localeCompare(b.group ?? '') ||
+        (a.startedAt ?? Infinity) - (b.startedAt ?? Infinity) ||
+        a.name.localeCompare(b.name),
+    )
+    return { summary: ciSummary(sorted), checks: sorted }
   }
 
   async comment(project: string, number: number, body: string): Promise<void> {

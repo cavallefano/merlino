@@ -12,7 +12,7 @@ import type {
   TimelineItem,
 } from '../../shared/types'
 import type { HostingClient } from './http'
-import { byTime, ciSummary, type HostingProvider, seconds } from './provider'
+import { byTime, ciSummary, type HostingProvider, optionalSeconds, seconds } from './provider'
 
 // Le parti delle risposte di GitLab che Merlino usa
 interface GlUser {
@@ -62,14 +62,27 @@ interface GlProject {
   namespace: { full_path: string }
 }
 interface GlJob {
+  id: number
   name: string
+  stage: string
   status: string
   web_url: string
+  started_at: string | null
+  finished_at: string | null
 }
 
 const STATES = { open: 'opened', merged: 'merged', closed: 'closed', all: 'all' } as const
-// I job in attesa (created, pending, preparing, scheduled, waiting_for_resource) contano come in corso
-const JOBS: Record<string, CheckState> = { success: 'passed', failed: 'failed', canceled: 'cancelled', canceling: 'cancelled', skipped: 'skipped', manual: 'skipped' }
+// In coda gli stati non elencati: created, pending, preparing, waiting_for_resource, scheduled.
+// Un job manuale non parte da solo: come saltato, altrimenti la pipeline non risulterebbe mai finita.
+const JOBS: Record<string, CheckState> = {
+  success: 'passed',
+  failed: 'failed',
+  running: 'running',
+  canceled: 'cancelled',
+  canceling: 'cancelled',
+  skipped: 'skipped',
+  manual: 'skipped',
+}
 // detailed_merge_status: gli stati non elencati (mergeable, checking, unchecked…) non bloccano
 const BLOCKS: Record<string, MergeBlock> = {
   conflict: 'conflicts',
@@ -171,8 +184,22 @@ export class GitLab implements HostingProvider {
   async checks(project: string, sha: string): Promise<CiStatus> {
     const [pipeline] = await this.c.request<{ id: number }[]>('GET', `${this.project(project)}/pipelines?sha=${sha}&per_page=1`)
     if (!pipeline) return { summary: 'none', checks: [] }
-    const jobs = await this.c.all<GlJob>(`${this.project(project)}/pipelines/${pipeline.id}/jobs?per_page=100`, 500)
-    const checks = jobs.map((j): Check => ({ name: j.name, state: JOBS[j.status] ?? 'running', url: j.web_url }))
+    const jobs = await this.c.all<GlJob>(`${this.project(project)}/pipelines/${pipeline.id}/jobs?per_page=100`, 1000)
+    // Per id: l'ordine in cui la pipeline crea i job, quindi anche quello degli stage
+    const byId = jobs.toSorted((a, b) => a.id - b.id)
+    const stages = [...new Set(byId.map((j) => j.stage))]
+    const checks = byId
+      .toSorted((a, b) => stages.indexOf(a.stage) - stages.indexOf(b.stage))
+      .map(
+        (j): Check => ({
+          name: j.name,
+          state: JOBS[j.status] ?? 'queued',
+          url: j.web_url,
+          group: j.stage,
+          startedAt: optionalSeconds(j.started_at),
+          finishedAt: optionalSeconds(j.finished_at),
+        }),
+      )
     return { summary: ciSummary(checks), checks }
   }
 

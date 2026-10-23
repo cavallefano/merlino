@@ -14,7 +14,7 @@ import type {
   PullRequestFilter,
   PullRequestRemote,
 } from '../../shared/types'
-import { matches, pickRemote } from '../pull-requests/model'
+import { isActive, matches, pickRemote } from '../pull-requests/model'
 import { useAppStore } from './app'
 import { useRepoStore } from './repo'
 
@@ -23,7 +23,7 @@ const storeId = (root: string) => `pull-requests:${root}`
 const remoteKey = (root: string) => `merlino.pullRequestRemote:${root}`
 const CI_WORKERS = 4
 
-export type PullRequestTab = 'conversation' | 'commits' | 'changes'
+export type PullRequestTab = 'conversation' | 'commits' | 'changes' | 'checks'
 
 function define(root: string) {
   return defineStore(storeId(root), () => {
@@ -50,6 +50,8 @@ function define(root: string) {
     const diff = shallowRef<FileDiff | null>(null)
     /** CI per SHA: resta in memoria; si ricontrollano solo quelle in corso. */
     const ci = shallowRef(new Map<string, CiStatus>())
+    /** Ora (secondi) per le durate delle pipeline: avanza a ogni controllo, senza un timer suo. */
+    const now = ref(Math.floor(Date.now() / 1000))
     /** Un'azione sul server in corso (commento, merge, chiusura). */
     const busy = ref(false)
     const merging = ref(false)
@@ -120,18 +122,22 @@ function define(root: string) {
           if (!r.ok || remote.value !== name) continue
           ci.value.set(sha, r.value)
           triggerRef(ci)
+          now.value = Math.floor(Date.now() / 1000)
         }
       }
       await Promise.all(Array.from({ length: CI_WORKERS }, worker))
     }
 
-    /** Dalla vista, ogni 30 s: solo le CI ancora in corso. */
-    const poll = () => loadChecks([...ci.value].filter(([, s]) => s.summary === 'running').map(([sha]) => sha))
+    /** Dalla vista, ogni 30 s: le pipeline con job in corso o in coda, anche se qualcuno è già fallito. */
+    const poll = () => {
+      now.value = Math.floor(Date.now() / 1000)
+      return loadChecks([...ci.value].filter(([, s]) => isActive(s)).map(([sha]) => sha))
+    }
 
-    async function select(n: number) {
+    async function select(n: number, next: PullRequestTab = 'conversation') {
       selected.value = n
       detail.value = null
-      tab.value = 'conversation'
+      tab.value = next
       commit.value = null
       changes.value = null
       changesError.value = null
@@ -158,13 +164,13 @@ function define(root: string) {
       }
       detail.value = r.value
       if (!ci.value.has(r.value.head.sha)) void loadChecks([r.value.head.sha])
-      if (tab.value !== 'conversation' && !changes.value) await loadChanges()
+      if ((tab.value === 'commits' || tab.value === 'changes') && !changes.value) await loadChanges()
     }
 
     async function setTab(next: PullRequestTab) {
       tab.value = next
       commit.value = null
-      if (next !== 'conversation' && !changes.value) await loadChanges()
+      if ((next === 'commits' || next === 'changes') && !changes.value) await loadChanges()
     }
 
     /** Scarica gli oggetti della PR (se mancano) e legge commit e file con git. */
@@ -282,7 +288,7 @@ function define(root: string) {
     )
 
     return {
-      root, remotes, remote, filter, query, list, openCount, stale, error, selected, detail, tab, changes, changesError, commit, file, diff, ci,
+      root, remotes, remote, filter, query, list, openCount, stale, error, selected, detail, tab, changes, changesError, commit, file, diff, ci, now,
       busy, merging, creating, current, withAccount, visible,
       refresh, load, poll, select, loadDetail, setTab, loadChanges, selectFile, loadDiff, openCommit, comment, setState, merge, checkout, create,
       setRemote, setFilter,

@@ -17,10 +17,10 @@ export interface HostingProvider {
   pullRef(number: number): string
 }
 
-/** Fallito se un check è fallito, in corso se uno gira, superato se ce ne sono, altrimenti nessuno. */
+/** Fallito se un job è fallito, in corso se uno è in corso o in coda, superato se ce ne sono, altrimenti nessuno. */
 export function ciSummary(checks: Check[]): CiStatus['summary'] {
   if (checks.some((c) => c.state === 'failed')) return 'failed'
-  if (checks.some((c) => c.state === 'running')) return 'running'
+  if (checks.some((c) => c.state === 'running' || c.state === 'queued')) return 'running'
   return checks.length ? 'passed' : 'none'
 }
 
@@ -29,6 +29,9 @@ export const byTime = (items: TimelineItem[]): TimelineItem[] => items.toSorted(
 
 /** Secondi dall'epoch da una data ISO, come i commit. */
 export const seconds = (iso: string | null | undefined): number => (iso ? Math.floor(Date.parse(iso) / 1000) : 0)
+
+/** Come seconds, ma null se la data manca (job non partito o non finito). */
+export const optionalSeconds = (iso: string | null | undefined): number | null => (iso ? seconds(iso) : null)
 
 /** Segmenti di un percorso codificati uno per uno: gli "/" restano. */
 export const pathSegments = (path: string): string => path.split('/').map(encodeURIComponent).join('/')
