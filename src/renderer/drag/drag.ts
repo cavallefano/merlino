@@ -1,3 +1,4 @@
+import { useAppStore } from '../stores/app'
 import { reactive } from 'vue'
 import { performDrop } from '../actions/branches'
 import type { useRepoStore } from '../stores/repo'
@@ -53,7 +54,11 @@ export function fileDragSource(repo: Repo, source: DragSource, item: { path: str
 export function dropTarget(repo: Repo, target: DropTarget) {
   const key = JSON.stringify(target)
   const action = (e: DragEvent) =>
-    drag.source ? dropAction(drag.source, target, e.altKey, { currentBranch: repo.info?.branch ?? null, remotes: repo.refs?.remotes ?? [] }) : null
+    drag.source ? dropAction(drag.source, target, e.altKey, {
+          currentBranch: repo.info?.branch ?? null,
+          remotes: repo.refs?.remotes ?? [],
+          lang: useAppStore().preferences.language,
+        }) : null
   return {
     class: { 'drop-hover': drag.hover === key },
     onDragover: (e: DragEvent) => {

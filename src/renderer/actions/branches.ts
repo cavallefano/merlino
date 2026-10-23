@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import type { BranchInfo, Commit, MenuItem, RemoteBranch, RemoteInfo, TagInfo } from '../../shared/types'
 import type { DropOperation } from '../drag/drop-actions'
 import { type PromptValues, useAppStore } from '../stores/app'
@@ -27,12 +28,12 @@ function defaultRemote(repo: Repo): string | undefined {
 
 export async function createBranch(repo: Repo, start: string) {
   const values = await useAppStore().prompt({
-    title: 'Nuovo branch',
+    title: t('branch.newTitle'),
     fields: [
-      { key: 'name', label: 'Nome' },
-      { key: 'checkout', label: 'Passa al nuovo branch', type: 'checkbox', value: true },
+      { key: 'name', label: t('common.name') },
+      { key: 'checkout', label: t('branch.checkoutNew'), type: 'checkbox', value: true },
     ],
-    confirm: 'Crea',
+    confirm: t('common.create'),
   })
   const name = field(values, 'name')
   if (name) await repo.git({ kind: 'createBranch', name, start, checkout: values?.checkout === true })
@@ -40,12 +41,12 @@ export async function createBranch(repo: Repo, start: string) {
 
 export async function createTag(repo: Repo, sha: string) {
   const values = await useAppStore().prompt({
-    title: 'Nuovo tag',
+    title: t('tag.newTitle'),
     fields: [
-      { key: 'name', label: 'Nome' },
-      { key: 'message', label: 'Messaggio (vuoto per un tag leggero)' },
+      { key: 'name', label: t('common.name') },
+      { key: 'message', label: t('tag.messageLabel') },
     ],
-    confirm: 'Crea',
+    confirm: t('common.create'),
   })
   const name = field(values, 'name')
   if (name) await repo.git({ kind: 'createTag', name, sha, message: field(values, 'message') })
@@ -53,9 +54,9 @@ export async function createTag(repo: Repo, sha: string) {
 
 async function renameBranch(repo: Repo, b: BranchInfo) {
   const values = await useAppStore().prompt({
-    title: `Rinomina ${b.name}`,
-    fields: [{ key: 'name', label: 'Nuovo nome', value: b.name }],
-    confirm: 'Rinomina',
+    title: t('branch.renameTitle', { name: b.name }),
+    fields: [{ key: 'name', label: t('branch.newName'), value: b.name }],
+    confirm: t('branch.rename'),
   })
   const name = field(values, 'name')
   if (name && name !== b.name) await repo.git({ kind: 'renameBranch', from: b.name, to: name })
@@ -63,9 +64,9 @@ async function renameBranch(repo: Repo, b: BranchInfo) {
 
 async function setUpstream(repo: Repo, b: BranchInfo) {
   const values = await useAppStore().prompt({
-    title: `Upstream di ${b.name}`,
-    fields: [{ key: 'upstream', label: 'Branch remoto (vuoto per toglierlo)', value: b.upstream ?? `${defaultRemote(repo) ?? 'origin'}/${b.name}` }],
-    confirm: 'Imposta',
+    title: t('branch.upstreamTitle', { name: b.name }),
+    fields: [{ key: 'upstream', label: t('branch.upstreamLabel'), value: b.upstream ?? `${defaultRemote(repo) ?? 'origin'}/${b.name}` }],
+    confirm: t('branch.setUpstream'),
   })
   if (!values) return
   const upstream = field(values, 'upstream') || null
@@ -77,40 +78,38 @@ async function deleteBranch(repo: Repo, name: string) {
   const r = await window.api.git(repo.root, { kind: 'deleteBranch', name, force: false })
   if (r.ok || !r.error.stderr.includes('not fully merged')) {
     await repo.run(Promise.resolve(r))
-  } else if (window.confirm(`Il branch ${name} non è mergiato: i suoi commit potrebbero andare persi. Eliminarlo comunque?`)) {
+  } else if (window.confirm(t('branch.confirmForceDelete', { name }))) {
     await repo.git({ kind: 'deleteBranch', name, force: true })
   }
 }
 
 async function deleteRemoteBranch(repo: Repo, remote: RemoteInfo, b: RemoteBranch) {
-  if (window.confirm(`Eliminare ${b.fullName} dal server? Il branch sparisce per tutto il team.`)) {
+  if (window.confirm(t('branch.confirmDeleteRemote', { name: b.fullName }))) {
     await repo.git({ kind: 'deleteRemoteBranch', remote: remote.name, name: b.name })
   }
 }
 
 async function reset(repo: Repo, sha: string, mode: 'soft' | 'mixed' | 'hard') {
-  const question = `Reset hard a ${sha.slice(0, 7)}: le modifiche locali e i commit successivi spariscono dal branch. Continuare?`
-  if (mode !== 'hard' || window.confirm(question)) await repo.git({ kind: 'reset', sha, mode })
+  if (mode !== 'hard' || window.confirm(t('reset.confirmHard', { sha: sha.slice(0, 7) }))) await repo.git({ kind: 'reset', sha, mode })
 }
 
 export async function push(repo: Repo, force: boolean) {
   const remote = defaultRemote(repo)
   if (!remote) {
-    repo.error = 'Nessun remote configurato: aggiungine uno con "Aggiungi remote…".'
+    repo.error = t('push.noRemote')
     return
   }
-  const question = 'Push forzato: riscrive la storia del branch sul remote (con --force-with-lease, fallisce se nel frattempo qualcuno ha pushato). Continuare?'
-  if (!force || window.confirm(question)) await repo.git({ kind: 'push', remote, force })
+  if (!force || window.confirm(t('push.confirmForce'))) await repo.git({ kind: 'push', remote, force })
 }
 
 async function addRemote(repo: Repo) {
   const values = await useAppStore().prompt({
-    title: 'Aggiungi remote',
+    title: t('remote.addTitle'),
     fields: [
-      { key: 'name', label: 'Nome', value: repo.refs?.remotes.length ? '' : 'origin' },
+      { key: 'name', label: t('common.name'), value: repo.refs?.remotes.length ? '' : 'origin' },
       { key: 'url', label: 'URL' },
     ],
-    confirm: 'Aggiungi',
+    confirm: t('common.add'),
   })
   const name = field(values, 'name')
   const url = field(values, 'url')
@@ -142,57 +141,57 @@ export function branchMenu(repo: Repo, b: BranchInfo) {
   return popup([
     { label: 'Checkout', enabled: other, run: () => repo.git({ kind: 'checkoutBranch', name: b.name }) },
     null,
-    { label: 'Merge nel branch corrente', enabled: other, run: () => repo.git({ kind: 'merge', ref: b.name, noFf: false }) },
-    { label: 'Merge senza fast-forward', enabled: other, run: () => repo.git({ kind: 'merge', ref: b.name, noFf: true }) },
-    { label: 'Rebase del corrente su questo', enabled: other, run: () => repo.git({ kind: 'rebase', onto: b.name }) },
+    { label: t('ctx.mergeIntoCurrent'), enabled: other, run: () => repo.git({ kind: 'merge', ref: b.name, noFf: false }) },
+    { label: t('ctx.mergeNoFf'), enabled: other, run: () => repo.git({ kind: 'merge', ref: b.name, noFf: true }) },
+    { label: t('ctx.rebaseOnto'), enabled: other, run: () => repo.git({ kind: 'rebase', onto: b.name }) },
     null,
-    { label: 'Rinomina…', run: () => renameBranch(repo, b) },
-    { label: 'Imposta upstream…', run: () => setUpstream(repo, b) },
-    { label: 'Elimina', enabled: other, run: () => deleteBranch(repo, b.name) },
+    { label: t('ctx.rename'), run: () => renameBranch(repo, b) },
+    { label: t('ctx.setUpstream'), run: () => setUpstream(repo, b) },
+    { label: t('ctx.delete'), enabled: other, run: () => deleteBranch(repo, b.name) },
   ])
 }
 
 export function remoteBranchMenu(repo: Repo, remote: RemoteInfo, b: RemoteBranch) {
   return popup([
     { label: 'Checkout', run: () => repo.git({ kind: 'checkoutRemote', fullName: b.fullName }) },
-    { label: 'Merge nel branch corrente', run: () => repo.git({ kind: 'merge', ref: b.fullName, noFf: false }) },
+    { label: t('ctx.mergeIntoCurrent'), run: () => repo.git({ kind: 'merge', ref: b.fullName, noFf: false }) },
     null,
-    { label: 'Elimina dal remote', run: () => deleteRemoteBranch(repo, remote, b) },
+    { label: t('ctx.deleteFromRemote'), run: () => deleteRemoteBranch(repo, remote, b) },
   ])
 }
 
 export function remoteMenu(repo: Repo, remote: RemoteInfo) {
   return popup([
     {
-      label: 'Rimuovi',
-      run: () => window.confirm(`Rimuovere il remote ${remote.name} (${remote.url})?`) && repo.git({ kind: 'removeRemote', name: remote.name }),
+      label: t('ctx.remove'),
+      run: () => window.confirm(t('remote.confirmRemove', { name: remote.name, url: remote.url })) && repo.git({ kind: 'removeRemote', name: remote.name }),
     },
   ])
 }
 
 export function tagMenu(repo: Repo, tag: TagInfo) {
   const pushes = (repo.refs?.remotes ?? []).map((r) => ({
-    label: `Push su ${r.name}`,
+    label: t('ctx.pushTo', { remote: r.name }),
     run: () => repo.git({ kind: 'pushTag', remote: r.name, name: tag.name }),
   }))
-  return popup([...pushes, ...(pushes.length ? [null] : []), { label: 'Elimina', run: () => repo.git({ kind: 'deleteTag', name: tag.name }) }])
+  return popup([...pushes, ...(pushes.length ? [null] : []), { label: t('ctx.delete'), run: () => repo.git({ kind: 'deleteTag', name: tag.name }) }])
 }
 
 export function commitMenu(repo: Repo, { sha }: Commit) {
   return popup([
-    { label: 'Crea branch qui…', run: () => createBranch(repo, sha) },
-    { label: 'Crea tag qui…', run: () => createTag(repo, sha) },
+    { label: t('ctx.createBranchHere'), run: () => createBranch(repo, sha) },
+    { label: t('ctx.createTagHere'), run: () => createTag(repo, sha) },
     null,
-    { label: 'Checkout (HEAD staccato)', run: () => repo.git({ kind: 'checkoutDetached', sha }) },
+    { label: t('ctx.checkoutDetached'), run: () => repo.git({ kind: 'checkoutDetached', sha }) },
     { label: 'Cherry-pick', run: () => repo.git({ kind: 'cherryPick', sha }) },
     { label: 'Revert', run: () => repo.git({ kind: 'revert', sha }) },
     null,
-    { label: 'Reset soft qui', run: () => reset(repo, sha, 'soft') },
-    { label: 'Reset mixed qui', run: () => reset(repo, sha, 'mixed') },
-    { label: 'Reset hard qui…', run: () => reset(repo, sha, 'hard') },
-    { label: 'Rebase interattivo da qui…', run: () => repo.openRebase(sha) },
+    { label: t('ctx.resetSoft'), run: () => reset(repo, sha, 'soft') },
+    { label: t('ctx.resetMixed'), run: () => reset(repo, sha, 'mixed') },
+    { label: t('ctx.resetHard'), run: () => reset(repo, sha, 'hard') },
+    { label: t('ctx.interactiveRebase'), run: () => repo.openRebase(sha) },
     null,
-    { label: 'Copia SHA', run: () => navigator.clipboard.writeText(sha) },
+    { label: t('ctx.copySha'), run: () => navigator.clipboard.writeText(sha) },
   ])
 }
 
@@ -215,11 +214,11 @@ export function registerBranchActions(): void {
     { id: 'remote.pullRebase', title: 'Pull (rebase)', when: idle, run: withRepo((r) => r.git({ kind: 'pull', mode: 'rebase' })) },
     { id: 'remote.pullMerge', title: 'Pull (merge)', when: idle, run: withRepo((r) => r.git({ kind: 'pull', mode: 'merge' })) },
     { id: 'remote.push', title: 'Push', when: idle, run: withRepo((r) => push(r, false)) },
-    { id: 'remote.forcePush', title: 'Push forzato…', when: idle, run: withRepo((r) => push(r, true)) },
-    { id: 'remote.add', title: 'Aggiungi remote…', when: idle, run: withRepo(addRemote) },
-    { id: 'branch.create', title: 'Nuovo branch…', when: idle, run: withRepo((r) => createBranch(r, 'HEAD')) },
-    { id: 'repo.clone', title: 'Clona repository…', when: () => app.git?.ok === true, run: () => app.cloneRepo() },
-    { id: 'operation.continue', title: "Continua l'operazione in corso", when: inOperation, run: step('continue') },
-    { id: 'operation.abort', title: "Annulla l'operazione in corso", when: inOperation, run: step('abort') },
+    { id: 'remote.forcePush', get title() { return t('action.remote.forcePush') }, when: idle, run: withRepo((r) => push(r, true)) },
+    { id: 'remote.add', get title() { return t('action.remote.add') }, when: idle, run: withRepo(addRemote) },
+    { id: 'branch.create', get title() { return t('action.branch.create') }, when: idle, run: withRepo((r) => createBranch(r, 'HEAD')) },
+    { id: 'repo.clone', get title() { return t('action.repo.clone') }, when: () => app.git?.ok === true, run: () => app.cloneRepo() },
+    { id: 'operation.continue', get title() { return t('action.operation.continue') }, when: inOperation, run: step('continue') },
+    { id: 'operation.abort', get title() { return t('action.operation.abort') }, when: inOperation, run: step('abort') },
   )
 }

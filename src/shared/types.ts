@@ -1,3 +1,5 @@
+import type { Lang } from './i18n'
+
 /** Esito del controllo di git all'avvio. */
 export interface GitCheck {
   ok: boolean
@@ -46,6 +48,8 @@ export type DiffAlgorithm = 'default' | 'myers' | 'minimal' | 'patience' | 'hist
 
 /** Preferenze dell'app, dalla schermata Impostazioni. */
 export interface Preferences {
+  /** Lingua dell'interfaccia e dei messaggi. */
+  language: Lang
   theme: ThemePreference
   /** 0 = fetch automatico spento. */
   autoFetchMinutes: number

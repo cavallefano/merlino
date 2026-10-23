@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import type { GitCheck } from '../../shared/types'
+import { t } from '../i18n'
 
 export const MIN_GIT = [2, 35, 0] as const
 
@@ -19,17 +20,17 @@ export function checkGit(gitPath: string): Promise<GitCheck> {
   return new Promise((resolve) => {
     execFile(gitPath, ['--version'], { windowsHide: true, timeout: 10_000 }, (err, stdout) => {
       if (err) {
-        resolve({ ok: false, path: gitPath, version: null, error: `Git non trovato (${gitPath}): ${err.message}` })
+        resolve({ ok: false, path: gitPath, version: null, error: t('error.gitNotFound', { path: gitPath, detail: err.message }) })
         return
       }
       const v = parseGitVersion(stdout)
       if (!v) {
-        resolve({ ok: false, path: gitPath, version: null, error: `Risposta inattesa da "${gitPath} --version": ${stdout.trim()}` })
+        resolve({ ok: false, path: gitPath, version: null, error: t('error.gitUnexpected', { path: gitPath, output: stdout.trim() }) })
         return
       }
       const version = v.join('.')
       if (!isAtLeast(v, MIN_GIT)) {
-        resolve({ ok: false, path: gitPath, version, error: `Serve git ${MIN_GIT.join('.')} o successivo, trovato ${version}` })
+        resolve({ ok: false, path: gitPath, version, error: t('error.gitTooOld', { min: MIN_GIT.join('.'), version }) })
         return
       }
       resolve({ ok: true, path: gitPath, version, error: null })

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { computed, nextTick, ref, watch } from 'vue'
 import { shortcuts } from '../../shared/shortcuts'
 import type { CommitTemplate, WorkingArea, WorkingFile } from '../../shared/types'
@@ -37,12 +38,12 @@ function onSubjectKey(e: KeyboardEvent) {
   if (repo.templatePicker === 'slash') picker.value?.onKey(e)
 }
 
-async function chooseTemplate(t: CommitTemplate) {
+async function chooseTemplate(template: CommitTemplate) {
   const slash = repo.templatePicker === 'slash'
   repo.templatePicker = null
   const typed = repo.body.trim() !== '' || (!slash && repo.subject.trim() !== '')
-  if (typed && !window.confirm(`Sostituire il messaggio con il template «${t.name}»?`)) return
-  repo.applyTemplate(t)
+  if (typed && !window.confirm(t('template.confirmReplace', { name: template.name }))) return
+  repo.applyTemplate(template)
   await nextTick()
   const el = subjectInput.value
   el?.focus()
@@ -53,10 +54,10 @@ const sections = computed(() => {
   const s = repo.status
   if (!s) return []
   const all: { area: WorkingArea; title: string; files: WorkingFile[] }[] = [
-    { area: 'conflicted', title: 'In conflitto', files: s.conflicted },
-    { area: 'staged', title: 'In stage', files: s.staged },
-    { area: 'unstaged', title: 'Modificati', files: s.unstaged },
-    { area: 'untracked', title: 'Non tracciati', files: s.untracked },
+    { area: 'conflicted', title: t('working.section.conflicted'), files: s.conflicted },
+    { area: 'staged', title: t('working.section.staged'), files: s.staged },
+    { area: 'unstaged', title: t('working.section.unstaged'), files: s.unstaged },
+    { area: 'untracked', title: t('working.section.untracked'), files: s.untracked },
   ]
   return all.filter((section) => section.files.length)
 })
@@ -69,8 +70,8 @@ async function openFile(file: WorkingFile) {
 }
 
 function discard(file: WorkingFile, area: WorkingArea) {
-  const question = area === 'untracked' ? `Eliminare ${file.path}?` : `Scartare le modifiche a ${file.path}?`
-  if (window.confirm(`${question} Non si può annullare.`)) void repo.discard([file], area === 'untracked')
+  const question = area === 'untracked' ? t('working.confirmDelete', { path: file.path }) : t('working.confirmDiscard', { path: file.path })
+  if (window.confirm(question)) void repo.discard([file], area === 'untracked')
 }
 
 async function createStash() {
@@ -89,7 +90,7 @@ async function createStash() {
           ref="subjectInput"
           v-model="repo.subject"
           data-testid="commit-subject"
-          placeholder="Oggetto del commit (/ per i template)"
+          :placeholder="t('commit.subjectPlaceholder')"
           @keydown="onSubjectKey"
           @blur="repo.templatePicker === 'slash' && (repo.templatePicker = null)"
         />
@@ -107,7 +108,7 @@ async function createStash() {
         v-model="repo.body"
         data-testid="commit-body"
         rows="3"
-        placeholder="Descrizione (facoltativa)"
+        :placeholder="t('commit.bodyPlaceholder')"
         :class="{ guided: app.preferences.bodyGuide > 0 }"
         :style="{ '--guide': `calc(8px + ${app.preferences.bodyGuide}ch)` }"
       />
@@ -134,14 +135,14 @@ async function createStash() {
         </button>
       </div>
       <form v-if="showStash" class="stash" @submit.prevent="createStash">
-        <input v-model="stashMessage" data-testid="stash-message" placeholder="Messaggio dello stash (facoltativo)" />
-        <label><input v-model="stashUntracked" type="checkbox" data-testid="stash-untracked" /> Includi non tracciati</label>
-        <button data-testid="stash-create">Crea stash</button>
+        <input v-model="stashMessage" data-testid="stash-message" :placeholder="t('stash.messagePlaceholder')" />
+        <label><input v-model="stashUntracked" type="checkbox" data-testid="stash-untracked" /> {{ t('stash.includeUntracked') }}</label>
+        <button data-testid="stash-create">{{ t('stash.create') }}</button>
       </form>
     </div>
 
     <div class="files">
-      <p v-if="!sections.length" class="muted empty">Nessuna modifica</p>
+      <p v-if="!sections.length" class="muted empty">{{ t('working.none') }}</p>
       <section
         v-for="section in sections"
         :key="section.area"
@@ -152,8 +153,8 @@ async function createStash() {
           <strong>{{ section.title }}</strong>
           <span class="muted">({{ section.files.length }})</span>
           <span class="spacer" />
-          <button v-if="section.area === 'staged'" data-testid="unstage-all" @click="repo.unstageEverything()">Togli tutto</button>
-          <button v-else-if="section.area !== 'conflicted'" data-testid="stage-all" @click="repo.stage(section.files)">Aggiungi tutto</button>
+          <button v-if="section.area === 'staged'" data-testid="unstage-all" @click="repo.unstageEverything()">{{ t('working.unstageAll') }}</button>
+          <button v-else-if="section.area !== 'conflicted'" data-testid="stage-all" @click="repo.stage(section.files)">{{ t('working.stageAll') }}</button>
         </header>
         <ul>
           <li
@@ -167,16 +168,16 @@ async function createStash() {
             <span class="status" :class="f.status">{{ f.status }}</span>
             <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
             <span class="actions" @click.stop>
-              <button v-if="section.area === 'staged'" data-testid="unstage-file" @click="repo.unstage([f])">Togli</button>
+              <button v-if="section.area === 'staged'" data-testid="unstage-file" @click="repo.unstage([f])">{{ t('working.unstage') }}</button>
               <template v-else-if="section.area === 'conflicted'">
-                <button data-testid="open-file" @click="openFile(f)">Apri</button>
-                <button data-testid="stage-file" @click="repo.stage([f])">Segna come risolto</button>
+                <button data-testid="open-file" @click="openFile(f)">{{ t('working.open') }}</button>
+                <button data-testid="stage-file" @click="repo.stage([f])">{{ t('working.markResolved') }}</button>
               </template>
               <template v-else>
-                <button data-testid="stage-file" @click="repo.stage([f])">Aggiungi</button>
-                <button v-if="section.area === 'untracked'" data-testid="ignore-file" @click="repo.ignore(f)">Ignora</button>
+                <button data-testid="stage-file" @click="repo.stage([f])">{{ t('working.stage') }}</button>
+                <button v-if="section.area === 'untracked'" data-testid="ignore-file" @click="repo.ignore(f)">{{ t('working.ignore') }}</button>
                 <button data-testid="discard-file" @click="discard(f, section.area)">
-                  {{ section.area === 'untracked' ? 'Elimina' : 'Scarta' }}
+                  {{ section.area === 'untracked' ? t('working.delete') : t('working.discard') }}
                 </button>
               </template>
             </span>
@@ -190,7 +191,7 @@ async function createStash() {
         <span class="path muted">{{ repo.working.file.path }}</span>
         <label>
           <input type="checkbox" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
-          Ignora spazi
+          {{ t('diff.ignoreWhitespace') }}
         </label>
       </div>
       <StageDiff :root="root" :diff="repo.workingDiff" />

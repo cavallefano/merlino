@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { ref } from 'vue'
 import { useAppStore } from '../stores/app'
 
@@ -18,16 +19,16 @@ async function retry() {
 
 <template>
   <section class="center">
-    <h1>Git non disponibile</h1>
+    <h1>{{ t('gitMissing.title') }}</h1>
     <p class="error">{{ app.git?.error }}</p>
     <p>
-      Installa git 2.35 o successivo da
+      {{ t('gitMissing.installBefore') }}
       <a href="https://git-scm.com/downloads" target="_blank">git-scm.com/downloads</a>
-      oppure indica il percorso dell'eseguibile.
+      {{ t('gitMissing.installAfter') }}
     </p>
     <form @submit.prevent="retry">
       <input v-model="path" data-testid="git-path" placeholder="/usr/bin/git" />
-      <button class="primary" :disabled="busy">Riprova</button>
+      <button class="primary" :disabled="busy">{{ t('gitMissing.retry') }}</button>
     </form>
   </section>
 </template>

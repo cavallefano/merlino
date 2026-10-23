@@ -4,7 +4,6 @@ import { dirname, join } from 'node:path'
 import { Channels } from '../shared/ipc'
 import { pathFromArgv } from './argv'
 import { registerIpc } from './ipc-handlers'
-import { buildMenu } from './menu'
 import { SettingsStore } from './settings'
 
 if (process.env.MERLINO_USER_DATA) app.setPath('userData', process.env.MERLINO_USER_DATA)
@@ -81,7 +80,6 @@ if (!app.requestSingleInstanceLock()) {
     if (hidden) app.dock?.hide()
     const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'))
     const ipc = registerIpc(() => win, settings, argvPath(process.argv, process.cwd()))
-    buildMenu((id) => win?.webContents.send(Channels.menuAction, id))
     win = createWindow()
     app.on('before-quit', () => void ipc.disposeAll())
   })

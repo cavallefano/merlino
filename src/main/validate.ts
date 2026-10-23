@@ -1,24 +1,26 @@
 import { isAbsolute } from 'node:path'
+import { LANGUAGES } from '../shared/i18n'
 import { DIFF_ALGORITHMS } from '../shared/preferences'
 import type { CommitTemplate, DiffOptions, GitConfigKey, Operation, Preferences, RebaseStep, RepoCommand } from '../shared/types'
 import type { DiffRequest } from './git/diff'
 import { GIT_CONFIG_KEYS } from './git/global-config'
+import { t } from './i18n'
 
 /** Gli argomenti arrivano dal renderer: si validano qui. */
 export function str(value: unknown, name: string): string {
-  if (typeof value !== 'string' || value === '') throw new TypeError(`${name} deve essere una stringa non vuota`)
+  if (typeof value !== 'string' || value === '') throw new TypeError(t('validation.required', { name }))
   return value
 }
 
 /** Uno SHA che non può essere scambiato per un'opzione di git. */
 export function sha(value: unknown): string {
   const s = str(value, 'sha')
-  if (!/^[0-9a-f]{4,64}$/i.test(s)) throw new TypeError('sha non valido')
+  if (!/^[0-9a-f]{4,64}$/i.test(s)) throw new TypeError(t('validation.invalid', { name: 'sha' }))
   return s
 }
 
 export function int(value: unknown, name: string, max: number): number {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max) throw new TypeError(`${name} non valido`)
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max) throw new TypeError(t('validation.invalid', { name }))
   return value
 }
 
@@ -33,8 +35,8 @@ export function diffOptions(value: unknown): DiffOptions {
   return {
     ignoreWhitespace: v.ignoreWhitespace === true,
     force: v.force === true,
-    context: v.context === undefined ? 3 : intIn(v.context, 'Righe di contesto', 1, 20),
-    algorithm: v.algorithm === undefined ? 'default' : oneOf(v.algorithm, DIFF_ALGORITHMS, 'Algoritmo del diff'),
+    context: v.context === undefined ? 3 : intIn(v.context, t('setting.diffContext'), 1, 20),
+    algorithm: v.algorithm === undefined ? 'default' : oneOf(v.algorithm, DIFF_ALGORITHMS, t('setting.diffAlgorithm')),
   }
 }
 
@@ -43,28 +45,28 @@ const MAX_TEXT = 50 * 1024 * 1024
 /** Percorso relativo dentro il repo. */
 export function relPath(value: unknown): string {
   const p = str(value, 'path')
-  if (isAbsolute(p) || p.split(/[\\/]/).includes('..')) throw new TypeError(`percorso non valido: ${p}`)
+  if (isAbsolute(p) || p.split(/[\\/]/).includes('..')) throw new TypeError(t('validation.invalidPath', { path: p }))
   return p
 }
 
 export function list<T>(value: unknown, item: (v: unknown) => T): T[] {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 10_000) throw new TypeError('elenco non valido')
+  if (!Array.isArray(value) || value.length === 0 || value.length > 10_000) throw new TypeError(t('validation.invalidList'))
   return value.map(item)
 }
 
 export function text(value: unknown, name: string): string {
-  if (typeof value !== 'string' || value.length > MAX_TEXT) throw new TypeError(`${name} non valido`)
+  if (typeof value !== 'string' || value.length > MAX_TEXT) throw new TypeError(t('validation.invalid', { name }))
   return value
 }
 
 export function oneOf<T extends string>(value: unknown, options: readonly T[], name: string): T {
-  if (!options.includes(value as T)) throw new TypeError(`${name} non valido`)
+  if (!options.includes(value as T)) throw new TypeError(t('validation.invalid', { name }))
   return value as T
 }
 
 export function stashRef(value: unknown): string {
   const ref = str(value, 'ref')
-  if (!/^stash@\{\d+\}$/.test(ref)) throw new TypeError('stash non valido')
+  if (!/^stash@\{\d+\}$/.test(ref)) throw new TypeError(t('validation.invalid', { name: 'stash' }))
   return ref
 }
 
@@ -78,21 +80,21 @@ const NOT_PRINTABLE = /[^\x20-\x7e\u00a0-\uffff]/
 
 /** Nome di branch, tag o remote: niente opzioni travestite (-x) né caratteri che git non ammette. */
 export function refName(value: unknown): string {
-  const s = str(value, 'nome')
-  if (s.startsWith('-') || /[\s~^:?*[\\]|\.\.|@\{/.test(s) || NOT_PRINTABLE.test(s)) throw new TypeError(`nome non valido: ${s}`)
+  const s = str(value, t('field.name'))
+  if (s.startsWith('-') || /[\s~^:?*[\\]|\.\.|@\{/.test(s) || NOT_PRINTABLE.test(s)) throw new TypeError(t('validation.invalidName', { value: s }))
   return s
 }
 
 /** Revisione (sha, branch, HEAD~2, origin/main): non deve sembrare un'opzione. */
 export function revision(value: unknown): string {
-  const s = str(value, 'revisione')
-  if (s.startsWith('-') || /\s/.test(s) || NOT_PRINTABLE.test(s)) throw new TypeError(`revisione non valida: ${s}`)
+  const s = str(value, t('field.revision'))
+  if (s.startsWith('-') || /\s/.test(s) || NOT_PRINTABLE.test(s)) throw new TypeError(t('validation.invalidRevision', { value: s }))
   return s
 }
 
 export function gitUrl(value: unknown): string {
-  const s = str(value, 'url')
-  if (s.startsWith('-') || /\s/.test(s) || s.length > 2000) throw new TypeError(`URL non valido: ${s}`)
+  const s = str(value, t('field.url'))
+  if (s.startsWith('-') || /\s/.test(s) || s.length > 2000) throw new TypeError(t('validation.invalidUrl', { value: s }))
   return s
 }
 
@@ -163,60 +165,61 @@ export function repoCommand(value: unknown): RepoCommand {
     case 'rebaseInteractive':
       return { kind: 'rebaseInteractive', sha: sha(v.sha), steps: list(v.steps, rebaseStep) }
     default:
-      throw new TypeError('comando non valido')
+      throw new TypeError(t('validation.invalidCommand'))
   }
 }
 
 export function intIn(value: unknown, name: string, min: number, max: number): number {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) {
-    throw new TypeError(`${name}: serve un numero intero da ${min} a ${max}`)
+    throw new TypeError(t('validation.integerRange', { name, min, max }))
   }
   return value
 }
 
 function bool(value: unknown, name: string): boolean {
-  if (typeof value !== 'boolean') throw new TypeError(`${name} non valido`)
+  if (typeof value !== 'boolean') throw new TypeError(t('validation.invalid', { name }))
   return value
 }
 
 function absolutePath(value: unknown, name: string): string | null {
   if (value === null) return null
   const s = str(value, name)
-  if (!isAbsolute(s) || s.length > 1024) throw new TypeError(`${name}: serve un percorso assoluto`)
+  if (!isAbsolute(s) || s.length > 1024) throw new TypeError(t('validation.absolutePath', { name }))
   return s
 }
 
 /** Preferenze dopo una modifica parziale: si valida il risultato, così i vincoli fra campi valgono sempre. */
 export function preferences(current: Preferences, patch: unknown): Preferences {
   const p = { ...current, ...(typeof patch === 'object' && patch !== null ? patch : {}) } as Record<string, unknown>
-  const subjectWarn = intIn(p.subjectWarn, "Avviso sull'oggetto", 20, 200)
+  const subjectWarn = intIn(p.subjectWarn, t('setting.subjectWarn'), 20, 200)
   return {
-    theme: oneOf(p.theme, ['system', 'light', 'dark'] as const, 'Tema'),
-    autoFetchMinutes: intIn(p.autoFetchMinutes, 'Fetch automatico', 0, 60),
-    fetchPrune: bool(p.fetchPrune, 'Prune'),
-    restoreTabs: bool(p.restoreTabs, 'Riapri le tab'),
+    language: oneOf(p.language, LANGUAGES, t('setting.language')),
+    theme: oneOf(p.theme, ['system', 'light', 'dark'] as const, t('setting.theme')),
+    autoFetchMinutes: intIn(p.autoFetchMinutes, t('setting.autoFetch'), 0, 60),
+    fetchPrune: bool(p.fetchPrune, t('setting.prune')),
+    restoreTabs: bool(p.restoreTabs, t('setting.restoreTabs')),
     subjectWarn,
-    subjectLimit: intIn(p.subjectLimit, "Limite dell'oggetto", subjectWarn, 200),
-    bodyGuide: p.bodyGuide === 0 ? 0 : intIn(p.bodyGuide, 'Guida della descrizione', 40, 200),
-    diffSplit: bool(p.diffSplit, 'Vista del diff'),
-    diffIgnoreWhitespace: bool(p.diffIgnoreWhitespace, 'Ignora spazi'),
-    diffContext: intIn(p.diffContext, 'Righe di contesto', 1, 20),
-    diffAlgorithm: oneOf(p.diffAlgorithm, DIFF_ALGORITHMS, 'Algoritmo del diff'),
-    codeFontSize: intIn(p.codeFontSize, 'Dimensione del carattere', 10, 20),
-    tabSize: intIn(p.tabSize, 'Larghezza del tab', 1, 8),
-    editorApp: absolutePath(p.editorApp, 'Editor'),
-    terminalApp: absolutePath(p.terminalApp, 'Terminale'),
-    cloneFolder: absolutePath(p.cloneFolder, 'Cartella dei clone'),
+    subjectLimit: intIn(p.subjectLimit, t('setting.subjectLimit'), subjectWarn, 200),
+    bodyGuide: p.bodyGuide === 0 ? 0 : intIn(p.bodyGuide, t('setting.bodyGuide'), 40, 200),
+    diffSplit: bool(p.diffSplit, t('setting.diffView')),
+    diffIgnoreWhitespace: bool(p.diffIgnoreWhitespace, t('setting.ignoreWhitespace')),
+    diffContext: intIn(p.diffContext, t('setting.diffContext'), 1, 20),
+    diffAlgorithm: oneOf(p.diffAlgorithm, DIFF_ALGORITHMS, t('setting.diffAlgorithm')),
+    codeFontSize: intIn(p.codeFontSize, t('setting.codeFontSize'), 10, 20),
+    tabSize: intIn(p.tabSize, t('setting.tabSize'), 1, 8),
+    editorApp: absolutePath(p.editorApp, t('setting.editor')),
+    terminalApp: absolutePath(p.terminalApp, t('setting.terminal')),
+    cloneFolder: absolutePath(p.cloneFolder, t('setting.cloneFolder')),
   }
 }
 
 /** Una chiave della sezione Git e il suo valore; '' = togli la chiave. */
 export function gitConfigEntry(key: unknown, value: unknown): [GitConfigKey, string] {
-  const k = oneOf(key, GIT_CONFIG_KEYS, 'chiave')
-  if (typeof value !== 'string' || /[\r\n\0]/.test(value) || value.length > 200) throw new TypeError(`${k}: valore non valido`)
+  const k = oneOf(key, GIT_CONFIG_KEYS, t('field.key'))
+  if (typeof value !== 'string' || /[\r\n\0]/.test(value) || value.length > 200) throw new TypeError(t('validation.configValue', { key: k }))
   const v = value.trim()
   if (v === '') return [k, '']
-  if (v.startsWith('-')) throw new TypeError(`${k}: il valore non può iniziare con "-"`)
+  if (v.startsWith('-')) throw new TypeError(t('validation.configDash', { key: k }))
   switch (k) {
     case 'commit.gpgsign':
     case 'pull.rebase':
@@ -232,18 +235,18 @@ export function gitConfigEntry(key: unknown, value: unknown): [GitConfigKey, str
 
 /** La libreria dei template: id unici, nomi con trim, testi entro i limiti. */
 export function commitTemplates(value: unknown): CommitTemplate[] {
-  if (!Array.isArray(value) || value.length > 200) throw new TypeError('elenco dei template non valido')
+  if (!Array.isArray(value) || value.length > 200) throw new TypeError(t('validation.templateList'))
   const ids = new Set<string>()
   return value.map((raw) => {
-    const t = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
-    const id = str(t.id, 'id')
-    if (!/^[\w-]{1,64}$/.test(id) || ids.has(id)) throw new TypeError(`id del template non valido: ${id}`)
+    const tpl = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
+    const id = str(tpl.id, 'id')
+    if (!/^[\w-]{1,64}$/.test(id) || ids.has(id)) throw new TypeError(t('validation.templateId', { id }))
     ids.add(id)
-    const name = typeof t.name === 'string' ? t.name.trim() : ''
-    if (!name || name.length > 100) throw new TypeError('Il nome di un template deve avere da 1 a 100 caratteri')
-    const subject = text(t.subject, 'oggetto')
-    const body = text(t.body, 'descrizione')
-    if (subject.length > 500 || body.length > 20_000) throw new TypeError(`Il template "${name}" è troppo lungo`)
+    const name = typeof tpl.name === 'string' ? tpl.name.trim() : ''
+    if (!name || name.length > 100) throw new TypeError(t('validation.templateName'))
+    const subject = text(tpl.subject, t('field.subject'))
+    const body = text(tpl.body, t('field.description'))
+    if (subject.length > 500 || body.length > 20_000) throw new TypeError(t('validation.templateTooLong', { name }))
     return { id, name, subject, body }
   })
 }

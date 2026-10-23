@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { t, tn } from '../i18n'
 import { computed, onMounted } from 'vue'
+import type { MessageKey } from '../../shared/i18n'
 import type { Operation } from '../../shared/types'
 import { push } from '../actions/branches'
 import { useRepoStore } from '../stores/repo'
@@ -12,18 +14,18 @@ import WorkingView from './WorkingView.vue'
 const props = defineProps<{ root: string }>()
 const repo = useRepoStore(props.root)
 
-const OPERATIONS: Record<Operation, string> = {
-  merge: 'Merge in corso',
-  rebase: 'Rebase in corso',
-  'cherry-pick': 'Cherry-pick in corso',
-  revert: 'Revert in corso',
+const OPERATIONS: Record<Operation, MessageKey> = {
+  merge: 'operation.merge',
+  rebase: 'operation.rebase',
+  'cherry-pick': 'operation.cherryPick',
+  revert: 'operation.revert',
 }
 
 const head = computed(() => {
   const info = repo.info
   if (!info) return ''
   if (info.branch) return info.branch
-  return info.headSha ? `HEAD staccato (${info.headSha.slice(0, 7)})` : 'nessun commit'
+  return info.headSha ? t('repo.detachedHead', { sha: info.headSha.slice(0, 7) }) : t('repo.noCommits')
 })
 const operation = computed(() => repo.status?.operation ?? null)
 const conflicts = computed(() => repo.status?.conflicted.length ?? 0)
@@ -51,16 +53,16 @@ onMounted(() => {
       <button data-testid="push" :disabled="!!repo.busy" @click="push(repo, false)">
         Push<span v-if="repo.status?.ahead" class="count">↑{{ repo.status.ahead }}</span>
       </button>
-      <button aria-label="Aggiorna" @click="repo.refresh()">↻</button>
+      <button :aria-label="t('action.repo.refresh')" @click="repo.refresh()">↻</button>
     </header>
     <p v-if="repo.error" class="error message">{{ repo.error }}</p>
     <div v-if="operation" class="operation" data-testid="operation-banner">
-      <strong>{{ OPERATIONS[operation] }}</strong>
-      <span v-if="conflicts" class="muted">{{ conflicts }} file in conflitto: risolvili e segnali come risolti.</span>
+      <strong>{{ t(OPERATIONS[operation]) }}</strong>
+      <span v-if="conflicts" class="muted">{{ tn('operation.conflicts', conflicts) }}</span>
       <span class="spacer" />
-      <button class="primary" data-testid="op-continue" :disabled="!!repo.busy || conflicts > 0" @click="step('continue')">Continua</button>
-      <button v-if="operation !== 'merge'" data-testid="op-skip" :disabled="!!repo.busy" @click="step('skip')">Salta</button>
-      <button data-testid="op-abort" :disabled="!!repo.busy" @click="step('abort')">Annulla</button>
+      <button class="primary" data-testid="op-continue" :disabled="!!repo.busy || conflicts > 0" @click="step('continue')">{{ t('operation.continue') }}</button>
+      <button v-if="operation !== 'merge'" data-testid="op-skip" :disabled="!!repo.busy" @click="step('skip')">{{ t('operation.skip') }}</button>
+      <button data-testid="op-abort" :disabled="!!repo.busy" @click="step('abort')">{{ t('operation.abort') }}</button>
     </div>
     <div class="panes">
       <RepoSidebar :root="root" />

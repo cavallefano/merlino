@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { shortcuts } from '../../shared/shortcuts'
 import { useAppStore } from '../stores/app'
 import { useRepoStore } from '../stores/repo'
@@ -12,14 +13,14 @@ export function registerHistoryActions(): void {
   registry.register(
     {
       id: 'history.search',
-      title: 'Cerca nella storia',
+      get title() { return t('action.history.search') },
       keys: shortcuts['history.search'],
       when: () => app.active !== null,
       run: () => document.querySelector<HTMLInputElement>('[data-testid="history-search"]')?.focus(),
     },
-    { id: 'commit.copySha', title: 'Copia SHA del commit', when: hasCommit, run: () => navigator.clipboard.writeText(repo()?.detail?.commit.sha ?? '') },
-    { id: 'commit.copyMessage', title: 'Copia messaggio del commit', when: hasCommit, run: () => navigator.clipboard.writeText(repo()?.detail?.message ?? '') },
-    { id: 'diff.toggleSplit', title: 'Diff affiancato / unificato', when: hasCommit, run: () => repo()?.toggleSplit() },
-    { id: 'diff.toggleWhitespace', title: 'Ignora spazi nel diff', when: hasCommit, run: () => repo()?.toggleWhitespace() },
+    { id: 'commit.copySha', get title() { return t('action.commit.copySha') }, when: hasCommit, run: () => navigator.clipboard.writeText(repo()?.detail?.commit.sha ?? '') },
+    { id: 'commit.copyMessage', get title() { return t('action.commit.copyMessage') }, when: hasCommit, run: () => navigator.clipboard.writeText(repo()?.detail?.message ?? '') },
+    { id: 'diff.toggleSplit', get title() { return t('action.diff.toggleSplit') }, when: hasCommit, run: () => repo()?.toggleSplit() },
+    { id: 'diff.toggleWhitespace', get title() { return t('action.diff.toggleWhitespace') }, when: hasCommit, run: () => repo()?.toggleWhitespace() },
   )
 }

@@ -4,6 +4,7 @@ import type { WorkingFile } from '../../src/shared/types'
 
 const ctx: DropContext = {
   currentBranch: 'main',
+  lang: 'en',
   remotes: [
     {
       name: 'origin',
@@ -24,7 +25,7 @@ const act = (s: DragSource, t: DropTarget, alt = false) => dropAction(s, t, alt,
 describe('dropAction', () => {
   it('branch sul corrente: merge; con ⌥ rebase', () => {
     expect(act(branch('feature/a'), { kind: 'branch', name: 'main' })).toEqual({
-      label: 'Merge di feature/a in main',
+      label: 'Merge feature/a into main',
       operation: { type: 'git', command: { kind: 'merge', ref: 'feature/a', noFf: false } },
     })
     expect(act(remoteBranch('feature/a'), { kind: 'branch', name: 'main' }, true)?.operation).toEqual({ type: 'git', command: { kind: 'rebase', onto: 'origin/feature/a' } })
@@ -35,7 +36,7 @@ describe('dropAction', () => {
       type: 'git',
       command: { kind: 'fastForward', branch: 'feature/a', from: 'origin/feature/a' },
     })
-    expect(act(remoteBranch('feature/a'), { kind: 'branch', name: 'feature/a' }, true)?.label).toBe('feature/a segue origin/feature/a')
+    expect(act(remoteBranch('feature/a'), { kind: 'branch', name: 'feature/a' }, true)?.label).toBe('feature/a tracks origin/feature/a')
   })
 
   it('branch locale su un remote: push; con ⌥ upstream solo se il branch remoto esiste', () => {
@@ -55,13 +56,13 @@ describe('dropAction', () => {
       type: 'git',
       command: { kind: 'pushBranch', remote: 'origin', branch: 'feature/a', remoteBranch: 'main' },
     })
-    expect(act(branch('feature/a'), remoteBranch('main'), true)?.label).toBe('feature/a segue origin/main')
+    expect(act(branch('feature/a'), remoteBranch('main'), true)?.label).toBe('feature/a tracks origin/main')
   })
 
   it('intestazioni: nuovo branch da branch, tag o commit; nuovo tag da un commit; stash dei file', () => {
-    expect(act({ kind: 'tag', name: 'v1' }, { kind: 'branchesHeader' })).toEqual({ label: 'Nuovo branch da v1…', operation: { type: 'createBranch', start: 'v1' } })
+    expect(act({ kind: 'tag', name: 'v1' }, { kind: 'branchesHeader' })).toEqual({ label: 'New branch from v1…', operation: { type: 'createBranch', start: 'v1' } })
     expect(act(commit, { kind: 'branchesHeader' })?.operation).toEqual({ type: 'createBranch', start: 'abcdef1234' })
-    expect(act(commit, { kind: 'tagsHeader' })).toEqual({ label: 'Nuovo tag su abcdef1…', operation: { type: 'createTag', sha: 'abcdef1234' } })
+    expect(act(commit, { kind: 'tagsHeader' })).toEqual({ label: 'New tag on abcdef1…', operation: { type: 'createTag', sha: 'abcdef1234' } })
     expect(act({ kind: 'files', area: 'untracked', files: [file('n.txt')] }, { kind: 'stashHeader' })?.operation).toEqual({
       type: 'git',
       command: { kind: 'stashFiles', paths: ['n.txt'], untracked: true },
@@ -73,18 +74,20 @@ describe('dropAction', () => {
   })
 
   it('commit sul corrente o sulle modifiche locali: cherry-pick; con ⌥ revert', () => {
-    expect(act(commit, { kind: 'branch', name: 'main' })?.label).toBe('Cherry-pick di abcdef1 in main')
+    expect(act(commit, { kind: 'branch', name: 'main' })?.label).toBe('Cherry-pick abcdef1 into main')
     expect(act(commit, { kind: 'working' }, true)?.operation).toEqual({ type: 'git', command: { kind: 'revert', sha: 'abcdef1234' } })
   })
 
   it('stash e file di un commit sulle modifiche locali; file fra le sezioni', () => {
     expect(act({ kind: 'stash', ref: 'stash@{0}', sha: 's' }, { kind: 'working' }, true)).toEqual({
-      label: 'Pop di stash@{0}',
+      label: 'Pop stash@{0}',
       operation: { type: 'stash', action: 'pop', ref: 'stash@{0}' },
     })
-    expect(act({ kind: 'commitFile', sha: 'abc1234', path: 'src/a.ts' }, { kind: 'working' })?.label).toBe('Applica le modifiche di a.ts')
-    expect(act({ kind: 'files', area: 'unstaged', files: [file('a')] }, { kind: 'area', area: 'staged' })?.label).toBe('Stage di a')
-    expect(act({ kind: 'files', area: 'staged', files: [file('a'), file('b')] }, { kind: 'area', area: 'unstaged' })?.label).toBe('Unstage di 2 file')
+    expect(act({ kind: 'commitFile', sha: 'abc1234', path: 'src/a.ts' }, { kind: 'working' })?.label).toBe('Apply the changes of a.ts')
+    expect(act({ kind: 'files', area: 'unstaged', files: [file('a')] }, { kind: 'area', area: 'staged' })?.label).toBe('Stage a')
+    expect(act({ kind: 'files', area: 'staged', files: [file('a'), file('b')] }, { kind: 'area', area: 'unstaged' })?.label).toBe('Unstage 2 files')
+    // Le etichette seguono la lingua scelta
+    expect(dropAction({ kind: 'files', area: 'staged', files: [file('a'), file('b')] }, { kind: 'area', area: 'unstaged' }, false, { ...ctx, lang: 'it' })?.label).toBe('Unstage di 2 file')
   })
 
   it('rilasci non ammessi', () => {

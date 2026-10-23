@@ -4,7 +4,7 @@ A fast, keyboard-friendly desktop Git client for macOS, Windows and Linux.
 
 Merlino drives the `git` you already have installed, so your hooks, commit signing, credential helpers, LFS and config keep working exactly as they do on the command line. It is built with Electron, Vue 3 and TypeScript.
 
-> **Status:** early development (v0.1). The interface is currently in Italian. No prebuilt releases yet: build it from source (see [Installation](#installation)).
+> **Status:** early development (v0.1). The interface is available in English and Italian. No prebuilt releases yet: build it from source (see [Installation](#installation)).
 
 ## Features
 
@@ -81,7 +81,7 @@ Drop to run the action; hold <kbd>⌥</kbd> (<kbd>Alt</kbd> on Windows/Linux) fo
 ### Settings
 | Section | What you can set |
 |---|---|
-| General | Theme: system, light or dark. Automatic fetch interval, pruning, reopening tabs at launch |
+| General | Language: English or Italian, applied immediately (menus included). Theme: system, light or dark. Automatic fetch interval, pruning, reopening tabs at launch |
 | Commit | Subject and body length guides, commit templates and the default per repository |
 | Diff | Initial view, whitespace, context lines, diff algorithm, code font size, tab width |
 | Integrations | External editor and terminal |
@@ -147,7 +147,7 @@ npm run test:e2e     # build, then Playwright end-to-end tests on the Electron a
 src/main/       Electron main process: git runner and parsers, IPC handlers, settings, menus
 src/preload/    the typed bridge exposed to the interface (window.api)
 src/renderer/   Vue 3 interface: components, Pinia stores, actions, drag and drop
-src/shared/     types and IPC contract shared by main and renderer
+src/shared/     types and IPC contract shared by main and renderer; translations in src/shared/i18n/
 test/           unit, integration (real git) and end-to-end (Playwright) tests
 docs/           design specs and implementation plans (in Italian)
 ```
@@ -163,8 +163,19 @@ docs/           design specs and implementation plans (in Italian)
 
 Issues and pull requests are welcome.
 - Please run `npm run lint`, `npm run typecheck`, `npm test` and `npm run test:e2e` before opening a pull request.
-- Keep new interface text consistent with the existing (Italian) wording.
+- Every new interface text goes in `src/shared/i18n/en.ts` and in `it.ts` (see [Translations](#translations)).
 - Commit messages follow the `feat:` / `fix:` / `docs:` / `test:` style used in the history.
+
+## Translations
+
+Interface texts live in `src/shared/i18n/`: `en.ts` is the reference, every other language has the same keys.
+
+To add a language:
+1. Copy `it.ts` to a new file (for example `fr.ts`), name the export after the language and translate the texts. Keep the `{placeholders}` as they are; plurals use the `.one` / `.other` keys.
+2. In `src/shared/i18n/index.ts`, add the language code to `Lang` and `LANGUAGES`, the dictionary to `dictionaries`, and its date locale to `dateLocale`.
+3. Add its name, written in that language, as `language.<code>` in every dictionary.
+
+`npm test` checks that every translation has the same placeholders as English and no empty text.
 
 ## License
 

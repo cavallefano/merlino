@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { shortcuts } from '../../shared/shortcuts'
 import { registry } from '../actions/builtin'
 import { useAppStore } from '../stores/app'
@@ -21,12 +22,12 @@ const paletteKeys = registry.keyLabel(shortcuts['palette.open'])
       @click="app.activate(root)"
     >
       <span>{{ name(root) }}</span>
-      <button class="close" aria-label="Chiudi tab" @click.stop="app.close(root)">×</button>
+      <button class="close" :aria-label="t('action.tab.close')" @click.stop="app.close(root)">×</button>
     </div>
-    <button class="add" aria-label="Apri repository" @click="app.pickAndOpen()">+</button>
+    <button class="add" :aria-label="t('action.repo.open')" @click="app.pickAndOpen()">+</button>
     <span class="spacer" />
     <button class="palette" data-testid="palette-button" @click="app.paletteOpen = true">
-      Comandi <kbd>{{ paletteKeys }}</kbd>
+      {{ t('tabs.commands') }} <kbd>{{ paletteKeys }}</kbd>
     </button>
   </nav>
 </template>

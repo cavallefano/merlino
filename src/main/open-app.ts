@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { t } from './i18n'
 
 /** Un'app esterna da avviare; wait: aspetta l'uscita (open su macOS esce subito, con l'esito). */
 export interface Launch {
@@ -26,7 +27,7 @@ export function startApp(l: Launch): Promise<void> {
     const child = spawn(l.command, l.args, { cwd: l.cwd, detached: !l.wait, stdio: 'ignore' })
     child.once('error', reject)
     if (l.wait) {
-      child.once('exit', (code) => (code === 0 ? resolve() : reject(new Error(`Impossibile aprire con ${l.args[1] ?? l.command} (exit ${code})`))))
+      child.once('exit', (code) => (code === 0 ? resolve() : reject(new Error(t('error.cannotOpenWith', { app: l.args[1] ?? l.command, code: String(code) })))))
     } else {
       child.once('spawn', () => {
         child.unref()

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Commit, CommandLogEntry, Operation, RebaseStep, RepoCommand } from '../../shared/types'
 import { LOG_FORMAT, parseLog } from './log'
+import { t } from '../i18n'
 import { GitError, GitRunner } from './runner'
 import { applyFileChanges, stashFiles } from './working'
 
@@ -101,7 +102,7 @@ export async function fastForward(r: GitRunner, branch: string, from: string): P
   } catch (e) {
     // git lo segnala come "[rejected]", che explain() tradurrebbe in un push rifiutato
     if (e instanceof GitError && /rejected|non-fast-forward/.test(e.info.stderr)) {
-      throw new GitError({ ...e.info, message: `${branch} non si può aggiornare in fast-forward da ${from}: fai checkout e merge` })
+      throw new GitError({ ...e.info, message: t('error.fastForward', { branch, from }) })
     }
     throw e
   }
@@ -134,11 +135,11 @@ export async function clone(
 /** I commit dal commit scelto a HEAD (dal più recente). Solo storie lineari. */
 export async function rebaseRange(r: GitRunner, sha: string): Promise<Commit[]> {
   const ancestor = await r.run(['merge-base', '--is-ancestor', sha, 'HEAD'], { okCodes: [0, 1] })
-  if (ancestor.exitCode !== 0) throw new Error('Il commit non fa parte della storia del branch corrente')
+  if (ancestor.exitCode !== 0) throw new Error(t('error.commitNotInHistory'))
   const root = (await parentsOf(r, sha)).length === 0
   const out = await r.run(['log', '-z', '--decorate=full', `--format=${LOG_FORMAT}`, root ? 'HEAD' : `${sha}^..HEAD`])
   const commits = parseLog(out.stdout)
-  if (commits.some((c) => c.parents.length > 1)) throw new Error('Il rebase interattivo non supporta intervalli che contengono merge')
+  if (commits.some((c) => c.parents.length > 1)) throw new Error(t('error.rebaseMerges'))
   return commits
 }
 
@@ -150,10 +151,10 @@ export async function rebaseRange(r: GitRunner, sha: string): Promise<Commit[]> 
 export async function rebaseInteractive(r: GitRunner, sha: string, steps: RebaseStep[]): Promise<void> {
   const range = new Set((await rebaseRange(r, sha)).map((c) => c.sha))
   if (steps.length !== range.size || !steps.every((s) => range.has(s.sha))) {
-    throw new Error('I commit del rebase non corrispondono alla storia attuale: ricarica e riprova')
+    throw new Error(t('error.rebaseChanged'))
   }
   if (steps[0] && (steps[0].action === 'squash' || steps[0].action === 'fixup')) {
-    throw new Error('Il primo commit applicato non può essere squash o fixup')
+    throw new Error(t('error.rebaseFirstSquash'))
   }
   // ponytail: la cartella temporanea resta finché il sistema non la pulisce (serve anche se il rebase si ferma su un edit)
   const dir = mkdtempSync(join(tmpdir(), 'merlino-rebase-'))

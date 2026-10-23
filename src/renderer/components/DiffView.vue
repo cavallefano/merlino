@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { computed } from 'vue'
 import type { DiffLine, FileDiff } from '../../shared/types'
 import { renderSegments, splitRows, wordSegments } from '../history/diff-model'
@@ -22,12 +23,12 @@ const sign = (line: DiffLine) => (line.type === 'add' ? '+' : line.type === 'del
 
 <template>
   <div class="diff">
-    <p v-if="diff.binary" class="note muted">File binario</p>
+    <p v-if="diff.binary" class="note muted">{{ t('diff.binary') }}</p>
     <p v-else-if="diff.tooLarge" class="note">
-      Diff troppo grande.
-      <button @click="emit('force')">Mostra comunque</button>
+      {{ t('diff.tooLarge') }}
+      <button @click="emit('force')">{{ t('diff.showAnyway') }}</button>
     </p>
-    <p v-else-if="!diff.hunks.length" class="note muted">Nessuna modifica al contenuto</p>
+    <p v-else-if="!diff.hunks.length" class="note muted">{{ t('diff.noContentChanges') }}</p>
     <div v-else-if="!split" class="unified">
       <template v-for="(h, hi) in diff.hunks" :key="hi">
         <div class="hunk">{{ h.header }}</div>

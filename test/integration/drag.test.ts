@@ -36,7 +36,7 @@ describe('operazioni del drag & drop', () => {
     git(repo, 'switch', '-q', 'indietro')
     commitFile(repo, 'l.txt', 'l\n', 'solo locale')
     git(repo, 'switch', '-q', 'lavoro')
-    await expect(fastForward(runnerFor(repo), 'indietro', 'origin/main')).rejects.toThrow(/non si può aggiornare in fast-forward da origin\/main/)
+    await expect(fastForward(runnerFor(repo), 'indietro', 'origin/main')).rejects.toThrow(/cannot be fast-forwarded to origin\/main/)
   })
 
   it('stash solo dei file indicati, anche non tracciati', async () => {

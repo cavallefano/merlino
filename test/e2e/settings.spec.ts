@@ -30,7 +30,7 @@ test('Impostazioni: ⌘, apre, il tema arriva a nativeTheme, Esc chiude; senza "
   await app.close()
 
   const again = await launch([], userData)
-  await expect(again.page.getByRole('button', { name: 'Apri repository…' })).toBeVisible()
+  await expect(again.page.getByText('Open Repository…')).toBeVisible()
   await expect(again.page.getByTestId('tab')).toHaveCount(0)
   expect(await again.app.evaluate(({ nativeTheme }) => nativeTheme.themeSource)).toBe('dark')
   await again.app.close()
@@ -41,7 +41,7 @@ test('sezione Git: nome ed email finiscono nella config globale (temporanea)', a
   writeFileSync(global, '')
   const { app, page } = await launch([], tempUserData(), { GIT_CONFIG_GLOBAL: global })
   // Prima che l'app abbia finito l'avvio la scorciatoia non è ancora registrata
-  await expect(page.getByRole('button', { name: 'Apri repository…' })).toBeVisible()
+  await expect(page.getByText('Open Repository…')).toBeVisible()
   await page.keyboard.press(`${mod}+Comma`)
   await page.getByTestId('settings-git').click()
   await page.getByTestId('git-user.name').fill('Ada Lovelace')
@@ -50,5 +50,39 @@ test('sezione Git: nome ed email finiscono nella config globale (temporanea)', a
   await page.getByTestId('git-user.email').press('Tab')
   await expect.poll(() => readFileSync(global, 'utf8')).toContain('name = Ada Lovelace')
   await expect.poll(() => readFileSync(global, 'utf8')).toContain('email = ada@example.com')
+  await app.close()
+})
+
+test('Lingua: in italiano cambiano subito interfaccia e menu, poi si torna all\'inglese', async () => {
+  const { app, page } = await launch([makeRepo(1)])
+  await expect(page.getByTestId('working-row')).toContainText('No changes')
+  type Item = { label: string; submenu?: { items: Item[] } | null }
+  const menuLabels = () =>
+    app.evaluate(({ Menu }) => {
+      const labels: string[] = []
+      const walk = (items: Item[]): void => {
+        for (const i of items) {
+          labels.push(i.label)
+          if (i.submenu) walk(i.submenu.items)
+        }
+      }
+      walk(Menu.getApplicationMenu()?.items ?? [])
+      return labels
+    })
+  expect(await menuLabels()).toContain('Settings…')
+
+  await page.keyboard.press(`${mod}+Comma`)
+  await page.getByTestId('pref-language').selectOption('it')
+  await expect(page.getByTestId('settings-general')).toHaveText('Generale')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'it')
+  await expect.poll(menuLabels).toContain('Impostazioni…')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('working-row')).toContainText('Nessuna modifica')
+
+  await page.keyboard.press(`${mod}+Comma`)
+  await page.getByTestId('pref-language').selectOption('en')
+  await expect.poll(menuLabels).toContain('Settings…')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('working-row')).toContainText('No changes')
   await app.close()
 })

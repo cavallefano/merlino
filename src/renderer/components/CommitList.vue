@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { PluralKey } from '../../shared/i18n'
+import { t, tn } from '../i18n'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Commit, GraphRow } from '../../shared/types'
 import { commitMenu } from '../actions/branches'
@@ -51,16 +53,16 @@ const textLeft = (r: number) => (hasGraph.value ? graphRight(rowAt, r) + GAP : P
 
 const workingSummary = computed(() => {
   const s = repo.status
-  if (!s || !repo.changeCount) return 'Nessuna modifica'
-  const parts: [number, string, string][] = [
-    [s.staged.length, 'in stage', 'in stage'],
-    [s.unstaged.length, 'modificato', 'modificati'],
-    [s.untracked.length, 'non tracciato', 'non tracciati'],
-    [s.conflicted.length, 'in conflitto', 'in conflitto'],
+  if (!s || !repo.changeCount) return t('working.none')
+  const parts: [number, PluralKey][] = [
+    [s.staged.length, 'working.staged'],
+    [s.unstaged.length, 'working.modified'],
+    [s.untracked.length, 'working.untracked'],
+    [s.conflicted.length, 'working.conflicted'],
   ]
   return parts
     .filter(([n]) => n > 0)
-    .map(([n, one, many]) => `${n} ${n === 1 ? one : many}`)
+    .map(([n, key]) => tn(key, n))
     .join(' · ')
 })
 
@@ -156,7 +158,7 @@ function openMenu(r: number) {
   <div ref="scroller" class="list" tabindex="0" data-testid="commit-list" @scroll="onScroll" @keydown="onKey">
     <div class="content" :style="{ height: `${rowCount * ROW_HEIGHT}px` }">
       <canvas v-if="graphWidth" ref="canvas" class="graph" :style="{ top: `${first * ROW_HEIGHT}px` }" />
-      <p v-if="repo.history.version && !repo.history.total" class="muted empty" :style="{ top: `${ROW_HEIGHT}px` }">Nessun commit</p>
+      <p v-if="repo.history.version && !repo.history.total" class="muted empty" :style="{ top: `${ROW_HEIGHT}px` }">{{ t('history.noCommits') }}</p>
       <div
         v-for="{ r, commit } in visible"
         :key="r"
@@ -174,7 +176,7 @@ function openMenu(r: number) {
             <span v-if="repo.changeCount" class="files" data-testid="working-files">{{ repo.changeCount }}</span>
           </div>
           <div class="line">
-            <span class="author">Modifiche locali</span>
+            <span class="author">{{ t('working.title') }}</span>
           </div>
         </template>
         <template v-else-if="commit">

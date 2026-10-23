@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n'
 import { shortcuts } from '../../shared/shortcuts'
 import { registry } from '../actions/builtin'
 import { useAppStore } from '../stores/app'
@@ -11,14 +12,14 @@ const paletteKeys = registry.keyLabel(shortcuts['palette.open'])
   <section class="welcome">
     <h1>Merlino</h1>
     <div class="actions">
-      <button class="primary" @click="app.pickAndOpen()">Apri repository…</button>
-      <button @click="app.pickAndInit()">Nuovo repository…</button>
-      <button data-testid="clone" :disabled="app.cloneProgress !== null" @click="app.cloneRepo()">Clona repository…</button>
+      <button class="primary" @click="app.pickAndOpen()">{{ t('action.repo.open') }}</button>
+      <button @click="app.pickAndInit()">{{ t('action.repo.init') }}</button>
+      <button data-testid="clone" :disabled="app.cloneProgress !== null" @click="app.cloneRepo()">{{ t('action.repo.clone') }}</button>
     </div>
-    <p class="muted">Oppure trascina qui la cartella di un repository.</p>
-    <p class="muted">Tutti i comandi: <kbd>{{ paletteKeys }}</kbd></p>
+    <p class="muted">{{ t('welcome.dropHint') }}</p>
+    <p class="muted">{{ t('welcome.allCommands') }} <kbd>{{ paletteKeys }}</kbd></p>
     <template v-if="app.recent.length">
-      <h2>Recenti</h2>
+      <h2>{{ t('welcome.recent') }}</h2>
       <ul class="recent">
         <li v-for="path in app.recent" :key="path">
           <a href="#" @click.prevent="app.open(path)">{{ path }}</a>
