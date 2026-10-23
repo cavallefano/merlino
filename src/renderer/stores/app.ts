@@ -3,7 +3,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import type { Result } from '../../shared/ipc'
 import { DEFAULT_PREFERENCES } from '../../shared/preferences'
-import type { AppSettings, CommandLogEntry, CommitTemplate, GitCheck, Preferences, RepoInfo } from '../../shared/types'
+import type { AppSettings, CommandLogEntry, CommitTemplate, GitCheck, HostingService, Preferences, RepoInfo } from '../../shared/types'
+import { disposePullRequestStore, usePullRequestStore } from './pull-requests'
 import { disposeRepoStore, useRepoStore } from './repo'
 
 const MAX_LOG = 500
@@ -25,7 +26,7 @@ export interface PromptRequest {
 
 export type PromptValues = Record<string, string | boolean>
 
-export type SettingsSection = 'general' | 'commit' | 'diff' | 'integrations' | 'git'
+export type SettingsSection = 'general' | 'commit' | 'diff' | 'integrations' | 'accounts' | 'git'
 
 export const useAppStore = defineStore('app', () => {
   const git = ref<GitCheck | null>(null)
@@ -45,6 +46,14 @@ export const useAppStore = defineStore('app', () => {
   const preferences = computed(() => settings.value?.preferences ?? DEFAULT_PREFERENCES)
   /** Sezione della schermata Impostazioni aperta; null = chiusa. */
   const settingsSection = ref<SettingsSection | null>(null)
+  /** Dialog "Aggiungi account" aperto, con servizio e server proposti. */
+  const accountDialog = shallowRef<{ service: HostingService; host: string } | null>(null)
+
+  /** Impostazioni → Account con il dialog aperto (da "Collega account…" o "Aggiorna token…"). */
+  function openAccountDialog(draft: { service: HostingService; host: string }) {
+    accountDialog.value = draft
+    settingsSection.value = 'accounts'
+  }
 
   async function updatePreferences(patch: Partial<Preferences>): Promise<boolean> {
     const r = await window.api.updatePreferences(patch)
@@ -100,6 +109,10 @@ export const useAppStore = defineStore('app', () => {
     window.api.onCommandLogged(addLog)
     window.api.onRepoChanged((root) => {
       if (tabs.value.includes(root)) void useRepoStore(root).refresh()
+    })
+    // Dopo un fetch (anche automatico) le pull request possono essere cambiate
+    window.api.onFetched((root) => {
+      if (tabs.value.includes(root)) void usePullRequestStore(root).load()
     })
     window.api.onOpenPath((path) => void open(path))
     window.api.onProgress(({ root, line }) => {
@@ -204,6 +217,7 @@ export const useAppStore = defineStore('app', () => {
     if (active.value === root) activate(tabs.value[Math.min(i, tabs.value.length - 1)] ?? null)
     await window.api.closeRepo(root)
     disposeRepoStore(root)
+    disposePullRequestStore(root)
   }
 
   function cycle(step: 1 | -1) {
@@ -214,7 +228,7 @@ export const useAppStore = defineStore('app', () => {
 
   return {
     git, tabs, active, recent, error, log, outputOpen, paletteOpen, promptRequest, cloneProgress,
-    settings, preferences, settingsSection, updatePreferences, saveTemplates, flushTemplates, setDefaultTemplate,
+    settings, preferences, settingsSection, accountDialog, openAccountDialog, updatePreferences, saveTemplates, flushTemplates, setDefaultTemplate,
     init, setGitPath, open, initRepo, pickAndOpen, pickAndInit, activate, close, cycle, pushUiError, prompt, closePrompt, cloneRepo,
   }
 })
