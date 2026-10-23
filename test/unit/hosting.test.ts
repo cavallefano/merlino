@@ -27,11 +27,15 @@ describe('parseRemoteUrl', () => {
 })
 
 describe('ciSummary', () => {
-  const check = (state: Check['state']): Check => ({ name: state, state, url: null })
+  const check = (state: Check['state']): Check => ({ name: state, state, url: null, group: null, startedAt: null, finishedAt: null })
   it('fallito batte in corso, in corso batte superato; senza check: nessuno', () => {
     expect(ciSummary([check('passed'), check('running'), check('failed')])).toBe('failed')
     expect(ciSummary([check('passed'), check('running')])).toBe('running')
     expect(ciSummary([check('passed'), check('skipped'), check('cancelled')])).toBe('passed')
     expect(ciSummary([])).toBe('none')
+  })
+
+  it('un job in coda tiene la pipeline in corso', () => {
+    expect(ciSummary([check('passed'), check('queued')])).toBe('running')
   })
 })

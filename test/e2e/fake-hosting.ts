@@ -20,7 +20,7 @@ export interface FakePull {
   baseSha: string
   comments: { author: string; body: string; at: string }[]
   commits: { sha: string; message: string; at: string }[]
-  checks: { name: string; state: 'success' | 'failure' | 'pending' }[]
+  checks: { name: string; state: 'success' | 'failure' | 'pending' | 'queued'; stage?: string }[]
   updatedAt: string
 }
 
@@ -36,7 +36,7 @@ export const TOKEN = 'good-token'
 const USER = 'ada'
 type Reply = [status: number, body: unknown]
 type Handler = (m: RegExpExecArray, body: Record<string, unknown>, query: URLSearchParams) => Reply
-const JOB = { success: 'success', failure: 'failed', pending: 'running' } as const
+const JOB = { success: 'success', failure: 'failed', pending: 'running', queued: 'pending' } as const
 
 /** Server HTTP locale che risponde come le API di GitHub e GitLab per il progetto acme/demo-app. */
 export async function fakeHosting(pulls: FakePull[]): Promise<FakeHosting> {
@@ -168,7 +168,7 @@ export async function fakeHosting(pulls: FakePull[]): Promise<FakeHosting> {
           return [201, {}]
         }),
     ],
-    ['GET', new RegExp(`${GH}/commits/(\\w+)/status$`), (m) => [200, { statuses: checksOf(m[1] ?? '').map((c) => ({ context: c.name, state: c.state, target_url: null })) }]],
+    ['GET', new RegExp(`${GH}/commits/(\\w+)/status$`), (m) => [200, { statuses: checksOf(m[1] ?? '').map((c) => ({ context: c.name, state: c.state === 'queued' ? 'pending' : c.state, target_url: null, created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:02:00Z' })) }]],
     ['GET', new RegExp(`${GH}/commits/(\\w+)/check-runs$`), () => [200, { check_runs: [] }]],
     ['DELETE', new RegExp(`${GH}/git/refs/heads/.+$`), () => [204, null]],
     // GitLab: il progetto acme/demo-app (id 1) e il fork di grace (id 2)
@@ -202,7 +202,21 @@ export async function fakeHosting(pulls: FakePull[]): Promise<FakeHosting> {
     [
       'GET',
       new RegExp(`${GL}/pipelines/(\\d+)/jobs$`),
-      (m) => withPull(m[1] ?? '', (p) => [200, p.checks.map((c) => ({ name: c.name, status: JOB[c.state], web_url: 'https://ci.example.com/job' }))]),
+      (m) =>
+        withPull(m[1] ?? '', (p) => [
+          200,
+          p.checks
+            .map((c, i) => ({
+              id: i + 1,
+              name: c.name,
+              stage: c.stage ?? 'test',
+              status: JOB[c.state],
+              web_url: 'https://ci.example.com/job',
+              started_at: c.state === 'queued' ? null : '2026-10-20T10:00:00Z',
+              finished_at: c.state === 'success' || c.state === 'failure' ? '2026-10-20T10:02:00Z' : null,
+            }))
+            .reverse(),
+        ]),
     ],
   ]
 

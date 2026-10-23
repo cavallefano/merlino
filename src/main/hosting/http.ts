@@ -80,16 +80,16 @@ export class HostingClient {
     return (await this.send(method, `${this.base}${path}`, body)).data as T
   }
 
-  /** GET di tutte le pagine, seguendo Link rel="next", fino a max elementi. */
-  async all<T>(path: string, max: number): Promise<T[]> {
-    const items: T[] = []
+  /** GET di tutte le pagine, seguendo Link rel="next", fino a max elementi; items li prende da una pagina che non è un array. */
+  async all<T>(path: string, max: number, items: (page: unknown) => T[] = (page) => page as T[]): Promise<T[]> {
+    const out: T[] = []
     let url: string | null = `${this.base}${path}`
-    while (url && items.length < max) {
+    while (url && out.length < max) {
       const page = await this.send('GET', url)
-      items.push(...(page.data as T[]))
+      out.push(...items(page.data))
       url = nextLink(page.headers.get('link'))
     }
-    return items.slice(0, max)
+    return out.slice(0, max)
   }
 
   private headers(json: boolean): Record<string, string> {
