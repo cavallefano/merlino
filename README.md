@@ -168,4 +168,4 @@ Issues and pull requests are welcome.
 
 ## License
 
-To be defined before the first public release.
+Merlino is released under the [MIT License](LICENSE).
