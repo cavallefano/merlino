@@ -1129,3 +1129,19 @@ git commit -m "docs: pannelli e popup del diff nel README e note di esecuzione
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
+
+---
+
+## Note di esecuzione
+
+- **Commit**: Task 1 `1ab74a5`, Task 2 `ae7ea6b`, Task 3 `7f086a4`, Task 4 `c531d9e`, Task 5 `cd2eb7d`, Task 6 in questo commit.
+- **Deviazioni dal piano**:
+  - il divisore si chiama `PaneSplitter.vue`: la regola di ESLint `vue/multi-word-component-names` rifiuta `Splitter`. Piano e spec usano già il nome nuovo;
+  - il fuoco del popup: Chromium di Electron 45 ignora `autofocus` sul `<dialog>` e dà il fuoco al primo pulsante attivo, che mostrava l'anello. Il dialog ha `tabindex="-1"` e riceve `focus()` subito dopo `showModal()`; ↑, ↓ ed Esc funzionano come prima.
+- **Provato a mano, con la finestra nascosta**:
+  - ridimensionando il popup dall'angolo di −200 e −100 px, la misura passa da 1088×670 a 888×569 e l'angolo segue il puntatore. Riaperto, il popup ha la misura salvata ed è di nuovo centrato;
+  - screenshot del layout orizzontale (chiaro), verticale con le modifiche locali (scuro) e del popup (chiaro e scuro).
+- **Verifica**:
+  - lint e typecheck puliti;
+  - 209 test unit e di integrazione (1 saltato: le prestazioni, opzionale), di cui 6 nuovi in `layout.test.ts` e 2 casi nuovi in `validate.test.ts`;
+  - 46 E2E con la finestra nascosta (1 saltato: gli screenshot del README), di cui 5 nuovi in `layout.spec.ts`.
