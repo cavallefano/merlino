@@ -14,7 +14,7 @@ Usare git flow da Merlino, come in Tower: inizializzarlo, aprire e chiudere i br
   - ha un pulsante Git Flow nella barra con Start e Finish e un dialog di inizializzazione.
 - **git-flow** (nvie e la variante avh):
   - **feature e bugfix**: partono da develop e tornano in develop con un merge `--no-ff`;
-  - **release**: parte da develop; al finish va in master con un merge `--no-ff`, riceve un tag annotato e torna in develop;
+  - **release**: parte da develop; al finish va in master con un merge `--no-ff`, riceve un tag annotato e torna in develop (avh fa il merge del tag in develop, così develop contiene il tag);
   - **hotfix**: parte da master (o da un branch support) e al finish fa lo stesso di una release, ma va nel branch release aperto, se c'è, invece che in develop;
   - **support**: branch di lunga durata da un tag di master, senza finish.
 
@@ -88,14 +88,14 @@ Usare git flow da Merlino, come in Tower: inizializzarlo, aprire e chiudere i br
    - release: produzione, poi develop;
    - hotfix: la base salvata, altrimenti produzione. Se la base è la produzione, poi il branch release aperto se c'è, altrimenti develop.
 2. **Aggiornamento**, se scelto: `git fetch <remote>`, poi il fast-forward di ogni destinazione dal suo upstream. Se una destinazione si è separata dal suo upstream, il Finish si ferma con un messaggio.
-3. **Merge**: per ogni destinazione che non contiene già il branch (`merge-base --is-ancestor`), checkout e `git merge --no-ff <branch>` con il messaggio standard di git. Con un conflitto il Finish si ferma: il banner del merge in corso permette di risolvere, continuare o annullare.
+3. **Merge**: nella prima destinazione, se non contiene già il branch (`merge-base --is-ancestor`), checkout e `git merge --no-ff <branch>` con il messaggio standard di git. Per release e hotfix, dopo il tag, il tag stesso va con lo stesso merge nelle destinazioni successive (develop o la release aperta), come fa git-flow-avh: così develop contiene il tag. Con un conflitto il Finish si ferma: il banner del merge in corso permette di risolvere, continuare o annullare.
 4. **Tag** (release e hotfix), se non esiste già:
    - si mette sul commit che ha portato il branch nella prima destinazione, cioè il primo commit della linea principale (`--first-parent`) che lo contiene; è il merge appena fatto, o quello della PR fatta sul server;
    - se il branch è entrato in fast-forward, si mette sulla sua punta;
    - è un tag annotato con il messaggio scelto.
 5. **Cancellazione**, se scelta:
    - si passa all'ultima destinazione, se serve;
-   - `git branch -d <branch>`;
+   - `git branch -D <branch>` se è nell'ultima destinazione (`-d` rifiuterebbe un branch pubblicato con commit non pushati), altrimenti `-d`;
    - se il branch esiste sul remote, `git push <remote> --delete <branch>`;
    - si toglie `gitflow.branch.<branch>.base`.
 6. **Push**, se scelto: `git push <remote> <destinazione>` per ogni destinazione che segue quel remote, poi `git push <remote> refs/tags/<tag>`.

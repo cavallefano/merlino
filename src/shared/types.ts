@@ -314,6 +314,9 @@ export type RepoCommand =
   | { kind: 'fastForward'; branch: string; from: string }
   | { kind: 'stashFiles'; paths: string[]; untracked: boolean }
   | { kind: 'applyFileChanges'; sha: string; path: string }
+  | { kind: 'flowInit'; main: string; develop: string; prefixes: Record<FlowType, string>; versionTag: string }
+  | { kind: 'flowStart'; type: FlowType; name: string; base: string; checkout: boolean; publish: string | null }
+  | { kind: 'flowFinish'; branch: string; update: boolean; tagMessage: string; deleteBranch: boolean; deleteRemote: boolean; push: boolean }
   | { kind: 'rebaseInteractive'; sha: string; steps: RebaseStep[] }
 
 export type MenuItem = { id: string; label: string; enabled?: boolean } | { separator: true }
