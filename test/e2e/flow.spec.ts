@@ -41,7 +41,8 @@ test('git flow: initialize, start di una feature, finish locale dal menu del bra
   await page.getByTestId('repo-refresh').click()
 
   await chooseNextMenuItem(app, 'Finish Feature search…')
-  await page.getByTestId('branch-item').filter({ hasText: /^search$/ }).click({ button: 'right' })
+  // Sul nome esatto: è il branch corrente, la riga contiene anche HEAD
+  await page.getByTestId('branch-item').filter({ has: page.locator('.name', { hasText: /^search$/ }) }).click({ button: 'right' })
   await expect(page.getByTestId('flow-steps')).toContainText('Merge feature/search into develop')
   await page.getByTestId('flow-finish').click()
   await expect(page.getByTestId('repo-branch')).toHaveText('develop')

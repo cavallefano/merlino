@@ -542,4 +542,6 @@ export const it: Messages = {
   'diff.previousFile': 'File precedente',
   'diff.nextFile': 'File successivo',
   'common.close': 'Chiudi',
+  'sidebar.workspace': 'Area di lavoro',
+  'page.localChanges': 'Modifiche locali',
 }
