@@ -119,18 +119,21 @@ export async function finishInfo(r: GitRunner, branch: string): Promise<FlowFini
     if (first === config.main) targets.push((await openRelease(r, config)) ?? config.develop)
   }
   const tag = type === 'release' || type === 'hotfix' ? `${config.versionTag}${name}` : null
+  const tagExists = tag ? await exists(r, `refs/tags/${tag}`) : false
   const [own, remotes] = await Promise.all([upstreamOf(r, branch), remotesWith(r, branch)])
   return {
     branch,
     type,
     name,
     targets: await Promise.all(
-      targets.map(async (target) => {
+      targets.map(async (target, i) => {
         const up = await upstreamOf(r, target)
-        return { branch: target, merged: await isAncestor(r, branch, target), upstream: up?.ref ?? null, remote: up?.remote ?? null }
+        // Dopo la prima destinazione arriva il tag (se c'è), non il branch
+        const merged = i === 0 || !tag ? await isAncestor(r, branch, target) : tagExists && (await isAncestor(r, tag, target))
+        return { branch: target, merged, upstream: up?.ref ?? null, remote: up?.remote ?? null }
       }),
     ),
-    tag: tag ? { name: tag, exists: await exists(r, `refs/tags/${tag}`) } : null,
+    tag: tag ? { name: tag, exists: tagExists } : null,
     remote: own && remotes.includes(own.remote) ? own.remote : (remotes[0] ?? null),
   }
 }

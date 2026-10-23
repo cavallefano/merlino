@@ -857,7 +857,15 @@ test('git flow: initialize, start di una feature, finish locale dal menu del bra
   await expect(page.getByTestId('flow-main')).toHaveValue('main')
   await expect(page.getByTestId('flow-develop')).toHaveValue('develop')
   await page.getByTestId('flow-init-save').click()
-  await expect.poll(() => git(repo.clone, 'config', 'gitflow.branch.develop').trim()).toBe('develop')
+  // git config esce con 1 finché la chiave non c'è: si riprova
+  const developKey = () => {
+    try {
+      return git(repo.clone, 'config', 'gitflow.branch.develop').trim()
+    } catch {
+      return ''
+    }
+  }
+  await expect.poll(developKey).toBe('develop')
 
   await chooseNextMenuItem(app, 'Start Feature…')
   await page.getByTestId('flow-button').click()

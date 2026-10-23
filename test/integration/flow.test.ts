@@ -105,7 +105,10 @@ describe('git flow', () => {
     await flowStart(r, { type: 'release', name: '0.2.0', base: 'develop', checkout: false, publish: null }, noProgress)
     await flowStart(r, { type: 'hotfix', name: '0.1.1', base: 'main', checkout: true, publish: null }, noProgress)
     commitFile(repo, 'fix.txt', 'fix\n', 'Fix crash')
-    expect((await finishInfo(r, 'hotfix/0.1.1')).targets.map((x) => x.branch)).toEqual(['main', 'release/0.2.0'])
+    expect((await finishInfo(r, 'hotfix/0.1.1')).targets.map((x) => [x.branch, x.merged])).toEqual([
+      ['main', false],
+      ['release/0.2.0', false],
+    ])
     await flowFinish(r, { branch: 'hotfix/0.1.1', ...finish, tagMessage: 'Hotfix 0.1.1' }, noProgress)
     expect(git(repo, 'log', '--format=%s', 'release/0.2.0').split('\n')).toContain('Fix crash')
     expect(git(repo, 'log', '--format=%s', 'develop').split('\n')).not.toContain('Fix crash')

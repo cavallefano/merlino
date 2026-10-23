@@ -3,6 +3,7 @@ import { t } from './i18n'
 import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { registerBranchActions } from './actions/branches'
 import { registerBuiltinActions, registry } from './actions/builtin'
+import { registerFlowActions } from './actions/flow'
 import { registerHistoryActions } from './actions/history'
 import { registerPullRequestActions } from './actions/pull-requests'
 import { registerWorkingActions } from './actions/working'
@@ -24,6 +25,7 @@ registerHistoryActions()
 registerWorkingActions()
 registerBranchActions()
 registerPullRequestActions()
+registerFlowActions()
 
 // Carattere e tab del codice nei diff, dalle preferenze
 watchEffect(() => {
