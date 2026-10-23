@@ -1,4 +1,5 @@
 import type { BranchInfo, Commit, MenuItem, RemoteBranch, RemoteInfo, TagInfo } from '../../shared/types'
+import type { DropOperation } from '../drag/drop-actions'
 import { type PromptValues, useAppStore } from '../stores/app'
 import { useRepoStore } from '../stores/repo'
 import { registry } from './builtin'
@@ -37,7 +38,7 @@ export async function createBranch(repo: Repo, start: string) {
   if (name) await repo.git({ kind: 'createBranch', name, start, checkout: values?.checkout === true })
 }
 
-async function createTag(repo: Repo, sha: string) {
+export async function createTag(repo: Repo, sha: string) {
   const values = await useAppStore().prompt({
     title: 'Nuovo tag',
     fields: [
@@ -114,6 +115,24 @@ async function addRemote(repo: Repo) {
   const name = field(values, 'name')
   const url = field(values, 'url')
   if (name && url) await repo.git({ kind: 'addRemote', name, url })
+}
+
+/** Esegue l'operazione di un rilascio con le stesse funzioni dei menu (dialog, errori, aggiornamento). */
+export async function performDrop(repo: Repo, op: DropOperation): Promise<unknown> {
+  switch (op.type) {
+    case 'git':
+      return repo.git(op.command)
+    case 'createBranch':
+      return createBranch(repo, op.start)
+    case 'createTag':
+      return createTag(repo, op.sha)
+    case 'stage':
+      return repo.stage(op.files)
+    case 'unstage':
+      return repo.unstage(op.files)
+    case 'stash':
+      return repo.stashAction(op.action, op.ref)
+  }
 }
 
 // --- Menu contestuali ---
