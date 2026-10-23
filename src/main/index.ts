@@ -1,8 +1,9 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, net, safeStorage, shell } from 'electron'
 import { appendFileSync, mkdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { Channels } from '../shared/ipc'
 import { pathFromArgv } from './argv'
+import { type Crypto, TokenStore } from './hosting/accounts'
 import { registerIpc } from './ipc-handlers'
 import { SettingsStore } from './settings'
 
@@ -29,6 +30,8 @@ const argvPath = (argv: string[], cwd: string) => pathFromArgv(argv, cwd, app.ge
 let win: BrowserWindow | null = null
 /** Test E2E: finestra mai mostrata e app mai in primo piano, così chi usa il computer non perde il focus. */
 const hidden = process.env.MERLINO_E2E === '1'
+// Test E2E: niente portachiavi, che su macOS chiederebbe il permesso con un dialog del sistema
+const PLAIN: Crypto = { isEncryptionAvailable: () => true, encryptString: (s) => Buffer.from(s), decryptString: (b) => b.toString() }
 
 function createWindow(): BrowserWindow {
   const w = new BrowserWindow({
@@ -79,7 +82,9 @@ if (!app.requestSingleInstanceLock()) {
     // macOS: senza icona nel Dock l'app non si attiva e non ruba il focus
     if (hidden) app.dock?.hide()
     const settings = new SettingsStore(join(app.getPath('userData'), 'settings.json'))
-    const ipc = registerIpc(() => win, settings, argvPath(process.argv, process.cwd()))
+    const tokens = new TokenStore(join(app.getPath('userData'), 'tokens.json'), hidden ? PLAIN : safeStorage)
+    // net.fetch usa la rete di Chromium: proxy e certificati del sistema
+    const ipc = registerIpc(() => win, settings, argvPath(process.argv, process.cwd()), { tokens, fetch: (url, init) => net.fetch(url, init) })
     win = createWindow()
     app.on('before-quit', () => void ipc.disposeAll())
   })

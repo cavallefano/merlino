@@ -1,7 +1,20 @@
 import { isAbsolute } from 'node:path'
 import { LANGUAGES } from '../shared/i18n'
 import { DIFF_ALGORITHMS } from '../shared/preferences'
-import type { CommitTemplate, DiffOptions, GitConfigKey, Operation, Preferences, RebaseStep, RepoCommand } from '../shared/types'
+import type {
+  CommitTemplate,
+  DiffOptions,
+  GitConfigKey,
+  HostingService,
+  MergeMethod,
+  MergeOptions,
+  NewPullRequest,
+  Operation,
+  Preferences,
+  PullRequestFilter,
+  RebaseStep,
+  RepoCommand,
+} from '../shared/types'
 import type { DiffRequest } from './git/diff'
 import { GIT_CONFIG_KEYS } from './git/global-config'
 import { t } from './i18n'
@@ -249,4 +262,68 @@ export function commitTemplates(value: unknown): CommitTemplate[] {
     if (subject.length > 500 || body.length > 20_000) throw new TypeError(t('validation.templateTooLong', { name }))
     return { id, name, subject, body }
   })
+}
+
+export const HOSTING_SERVICES = ['github', 'gitlab'] as const satisfies readonly HostingService[]
+export const PR_FILTERS = ['open', 'merged', 'closed', 'all'] as const satisfies readonly PullRequestFilter[]
+const MERGE_METHODS = ['merge', 'squash', 'rebase', 'ff'] as const satisfies readonly MergeMethod[]
+export const MAX_BODY = 65_536
+
+/** Server di un account: nome con la porta facoltativa, senza schema né percorso. */
+export function server(value: unknown): string {
+  const s = str(value, t('field.server')).trim().toLowerCase()
+  if (s.length > 253 || !/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d{1,5})?$/.test(s)) throw new TypeError(t('validation.invalidServer', { value: s }))
+  return s
+}
+
+export function token(value: unknown): string {
+  const s = str(value, 'token').trim()
+  if (!s || /\s/.test(s) || s.length > 1000) throw new TypeError(t('validation.invalid', { name: 'token' }))
+  return s
+}
+
+export function accountId(value: unknown): string {
+  const s = str(value, 'id')
+  if (!/^[\w-]{1,64}$/.test(s)) throw new TypeError(t('validation.invalid', { name: 'id' }))
+  return s
+}
+
+export const prNumber = (value: unknown): number => intIn(value, '#', 1, 2 ** 31 - 1)
+
+/** Testo fino a max caratteri; con required non può essere vuoto. */
+export function limitedText(value: unknown, name: string, max: number, required = false): string {
+  if (typeof value !== 'string') throw new TypeError(t('validation.invalid', { name }))
+  if (value.length > max) throw new TypeError(t('validation.tooLong', { name, max }))
+  if (required && !value.trim()) throw new TypeError(t('validation.required', { name }))
+  return value
+}
+
+export function mergeOptions(value: unknown): MergeOptions {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  return {
+    method: oneOf(v.method, MERGE_METHODS, 'method'),
+    sha: sha(v.sha),
+    message: limitedText(v.message ?? '', t('field.message'), MAX_BODY),
+    squash: v.squash === true,
+    deleteBranch: v.deleteBranch === true,
+  }
+}
+
+export function newPullRequest(value: unknown): NewPullRequest {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  return {
+    remote: refName(v.remote),
+    base: refName(v.base),
+    headRemote: refName(v.headRemote),
+    head: refName(v.head),
+    title: limitedText(v.title, t('field.title'), 256, true).trim(),
+    body: limitedText(v.body ?? '', t('field.description'), MAX_BODY),
+    draft: v.draft === true,
+  }
+}
+
+/** Branch di destinazione e SHA di una PR, per scaricarne gli oggetti. */
+export function pullRequestRefs(value: unknown): { base: string; baseSha: string; headSha: string } {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  return { base: refName(v.base), baseSha: sha(v.baseSha), headSha: sha(v.headSha) }
 }
