@@ -152,6 +152,14 @@ export function repoCommand(value: unknown): RepoCommand {
       return { kind: 'addRemote', name: refName(v.name), url: gitUrl(v.url) }
     case 'removeRemote':
       return { kind: 'removeRemote', name: refName(v.name) }
+    case 'pushBranch':
+      return { kind: 'pushBranch', remote: refName(v.remote), branch: refName(v.branch), remoteBranch: refName(v.remoteBranch) }
+    case 'fastForward':
+      return { kind: 'fastForward', branch: refName(v.branch), from: refName(v.from) }
+    case 'stashFiles':
+      return { kind: 'stashFiles', paths: list(v.paths, relPath), untracked: v.untracked === true }
+    case 'applyFileChanges':
+      return { kind: 'applyFileChanges', sha: sha(v.sha), path: relPath(v.path) }
     case 'rebaseInteractive':
       return { kind: 'rebaseInteractive', sha: sha(v.sha), steps: list(v.steps, rebaseStep) }
     default:

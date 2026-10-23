@@ -51,6 +51,7 @@ const api: Api = {
   openInEditor: (root, path) => ipcRenderer.invoke(Channels.openInEditor, root, path),
   contextMenu: (items) => ipcRenderer.invoke(Channels.contextMenu, items),
   pickApp: () => ipcRenderer.invoke(Channels.pickApp),
+  startDrag: (root, item) => ipcRenderer.sendSync(Channels.startDrag, root, item),
   saveCommitTemplates: (templates) => ipcRenderer.invoke(Channels.saveCommitTemplates, templates),
   setDefaultTemplate: (root, id) => ipcRenderer.invoke(Channels.setDefaultTemplate, root, id),
   gitCommitTemplate: (root) => ipcRenderer.invoke(Channels.gitCommitTemplate, root),

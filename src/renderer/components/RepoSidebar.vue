@@ -2,6 +2,8 @@
 import { computed, reactive } from 'vue'
 import type { StashEntry } from '../../shared/types'
 import { branchMenu, remoteBranchMenu, remoteMenu, tagMenu } from '../actions/branches'
+import { dragSource, dropTarget } from '../drag/drag'
+import type { DragSource, DropTarget } from '../drag/drop-actions'
 import { treeRows } from '../history/branch-tree'
 import { useRepoStore } from '../stores/repo'
 
@@ -24,6 +26,10 @@ interface Row {
   open?: () => unknown
   /** Clic destro. */
   menu?: () => unknown
+  /** Origine del drag & drop. */
+  drag?: DragSource
+  /** Destinazione del drag & drop. */
+  drop?: DropTarget
 }
 
 // Sezioni e cartelle chiuse. Le cartelle sono "<gruppo>:<percorso>" (gruppo: heads o remotes/<nome>), i remote "remotes/<nome>".
@@ -54,13 +60,24 @@ const branchRows = computed(() =>
     testid: 'branch-item',
     open: () => !b.current && repo.git({ kind: 'checkoutBranch', name: b.name }),
     menu: () => branchMenu(repo, b),
+    drag: { kind: 'branch', name: b.name },
+    drop: { kind: 'branch', name: b.name },
   })),
 )
 
 const remoteRows = computed(() =>
   (repo.refs?.remotes ?? []).flatMap((remote): Row[] => {
     const key = `remotes/${remote.name}`
-    const header: Row = { key, depth: 0, label: remote.name, folder: key, title: remote.url, menu: () => remoteMenu(repo, remote) }
+    const header: Row = {
+      key,
+      depth: 0,
+      label: remote.name,
+      folder: key,
+      title: remote.url,
+      testid: 'remote-item',
+      menu: () => remoteMenu(repo, remote),
+      drop: { kind: 'remote', name: remote.name },
+    }
     if (collapsed.has(key)) return [header]
     const branches = tree(key, remote.branches, 1, (b) => ({
       sha: b.sha,
@@ -68,20 +85,27 @@ const remoteRows = computed(() =>
       testid: 'remote-branch-item',
       open: () => repo.git({ kind: 'checkoutRemote', fullName: b.fullName }),
       menu: () => remoteBranchMenu(repo, remote, b),
+      drag: { kind: 'remoteBranch', remote: remote.name, name: b.name, fullName: b.fullName },
+      drop: { kind: 'remoteBranch', remote: remote.name, name: b.name, fullName: b.fullName },
     }))
     return [header, ...branches]
   }),
 )
 
 const tagRows = computed(() =>
-  (repo.refs?.tags ?? []).map((t): Row => ({ key: t.name, depth: 0, label: t.name, sha: t.sha, testid: 'tag-item', menu: () => tagMenu(repo, t) })),
+  (repo.refs?.tags ?? []).map(
+    (t): Row => ({ key: t.name, depth: 0, label: t.name, sha: t.sha, testid: 'tag-item', menu: () => tagMenu(repo, t), drag: { kind: 'tag', name: t.name } }),
+  ),
 )
 
 const sections = computed(() => [
-  { title: 'Branch', rows: branchRows.value, empty: 'Nessun branch' },
-  { title: 'Remote', rows: remoteRows.value, empty: 'Nessun remote' },
-  { title: 'Tag', rows: tagRows.value, empty: 'Nessun tag' },
+  { title: 'Branch', rows: branchRows.value, empty: 'Nessun branch', drop: { kind: 'branchesHeader' } as DropTarget, testid: 'branches-header' },
+  { title: 'Remote', rows: remoteRows.value, empty: 'Nessun remote', drop: undefined, testid: 'remotes-header' },
+  { title: 'Tag', rows: tagRows.value, empty: 'Nessun tag', drop: { kind: 'tagsHeader' } as DropTarget, testid: 'tags-header' },
 ])
+
+/** Attributi di drag & drop di una riga o di un'intestazione. */
+const dnd = (source?: DragSource, target?: DropTarget) => ({ ...(source ? dragSource(source) : {}), ...(target ? dropTarget(repo, target) : {}) })
 
 const isSelected = (sha: string | undefined) => repo.view === 'commit' && !!sha && repo.selected === sha
 
@@ -98,13 +122,14 @@ function drop(stash: StashEntry) {
 <template>
   <aside class="sidebar">
     <section v-for="s in sections" :key="s.title">
-      <h3 @click="toggle(s.title)">{{ s.title }}</h3>
+      <h3 v-bind="dnd(undefined, s.drop)" :data-testid="s.testid" @click="toggle(s.title)">{{ s.title }}</h3>
       <template v-if="!collapsed.has(s.title)">
         <p v-if="!s.rows.length" class="muted empty">{{ s.empty }}</p>
         <ul>
           <li
             v-for="row in s.rows"
             :key="row.key"
+            v-bind="dnd(row.drag, row.drop)"
             :class="{ folder: row.folder, current: row.current, selected: isSelected(row.sha) }"
             :style="{ paddingLeft: `${16 + row.depth * 12}px` }"
             :title="row.title ?? row.label"
@@ -121,13 +146,14 @@ function drop(stash: StashEntry) {
       </template>
     </section>
     <section>
-      <h3 @click="toggle('Stash')">Stash <span class="muted">{{ repo.stashes.length }}</span></h3>
+      <h3 v-bind="dnd(undefined, { kind: 'stashHeader' })" data-testid="stash-header" @click="toggle('Stash')">Stash <span class="muted">{{ repo.stashes.length }}</span></h3>
       <template v-if="!collapsed.has('Stash')">
         <p v-if="!repo.stashes.length" class="muted empty">Nessuno stash</p>
         <ul>
           <li
             v-for="s in repo.stashes"
             :key="s.ref"
+            v-bind="dnd({ kind: 'stash', ref: s.ref, sha: s.sha })"
             :class="{ selected: isSelected(s.sha) }"
             :title="s.message"
             data-testid="stash-item"

@@ -5,6 +5,7 @@ import { registerBuiltinActions, registry } from './actions/builtin'
 import { registerHistoryActions } from './actions/history'
 import { registerWorkingActions } from './actions/working'
 import CommandPalette from './components/CommandPalette.vue'
+import DropHint from './components/DropHint.vue'
 import GitMissing from './components/GitMissing.vue'
 import OutputPanel from './components/OutputPanel.vue'
 import PromptDialog from './components/PromptDialog.vue'
@@ -12,6 +13,7 @@ import SettingsView from './components/SettingsView.vue'
 import RepoView from './components/RepoView.vue'
 import TabBar from './components/TabBar.vue'
 import WelcomeScreen from './components/WelcomeScreen.vue'
+import { drag, resetDrag } from './drag/drag'
 import { useAppStore } from './stores/app'
 
 const app = useAppStore()
@@ -34,24 +36,42 @@ function onKey(e: KeyboardEvent) {
   registry.run(action.id)
 }
 
+function onDragOver(e: DragEvent) {
+  e.preventDefault()
+  // Un drag di Merlino fuori da una destinazione: cursore "vietato" invece di "apri come repository"
+  if (drag.source && e.dataTransfer) e.dataTransfer.dropEffect = 'none'
+}
+
 function onDrop(e: DragEvent) {
+  // Il drag nativo dei file di Merlino arriva come un drag di file: non va aperto come repository
+  if (drag.source) {
+    resetDrag()
+    return
+  }
   const file = e.dataTransfer?.files[0]
   if (file) void app.open(window.api.pathForFile(file))
+}
+
+// Il sistema non manda dragend dopo un drag nativo: il primo movimento del mouse dopo il rilascio azzera lo stato
+const onMouseMove = () => {
+  if (drag.source) resetDrag()
 }
 
 let offMenu: () => void = () => {}
 onMounted(() => {
   window.addEventListener('keydown', onKey)
+  window.addEventListener('mousemove', onMouseMove)
   offMenu = window.api.onMenuAction((id) => registry.run(id))
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', onKey)
+  window.removeEventListener('mousemove', onMouseMove)
   offMenu()
 })
 </script>
 
 <template>
-  <div class="app" @dragover.prevent @drop.prevent="onDrop">
+  <div class="app" @dragover="onDragOver" @drop.prevent="onDrop">
     <div v-if="!app.git" class="center muted">Avvio…</div>
     <SettingsView v-else-if="app.settingsSection" />
     <GitMissing v-else-if="!app.git.ok" />
@@ -70,6 +90,7 @@ onUnmounted(() => {
     <OutputPanel v-if="app.outputOpen" />
     <CommandPalette v-if="app.paletteOpen" />
     <PromptDialog v-if="app.promptRequest" :request="app.promptRequest" />
+    <DropHint />
   </div>
 </template>
 

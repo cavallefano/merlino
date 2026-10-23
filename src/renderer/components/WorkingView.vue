@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { shortcuts } from '../../shared/shortcuts'
 import type { CommitTemplate, WorkingArea, WorkingFile } from '../../shared/types'
 import { registry } from '../actions/builtin'
+import { dropTarget, fileDragSource } from '../drag/drag'
 import { useAppStore } from '../stores/app'
 import { useRepoStore } from '../stores/repo'
 import StageDiff from './StageDiff.vue'
@@ -141,7 +142,12 @@ async function createStash() {
 
     <div class="files">
       <p v-if="!sections.length" class="muted empty">Nessuna modifica</p>
-      <section v-for="section in sections" :key="section.area" :data-testid="`section-${section.area}`">
+      <section
+        v-for="section in sections"
+        :key="section.area"
+        :data-testid="`section-${section.area}`"
+        v-bind="section.area === 'conflicted' ? {} : dropTarget(repo, { kind: 'area', area: section.area === 'staged' ? 'staged' : 'unstaged' })"
+      >
         <header>
           <strong>{{ section.title }}</strong>
           <span class="muted">({{ section.files.length }})</span>
@@ -155,6 +161,7 @@ async function createStash() {
             :key="f.path"
             :class="{ selected: isSelected(f, section.area) }"
             data-testid="working-file"
+            v-bind="fileDragSource(repo, { kind: 'files', area: section.area, files: [f] }, { path: f.path })"
             @click="repo.selectWorkingFile(f, section.area)"
           >
             <span class="status" :class="f.status">{{ f.status }}</span>

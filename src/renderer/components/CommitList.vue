@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Commit, GraphRow } from '../../shared/types'
 import { commitMenu } from '../actions/branches'
+import { dragSource, dropTarget } from '../drag/drag'
 import { formatShortDate } from '../history/format'
 import { drawGraph, graphRight, laneColor, type NodeKind, ROW_HEIGHT } from '../history/graph-draw'
 import { useRepoStore } from '../stores/repo'
@@ -163,6 +164,7 @@ function openMenu(r: number) {
         :class="{ selected: isSelected(r, commit) }"
         :style="{ top: `${r * ROW_HEIGHT}px`, paddingLeft: `${textLeft(r)}px` }"
         :data-testid="r === 0 ? 'working-row' : 'commit-row'"
+        v-bind="r === 0 ? dropTarget(repo, { kind: 'working' }) : commit ? dragSource({ kind: 'commit', sha: commit.sha }) : {}"
         @click="select(r)"
         @contextmenu.prevent="openMenu(r)"
       >

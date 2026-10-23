@@ -95,3 +95,6 @@ select { font: inherit; color: inherit; background: var(--bg); border: 1px solid
 .hljs-number, .hljs-attr, .hljs-attribute, .hljs-variable, .hljs-property { color: var(--syn-number); }
 .hljs-title, .hljs-section, .hljs-name { color: var(--syn-title); }
 .hljs-meta, .hljs-tag, .hljs-symbol { color: var(--syn-meta); }
+
+/* Destinazione del drag & drop sotto il puntatore */
+.drop-hover { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--selected-bg) !important; }

@@ -298,6 +298,10 @@ export type RepoCommand =
   | { kind: 'push'; remote: string; force: boolean }
   | { kind: 'addRemote'; name: string; url: string }
   | { kind: 'removeRemote'; name: string }
+  | { kind: 'pushBranch'; remote: string; branch: string; remoteBranch: string }
+  | { kind: 'fastForward'; branch: string; from: string }
+  | { kind: 'stashFiles'; paths: string[]; untracked: boolean }
+  | { kind: 'applyFileChanges'; sha: string; path: string }
   | { kind: 'rebaseInteractive'; sha: string; steps: RebaseStep[] }
 
 export type MenuItem = { id: string; label: string; enabled?: boolean } | { separator: true }

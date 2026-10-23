@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { formatDate } from '../history/format'
 import { useRepoStore } from '../stores/repo'
+import { fileDragSource } from '../drag/drag'
 import DiffView from './DiffView.vue'
 
 const props = defineProps<{ root: string }>()
@@ -50,6 +51,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           :key="f.path"
           :class="{ selected: f.path === repo.selectedFile?.path }"
           data-testid="file-row"
+          v-bind="fileDragSource(repo, { kind: 'commitFile', sha: commit.sha, path: f.path }, { path: f.path, sha: commit.sha })"
           @click="repo.selectFile(f)"
         >
           <span class="status" :class="f.status">{{ f.status }}</span>

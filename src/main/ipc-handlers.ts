@@ -1,10 +1,11 @@
-import { BrowserWindow, dialog, ipcMain, Menu, type MenuItemConstructorOptions, nativeTheme, shell } from 'electron'
+import { BrowserWindow, dialog, ipcMain, Menu, type MenuItemConstructorOptions, nativeImage, nativeTheme, shell } from 'electron'
 import { statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { Channels, type Result } from '../shared/ipc'
 import type { CommandLogEntry, GitErrorInfo, PatchMode, Preferences, RepoInfo, WorkingArea } from '../shared/types'
 import { AutoFetch } from './auto-fetch'
+import { dragFile } from './drag-file'
 import { clone, fetch as gitFetch, rebaseRange, runCommand } from './git/branches'
 import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
@@ -54,6 +55,10 @@ import {
 
 const MAX_LOG = 500
 const MAX_PAGE = 5000
+// Icona del drag nativo (macOS la vuole non vuota): un quadrato grigio 16×16
+const DRAG_ICON = nativeImage.createFromDataURL(
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGklEQVR4nGPomjzvPyWYYdSAUQNGDRguBgAAche6HxUly5oAAAAASUVORK5CYII=',
+)
 
 function fail(e: unknown): { ok: false; error: GitErrorInfo } {
   if (e instanceof GitError) return { ok: false, error: e.info }
@@ -304,6 +309,18 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   ipcMain.handle(Channels.openInTerminal, (_e, root: unknown) =>
     withSession(root, (s) => startApp(terminalLaunch(process.platform, settings.get().preferences.terminalApp, s.root))),
   )
+  ipcMain.on(Channels.startDrag, (e, root: unknown, item: unknown) => {
+    try {
+      const session = sessions.get(str(root, 'root'))
+      if (!session) throw new Error('Repository non aperto')
+      const v = (typeof item === 'object' && item !== null ? item : {}) as { path?: unknown; sha?: unknown }
+      const target = v.sha === undefined ? { path: relPath(v.path) } : { path: relPath(v.path), sha: sha(v.sha) }
+      e.sender.startDrag({ file: dragFile(gitPath(), session.root, target), icon: DRAG_ICON })
+      e.returnValue = { ok: true, value: undefined }
+    } catch (err) {
+      e.returnValue = fail(err)
+    }
+  })
   ipcMain.handle(Channels.pickApp, async () => {
     const options: Electron.OpenDialogOptions =
       process.platform === 'darwin'

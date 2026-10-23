@@ -53,6 +53,8 @@ test('dettaglio: file cambiati, diff unificato e affiancato, copia SHA', async (
   const repo = repoWithMerge()
   const { app, page } = await launch([repo])
   await page.getByTestId('commit-row').filter({ hasText: 'modifica su feature' }).click()
+  // Il dettaglio arriva dopo il clic, e il merge selezionato all'avvio ha gli stessi file e righe
+  await expect(page.getByTestId('commit-message')).toContainText('modifica su feature')
   await expect(page.getByTestId('file-row')).toHaveText(/file1\.txt/)
   await expect(page.getByTestId('diff-line-add')).toContainText('modificato')
   await expect(page.getByTestId('diff-line-context')).toContainText('1')
