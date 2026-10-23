@@ -74,8 +74,8 @@ Drop to run the action; hold <kbd>⌥</kbd> (<kbd>Alt</kbd> on Windows/Linux) fo
 
 ### Pull requests
 - GitHub (including Enterprise) and GitLab (including self-hosted), connected with a personal access token in Settings → Accounts. Each remote uses the account for its server, or the one you pick from the remote's menu.
-- A list of pull requests (merge requests on GitLab) with search over title, description, author and branch, an Open / Merged / Closed / All filter, and CI status.
-- Details: the conversation (descriptions and comments in Markdown, commits in between), the commits and the changes of the whole pull request, read with your own git without adding refs to your history, and the list of checks.
+- A list of pull requests (merge requests on GitLab) with search over title, description, author and branch, an Open / Merged / Closed / All filter, and CI status; running pipelines show a progress bar with finished jobs, the current stage and the elapsed time.
+- Details: the conversation (descriptions and comments in Markdown, commits in between), the commits and the changes of the whole pull request, read with your own git without adding refs to your history, and a Checks tab with the jobs grouped by stage (GitLab) or workflow (GitHub), with a filter for long pipelines.
 - Comment, check out (pull requests from forks become `pr/<n>`), merge with the methods the repository allows, close and reopen.
 - Create a pull request from a branch (its menu, the command palette, or by dropping it on "Pull Requests"); the branch is pushed first if needed.
 - <kbd>⌘</kbd><kbd>1</kbd> / <kbd>⌘</kbd><kbd>2</kbd> switch between History and Pull Requests.

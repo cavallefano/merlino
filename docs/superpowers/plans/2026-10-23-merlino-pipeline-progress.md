@@ -968,3 +968,18 @@ Screenshot nascosti (spec temporanea, non committata) della lista con la barra e
 git add README.md docs
 git commit -m "docs: avanzamento delle pipeline nel README e note di esecuzione"
 ```
+
+---
+
+## Note di esecuzione
+
+- **Commit**: Task 1 `6158d10`, Task 2 `e630286`, Task 3 `71fad81`, Task 4 `63c5926`, Task 5 in questo commit.
+- **Scelte prese durante il lavoro**:
+  - Le chiavi `ci.queued` sono entrate nel Task 1: l'elenco degli stati nel dettaglio le usa già.
+  - Nell'E2E i nomi dei job si confrontano sullo `<span class="name">`: il testo della riga non ha spazi fra icona, nome e durata.
+  - Gli stili `.ci` rimasti senza uso nel dettaglio (l'elenco nell'intestazione) sono stati tolti.
+- **Verifica**:
+  - lint e typecheck puliti;
+  - 190 test unit e di integrazione (1 saltato: le prestazioni, opzionale);
+  - 39 E2E con la finestra nascosta, di cui uno nuovo (pipeline GitLab di 40 job su 3 stage: barra nella lista, scheda Controlli, gruppi, filtro);
+  - screenshot nascosti in inglese e in italiano della lista con le barre (una pipeline in corso, una con un job già fallito e altri in corso) e della scheda Controlli.
