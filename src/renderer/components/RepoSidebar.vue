@@ -194,7 +194,7 @@ function drop(stash: StashEntry) {
 </template>
 
 <style scoped>
-.sidebar { min-width: 0; min-height: 0; overflow: auto; background: var(--bg-alt); border-right: 1px solid var(--border); user-select: none; }
+.sidebar { min-width: 0; min-height: 0; overflow: auto; background: var(--bg-alt); user-select: none; }
 .pages { display: flex; flex-direction: column; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .pages button { display: flex; align-items: center; gap: 4px; padding: 4px 16px; border: 0; border-radius: 0; background: transparent; text-align: left; }
 .pages button:hover { background: var(--bg-hover); }

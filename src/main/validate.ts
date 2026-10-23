@@ -1,9 +1,11 @@
 import { isAbsolute } from 'node:path'
+import { FLOW_TYPES } from '../shared/flow'
 import { LANGUAGES } from '../shared/i18n'
 import { DIFF_ALGORITHMS } from '../shared/preferences'
 import type {
   CommitTemplate,
   DiffOptions,
+  FlowType,
   GitConfigKey,
   HostingService,
   MergeMethod,
@@ -111,6 +113,24 @@ export function gitUrl(value: unknown): string {
   return s
 }
 
+const NOT_REF = /[\s~^:?*[\\]|\.\.|@\{/
+
+/** Prefisso di git flow: vuoto o un frammento di nome di ref. */
+function flowPrefix(value: unknown): string {
+  if (typeof value !== 'string' || value.length > 50 || value.startsWith('-') || NOT_REF.test(value) || NOT_PRINTABLE.test(value)) {
+    throw new TypeError(t('validation.flowPrefix', { value: String(value) }))
+  }
+  return value
+}
+
+function flowPrefixes(value: unknown): Record<FlowType, string> {
+  const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  const prefixes = Object.fromEntries(FLOW_TYPES.map((type) => [type, flowPrefix(v[type])])) as Record<FlowType, string>
+  const used = Object.values(prefixes).filter(Boolean)
+  if (new Set(used).size !== used.length) throw new TypeError(t('validation.flowPrefixes'))
+  return prefixes
+}
+
 const OPERATIONS = ['merge', 'rebase', 'cherry-pick', 'revert'] as const satisfies readonly Operation[]
 
 function rebaseStep(value: unknown): RebaseStep {
@@ -175,6 +195,27 @@ export function repoCommand(value: unknown): RepoCommand {
       return { kind: 'stashFiles', paths: list(v.paths, relPath), untracked: v.untracked === true }
     case 'applyFileChanges':
       return { kind: 'applyFileChanges', sha: sha(v.sha), path: relPath(v.path) }
+    case 'flowInit':
+      return { kind: 'flowInit', main: refName(v.main), develop: refName(v.develop), prefixes: flowPrefixes(v.prefixes), versionTag: flowPrefix(v.versionTag) }
+    case 'flowStart':
+      return {
+        kind: 'flowStart',
+        type: oneOf(v.type, FLOW_TYPES, 'type'),
+        name: refName(v.name),
+        base: revision(v.base),
+        checkout: v.checkout === true,
+        publish: v.publish === null || v.publish === undefined ? null : refName(v.publish),
+      }
+    case 'flowFinish':
+      return {
+        kind: 'flowFinish',
+        branch: refName(v.branch),
+        update: v.update === true,
+        tagMessage: limitedText(v.tagMessage ?? '', t('field.message'), 10_000),
+        deleteBranch: v.deleteBranch === true,
+        deleteRemote: v.deleteRemote === true,
+        push: v.push === true,
+      }
     case 'rebaseInteractive':
       return { kind: 'rebaseInteractive', sha: sha(v.sha), steps: list(v.steps, rebaseStep) }
     default:
@@ -208,6 +249,7 @@ export function preferences(current: Preferences, patch: unknown): Preferences {
   return {
     language: oneOf(p.language, LANGUAGES, t('setting.language')),
     theme: oneOf(p.theme, ['system', 'light', 'dark'] as const, t('setting.theme')),
+    panelLayout: oneOf(p.panelLayout, ['horizontal', 'vertical'] as const, t('setting.panelLayout')),
     autoFetchMinutes: intIn(p.autoFetchMinutes, t('setting.autoFetch'), 0, 60),
     fetchPrune: bool(p.fetchPrune, t('setting.prune')),
     restoreTabs: bool(p.restoreTabs, t('setting.restoreTabs')),

@@ -11,6 +11,8 @@ import type {
   DiffOptions,
   FileChange,
   FileDiff,
+  FlowConfig,
+  FlowType,
   GraphRow,
   HistoryPage,
   HistorySummary,
@@ -25,6 +27,9 @@ import type {
 } from '../../shared/types'
 
 const storeId = (root: string) => `repo:${root}`
+
+/** Dialog di git flow aperto; init può avere un dialog da aprire dopo (prima azione su un repo non inizializzato). */
+export type FlowDialog = { kind: 'init'; then?: FlowDialog } | { kind: 'start'; type: FlowType } | { kind: 'finish'; branch: string }
 export const PAGE_SIZE = 500
 
 interface WorkingSelection {
@@ -80,6 +85,8 @@ function define(root: string) {
     const status = shallowRef<WorkingStatus | null>(null)
     const stashes = shallowRef<StashEntry[]>([])
     const working = shallowRef<WorkingSelection | null>(null)
+    /** Popup del diff aperto e cosa mostra; null = chiuso. */
+    const diffDialog = ref<'commit' | 'working' | 'pr' | null>(null)
     const workingDiff = shallowRef<FileDiff | null>(null)
     const selectedLines = shallowRef<ReadonlySet<string>>(new Set())
     let anchor: string | null = null
@@ -128,6 +135,19 @@ function define(root: string) {
     const progress = ref('')
     /** Rebase interattivo da preparare: il commit di partenza e i commit da lì a HEAD (dal più recente). */
     const rebasePlan = shallowRef<{ sha: string; commits: Commit[] } | null>(null)
+    /** Configurazione di git flow; null se il repo non è inizializzato. */
+    const flow = shallowRef<FlowConfig | null>(null)
+    const flowDialog = shallowRef<FlowDialog | null>(null)
+
+    async function loadFlow() {
+      const r = await window.api.flowConfig(root)
+      if (r.ok) flow.value = r.value
+    }
+
+    /** Apre un dialog di git flow; su un repo non inizializzato prima quello di init. */
+    function openFlow(dialog: FlowDialog) {
+      flowDialog.value = flow.value || dialog.kind === 'init' ? dialog : { kind: 'init', then: dialog }
+    }
 
     const changeCount = computed(() => {
       const s = status.value
@@ -136,7 +156,7 @@ function define(root: string) {
     const canCommit = computed(() => subject.value.trim() !== '' && (amend.value || (status.value?.staged.length ?? 0) > 0))
 
     async function refresh() {
-      const [r] = await Promise.all([window.api.repoInfo(root), loadStatus(), loadStashes(), loadRefs(), loadHistory(), loadGitTemplate()])
+      const [r] = await Promise.all([window.api.repoInfo(root), loadStatus(), loadStashes(), loadRefs(), loadHistory(), loadGitTemplate(), loadFlow()])
       if (r.ok) info.value = r.value
       else error.value = r.error.message
       if (view.value === 'working') await loadWorkingDiff()
@@ -420,10 +440,10 @@ function define(root: string) {
       root, info, error, refresh,
       history, query, pagesTick, loadHistory, ensureRows, commitAt, rowAt, fileCountOf, search, move,
       page, view, selected, selectedIndex, detail, selectedFile, diff, diffOptions, select, selectFile, loadDiff, toggleSplit, toggleWhitespace,
-      status, stashes, working, workingDiff, selectedLines, subject, body, amend, changeCount, canCommit,
+      status, stashes, working, workingDiff, diffDialog, selectedLines, subject, body, amend, changeCount, canCommit,
       selectWorking, selectWorkingFile, stage, unstage, discard, stageEverything, unstageEverything, ignore,
       applyLines, toggleLine, clearSelection, setAmend, commitChanges, stashPush, stashAction,
-      refs, busy, progress, rebasePlan, run, git, openRebase,
+      refs, busy, progress, rebasePlan, run, git, openRebase, flow, flowDialog, openFlow,
       gitTemplate, defaultTemplate, templatePicker, applyTemplate, prefillTemplate,
     }
   })

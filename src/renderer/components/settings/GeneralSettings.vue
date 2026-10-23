@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type Lang, LANGUAGES, type MessageKey } from '../../../shared/i18n'
-import type { ThemePreference } from '../../../shared/types'
+import type { PanelLayout, ThemePreference } from '../../../shared/types'
 import { useAppStore } from '../../stores/app'
 import { t } from '../../i18n'
 import PrefNumber from './PrefNumber.vue'
@@ -35,6 +35,16 @@ const checked = (e: Event) => (e.target as HTMLInputElement).checked
       @change="app.updatePreferences({ theme: ($event.target as HTMLSelectElement).value as ThemePreference })"
     >
       <option v-for="theme in THEMES" :key="theme.value" :value="theme.value">{{ t(theme.label) }}</option>
+    </select>
+    <label for="pref-panelLayout">{{ t('setting.panelLayout') }}</label>
+    <select
+      id="pref-panelLayout"
+      data-testid="pref-panelLayout"
+      :value="app.preferences.panelLayout"
+      @change="app.updatePreferences({ panelLayout: ($event.target as HTMLSelectElement).value as PanelLayout })"
+    >
+      <option value="horizontal">{{ t('layout.horizontal') }}</option>
+      <option value="vertical">{{ t('layout.vertical') }}</option>
     </select>
 
     <h2>Fetch</h2>

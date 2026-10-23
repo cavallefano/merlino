@@ -95,7 +95,7 @@ onUnmounted(() => clearInterval(timer))
 </template>
 
 <style scoped>
-.prs { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--border); }
+.prs { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .bar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
 .bar input { flex: 1; min-width: 80px; }
 .bar button { padding: 2px 8px; white-space: nowrap; }

@@ -4,21 +4,40 @@ import { computed, onMounted } from 'vue'
 import type { MessageKey } from '../../shared/i18n'
 import type { Operation } from '../../shared/types'
 import { push } from '../actions/branches'
+import { registry } from '../actions/builtin'
+import { flowMenu } from '../actions/flow'
+import { SIZES, useLayout } from '../layout'
+import { useAppStore } from '../stores/app'
 import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
 import CommitDetail from './CommitDetail.vue'
 import CreatePullRequestDialog from './CreatePullRequestDialog.vue'
+import DiffDialog from './DiffDialog.vue'
+import FlowFinishDialog from './FlowFinishDialog.vue'
+import FlowInitDialog from './FlowInitDialog.vue'
+import FlowStartDialog from './FlowStartDialog.vue'
 import HistoryView from './HistoryView.vue'
 import MergeDialog from './MergeDialog.vue'
 import PullRequestDetail from './PullRequestDetail.vue'
 import PullRequestList from './PullRequestList.vue'
 import RebaseDialog from './RebaseDialog.vue'
 import RepoSidebar from './RepoSidebar.vue'
+import PaneSplitter from './PaneSplitter.vue'
 import WorkingView from './WorkingView.vue'
 
 const props = defineProps<{ root: string }>()
 const repo = useRepoStore(props.root)
 const prs = usePullRequestStore(props.root)
+const app = useAppStore()
+const layout = useLayout()
+const vertical = computed(() => app.preferences.panelLayout === 'vertical')
+/** La misura della lista: frazione della larghezza in orizzontale, dell'altezza in verticale. */
+const listKey = computed(() => (vertical.value ? 'listVertical' : 'list'))
+const mainStyle = computed(() => {
+  const f = layout[listKey.value]
+  const tracks = `minmax(0, ${f}fr) 5px minmax(0, ${1 - f}fr)`
+  return vertical.value ? { gridTemplateRows: tracks } : { gridTemplateColumns: tracks }
+})
 
 const OPERATIONS: Record<Operation, MessageKey> = {
   merge: 'operation.merge',
@@ -54,6 +73,7 @@ onMounted(() => {
       <span class="branch" data-testid="repo-branch">{{ head }}</span>
       <span class="spacer" />
       <span v-if="repo.busy && repo.progress" class="progress muted" data-testid="progress">{{ repo.progress }}</span>
+      <button data-testid="flow-button" :disabled="!!repo.busy" @click="flowMenu(repo)">{{ t('flow.button') }}</button>
       <button data-testid="fetch" :disabled="!!repo.busy" @click="repo.git({ kind: 'fetch' })">Fetch</button>
       <button data-testid="pull" :disabled="!!repo.busy" @click="repo.git({ kind: 'pull', mode: 'config' })">
         Pull<span v-if="repo.status?.behind" class="count">↓{{ repo.status.behind }}</span>
@@ -61,7 +81,13 @@ onMounted(() => {
       <button data-testid="push" :disabled="!!repo.busy" @click="push(repo, false)">
         Push<span v-if="repo.status?.ahead" class="count">↑{{ repo.status.ahead }}</span>
       </button>
-      <button :aria-label="t('action.repo.refresh')" @click="repo.refresh()">↻</button>
+      <button
+        data-testid="layout-toggle"
+        :aria-label="t('action.layout.toggle')"
+        :title="t('action.layout.toggle')"
+        @click="registry.run('layout.toggle')"
+      >{{ vertical ? '◫' : '⊟' }}</button>
+      <button data-testid="repo-refresh" :aria-label="t('action.repo.refresh')" @click="repo.refresh()">↻</button>
     </header>
     <p v-if="repo.error" class="error message">{{ repo.error }}</p>
     <div v-if="operation" class="operation" data-testid="operation-banner">
@@ -72,21 +98,43 @@ onMounted(() => {
       <button v-if="operation !== 'merge'" data-testid="op-skip" :disabled="!!repo.busy" @click="step('skip')">{{ t('operation.skip') }}</button>
       <button data-testid="op-abort" :disabled="!!repo.busy" @click="step('abort')">{{ t('operation.abort') }}</button>
     </div>
-    <div class="panes">
+    <div class="panes" :style="{ gridTemplateColumns: `${layout.sidebar}px 5px minmax(0, 1fr)` }">
       <RepoSidebar :root="root" />
-      <template v-if="repo.page === 'pullRequests'">
-        <PullRequestList :root="root" />
-        <PullRequestDetail :root="root" />
-      </template>
-      <template v-else>
-        <HistoryView :root="root" />
-        <WorkingView v-if="repo.view === 'working'" :root="root" />
+      <PaneSplitter
+        v-model="layout.sidebar"
+        orientation="col"
+        :default-value="SIZES.sidebar.default"
+        :min="SIZES.sidebar.min"
+        :max="SIZES.sidebar.max"
+        :min-after="480"
+        :label="t('layout.resize')"
+        data-testid="split-sidebar"
+      />
+      <div class="main" :class="{ vertical }" :style="mainStyle">
+        <PullRequestList v-if="repo.page === 'pullRequests'" :root="root" />
+        <HistoryView v-else :root="root" />
+        <PaneSplitter
+          v-model="layout[listKey]"
+          :orientation="vertical ? 'row' : 'col'"
+          fraction
+          :default-value="SIZES[listKey].default"
+          :min="vertical ? 120 : 240"
+          :min-after="vertical ? 120 : 240"
+          :label="t('layout.resize')"
+          data-testid="split-list"
+        />
+        <PullRequestDetail v-if="repo.page === 'pullRequests'" :root="root" />
+        <WorkingView v-else-if="repo.view === 'working'" :root="root" />
         <CommitDetail v-else :root="root" />
-      </template>
+      </div>
     </div>
     <RebaseDialog v-if="repo.rebasePlan" :root="root" />
     <MergeDialog v-if="prs.merging && prs.detail" :root="root" />
     <CreatePullRequestDialog v-if="prs.creating" :root="root" />
+    <FlowInitDialog v-if="repo.flowDialog?.kind === 'init'" :root="root" />
+    <FlowStartDialog v-else-if="repo.flowDialog?.kind === 'start'" :root="root" />
+    <FlowFinishDialog v-else-if="repo.flowDialog?.kind === 'finish'" :root="root" />
+    <DiffDialog v-if="repo.diffDialog" :root="root" />
   </section>
 </template>
 
@@ -100,5 +148,8 @@ onMounted(() => {
 .message { margin: 0; padding: 6px 12px; border-bottom: 1px solid var(--border); }
 .operation { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border); box-shadow: inset 3px 0 #bf8700; }
 .operation button { padding: 2px 10px; }
-.panes { flex: 1; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 11fr) minmax(0, 9fr); }
+.panes { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); }
+/* Lista | divisore | dettaglio: colonne (dallo stile in linea) e una riga, oppure righe e una colonna */
+.main { display: grid; grid-template-rows: minmax(0, 1fr); min-width: 0; min-height: 0; }
+.main.vertical { grid-template-columns: minmax(0, 1fr); }
 </style>

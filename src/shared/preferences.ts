@@ -3,6 +3,7 @@ import type { DiffAlgorithm, Preferences } from './types'
 export const DEFAULT_PREFERENCES: Preferences = {
   language: 'en',
   theme: 'system',
+  panelLayout: 'horizontal',
   autoFetchMinutes: 10,
   fetchPrune: true,
   restoreTabs: true,

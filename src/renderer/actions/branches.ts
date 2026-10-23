@@ -1,3 +1,4 @@
+import { flowName, flowTypeOf } from '../../shared/flow'
 import { t } from '../i18n'
 import type { BranchInfo, Commit, MenuItem, RemoteBranch, RemoteInfo, TagInfo } from '../../shared/types'
 import type { DropOperation } from '../drag/drop-actions'
@@ -141,6 +142,12 @@ export async function performDrop(repo: Repo, op: DropOperation): Promise<unknow
 
 export function branchMenu(repo: Repo, b: BranchInfo) {
   const other = !b.current
+  // I branch di git flow (non support) si possono finire da qui
+  const type = repo.flow ? flowTypeOf(b.name, repo.flow) : null
+  const finish =
+    repo.flow && type && type !== 'support'
+      ? [null, { label: t(`flow.finish.${type}`, { name: flowName(b.name, repo.flow) }), run: () => repo.openFlow({ kind: 'finish', branch: b.name }) }]
+      : []
   return popup([
     { label: 'Checkout', enabled: other, run: () => repo.git({ kind: 'checkoutBranch', name: b.name }) },
     null,
@@ -153,6 +160,7 @@ export function branchMenu(repo: Repo, b: BranchInfo) {
     { label: t('ctx.delete'), enabled: other, run: () => deleteBranch(repo, b.name) },
     null,
     { label: t('ctx.createPullRequest', { branch: b.name }), run: () => openCreatePullRequest(repo, b.name) },
+    ...finish,
   ])
 }
 

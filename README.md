@@ -63,11 +63,11 @@ Git clients tend to trade speed for depth. Merlino keeps both for the work you d
 | --- | --- |
 | History | Commit graph of every branch, remote branch and tag, with colored lanes. Search by text, `author:`, `path:`, `message:` or `contents:`. Commit details with clickable parents. Diffs unified or side by side, with syntax highlighting, word-level changes and an option to ignore whitespace |
 | Local changes | Stage, unstage and discard by file, hunk or line. Add files to `.gitignore`. Commit composer with length guides, amend and templates (`{branch}`, `{ticket}`, and Git's own `commit.template`). Stashes, also of single files. A banner to continue, skip or abort a merge, rebase, cherry-pick or revert with conflicts |
-| Branches and remotes | Branches in folders with ahead/behind counts. Create, check out, rename, delete, set the upstream. Merge, rebase, cherry-pick, revert, reset and interactive rebase. Tags. Clone, fetch (also in the background), pull, push with `--force-with-lease`, remotes |
+| Branches and remotes | Branches in folders with ahead/behind counts. Create, check out, rename, delete, set the upstream. Merge, rebase, cherry-pick, revert, reset and interactive rebase. Tags. Clone, fetch (also in the background), pull, push with `--force-with-lease`, remotes. Git flow: start and finish features, bugfixes, releases and hotfixes (locally, or through a pull request), and support branches, compatible with the `git flow` command line |
 | Drag and drop | Merge, rebase, cherry-pick, revert, push, fast-forward, set the upstream, stage, stash and apply by dragging, with a label that says what will happen. Files from any commit can be dragged to other apps |
 | Pull requests | GitHub (also Enterprise) and GitLab (also self-hosted) with a personal access token. List with search, filters and CI status. Conversation in Markdown, commits and changes read with your git. Pipelines with progress and jobs by stage. Comment, check out (forks too), merge with the methods the repository allows, close, reopen, create |
-| Everyday use | Tabs restored at launch. Open a repository from the dialog, by dropping its folder or from the command line. Command palette, menu bar and context menus with the same actions. An output panel with every git command. Open in your terminal or editor |
-| Settings | Language (English or Italian), theme, automatic fetch, commit guides and templates, diff view and algorithm, editor and terminal, accounts, and your global Git identity, signing and pull strategy |
+| Everyday use | Tabs restored at launch. Open a repository from the dialog, by dropping its folder or from the command line. Resizable panels, with the list beside or above the details. Diffs also in a large, resizable window. Command palette, menu bar and context menus with the same actions. An output panel with every git command. Open in your terminal or editor |
+| Settings | Language (English or Italian), theme, panel layout, automatic fetch, commit guides and templates, diff view and algorithm, editor and terminal, accounts, and your global Git identity, signing and pull strategy |
 | Quality | Clear messages for the usual git failures. A confirmation before every destructive operation. A sandboxed interface that can only call validated operations. Tested against real git: unit, integration and end-to-end |
 
 <details>
@@ -218,10 +218,11 @@ For a test build without a release, run the workflow by hand (Actions → Releas
 - [x] Pull and merge requests: list, conversation, changes, merge, check out, create
 - [x] Pipelines with progress and jobs by stage
 - [x] Packages for macOS, Windows and Linux on GitHub Releases
+- [x] Git flow, with finish by local merge or pull request
 - [ ] Reviews: approve, request changes, comments on diff lines
 - [ ] Three-way merge tool
 - [ ] Blame, file history and a tree view of the repository
-- [ ] Submodules, worktrees, git flow and custom commands
+- [ ] Submodules, worktrees and custom commands
 
 ## Contributing
 
@@ -242,6 +243,12 @@ To add a language:
 3. Add its name, written in that language, as `language.<code>` in every dictionary.
 
 `npm test` checks that every translation has the same placeholders as English and no empty text.
+
+## Support the project
+
+Merlino is free and always will be. If it saves you time, you can leave a tip: it helps keep the project going.
+
+<a href='https://ko-fi.com/Q8F229BNA3' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 ## License
 
