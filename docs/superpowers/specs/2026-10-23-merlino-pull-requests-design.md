@@ -80,7 +80,7 @@ Merlino aggiunge lo stato della CI e il filtro per stato (aperte, unite, chiuse)
   - **Pulsanti**: "Nuova pull request…" e ↻.
   - **Righe** su due linee:
     - `#42 Titolo`, l'etichetta Bozza e l'icona della CI;
-    - autore · data · `head → base` · numero di commenti.
+    - autore · data · `head → base` · numero di commenti (su GitHub solo nel dettaglio: la lista delle API non lo dà).
   - **Ordine**: per ultimo aggiornamento.
   - **Quante**:
     - le aperte si caricano tutte, fino a 500;
