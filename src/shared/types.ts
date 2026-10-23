@@ -314,6 +314,9 @@ export type RepoCommand =
   | { kind: 'fastForward'; branch: string; from: string }
   | { kind: 'stashFiles'; paths: string[]; untracked: boolean }
   | { kind: 'applyFileChanges'; sha: string; path: string }
+  | { kind: 'flowInit'; main: string; develop: string; prefixes: Record<FlowType, string>; versionTag: string }
+  | { kind: 'flowStart'; type: FlowType; name: string; base: string; checkout: boolean; publish: string | null }
+  | { kind: 'flowFinish'; branch: string; update: boolean; tagMessage: string; deleteBranch: boolean; deleteRemote: boolean; push: boolean }
   | { kind: 'rebaseInteractive'; sha: string; steps: RebaseStep[] }
 
 export type MenuItem = { id: string; label: string; enabled?: boolean } | { separator: true }
@@ -433,4 +436,32 @@ export interface NewPullRequest {
 export interface PullRequestChanges {
   commits: Commit[]
   files: FileChange[]
+}
+
+export type FlowType = 'feature' | 'bugfix' | 'release' | 'hotfix' | 'support'
+
+/** Configurazione di git flow, nelle chiavi gitflow.* di git-flow-avh. */
+export interface FlowConfig {
+  /** Branch di produzione (gitflow.branch.master). */
+  main: string
+  develop: string
+  prefixes: Record<FlowType, string>
+  /** Prefisso dei tag di versione, es. "v"; può essere vuoto. */
+  versionTag: string
+  /** Branch → la base da cui è partito (gitflow.branch.<branch>.base). */
+  bases: Record<string, string>
+}
+
+/** Cosa farà il Finish di un branch, per il riepilogo del dialog. */
+export interface FlowFinishInfo {
+  branch: string
+  type: Exclude<FlowType, 'support'>
+  /** Nome o versione, senza prefisso. */
+  name: string
+  /** Destinazioni in ordine; merged: contengono già il branch; upstream: es. origin/main. */
+  targets: { branch: string; merged: boolean; upstream: string | null; remote: string | null }[]
+  /** Tag di release e hotfix; exists: c'è già. */
+  tag: { name: string; exists: boolean } | null
+  /** Remote su cui c'è anche il branch; null se è solo locale. */
+  remote: string | null
 }

@@ -7,6 +7,8 @@ import type {
   CommitTemplate,
   DiffOptions,
   FileDiff,
+  FlowConfig,
+  FlowFinishInfo,
   GitCheck,
   GitConfigKey,
   GitErrorInfo,
@@ -98,6 +100,8 @@ export const Channels = {
   prCreate: 'pr:create',
   prCheckout: 'pr:checkout',
   prBranchSummary: 'pr:branch-summary',
+  flowConfig: 'flow:config',
+  flowFinishInfo: 'flow:finish-info',
   // eventi dal main al renderer
   repoChanged: 'repo:changed',
   fetched: 'repo:fetched',
@@ -193,6 +197,10 @@ export interface Api {
   /** branch null: PR da fork (pr/<n>). */
   prCheckout(root: string, remote: string, number: number, branch: string | null): Promise<Result<void>>
   prBranchSummary(root: string, base: string, head: string): Promise<Result<{ count: number; message: string }>>
+  /** Configurazione di git flow del repo; null se non è inizializzato. */
+  flowConfig(root: string): Promise<Result<FlowConfig | null>>
+  /** Destinazioni, tag e remote del Finish di un branch, per il riepilogo del dialog. */
+  flowFinishInfo(root: string, branch: string): Promise<Result<FlowFinishInfo>>
   onProgress(cb: (event: { root: string; line: string }) => void): () => void
   /** Percorso sul disco di un file o di una cartella trascinati nella finestra. */
   pathForFile(file: File): string

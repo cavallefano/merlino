@@ -4,6 +4,33 @@ import { commitTemplates, diffOptions, gitConfigEntry, gitUrl, limitedText, merg
 import { DEFAULT_PREFERENCES } from '../../src/shared/preferences'
 
 describe('validazione degli argomenti dal renderer', () => {
+  it('comandi di git flow', () => {
+    const prefixes = { feature: 'feature/', bugfix: 'bugfix/', release: 'release/', hotfix: 'hotfix/', support: 'support/' }
+    expect(repoCommand({ kind: 'flowInit', main: 'main', develop: 'develop', prefixes, versionTag: '' })).toEqual({ kind: 'flowInit', main: 'main', develop: 'develop', prefixes, versionTag: '' })
+    for (const bad of [{ ...prefixes, feature: 'a b' }, { ...prefixes, bugfix: 'feature/' }, { ...prefixes, release: 'x'.repeat(51) }]) {
+      expect(() => repoCommand({ kind: 'flowInit', main: 'main', develop: 'develop', prefixes: bad, versionTag: 'v' })).toThrow()
+    }
+    expect(repoCommand({ kind: 'flowStart', type: 'release', name: '0.2.0', base: 'develop', checkout: 1, publish: null })).toEqual({
+      kind: 'flowStart',
+      type: 'release',
+      name: '0.2.0',
+      base: 'develop',
+      checkout: false,
+      publish: null,
+    })
+    expect(() => repoCommand({ kind: 'flowStart', type: 'epic', name: 'x', base: 'develop', publish: null })).toThrow()
+    expect(() => repoCommand({ kind: 'flowStart', type: 'feature', name: '--x', base: 'develop', publish: null })).toThrow()
+    expect(repoCommand({ kind: 'flowFinish', branch: 'feature/a', update: true, deleteBranch: true })).toEqual({
+      kind: 'flowFinish',
+      branch: 'feature/a',
+      update: true,
+      tagMessage: '',
+      deleteBranch: true,
+      deleteRemote: false,
+      push: false,
+    })
+  })
+
   it('account e pull request', () => {
     expect(server(' GitLab.Example.com:8443 ')).toBe('gitlab.example.com:8443')
     for (const bad of ['https://github.com', 'github.com/acme', '-x', 'a b', '']) expect(() => server(bad)).toThrow()

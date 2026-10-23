@@ -56,7 +56,7 @@ function define(root: string) {
     const busy = ref(false)
     const merging = ref(false)
     /** Dialog di una nuova PR aperto, con il branch proposto. */
-    const creating = shallowRef<{ branch: string } | null>(null)
+    const creating = shallowRef<{ branch: string; base?: string; title?: string } | null>(null)
     let listRequest = 0
     let detailRequest = 0
     let diffRequest = 0

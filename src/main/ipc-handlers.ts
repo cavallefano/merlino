@@ -11,6 +11,7 @@ import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
 import { readGitCommitTemplate } from './git/commit-template'
 import { readCommitFileDiff } from './git/diff'
+import { finishInfo, readFlowConfig } from './git/flow'
 import { readGlobalConfig, setGlobalConfig } from './git/global-config'
 import { branchSummary, checkoutPullRequest, fetchPullRequest, readPullRequestChanges, readPullRequestFileDiff } from './git/pull-request'
 import { readRefs } from './git/refs'
@@ -447,6 +448,10 @@ export function registerIpc(
   ipcMain.handle(Channels.prBranchSummary, (_e, root: unknown, base: unknown, head: unknown) =>
     withSession(root, (s) => branchSummary(s.runner, revision(base), revision(head))),
   )
+
+  // --- Git flow ---
+  ipcMain.handle(Channels.flowConfig, (_e, root: unknown) => withSession(root, (s) => readFlowConfig(s.runner)))
+  ipcMain.handle(Channels.flowFinishInfo, (_e, root: unknown, branch: unknown) => withSession(root, (s) => finishInfo(s.runner, refName(branch))))
 
   return {
     async disposeAll(): Promise<void> {

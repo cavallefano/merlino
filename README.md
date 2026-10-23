@@ -63,7 +63,7 @@ Git clients tend to trade speed for depth. Merlino keeps both for the work you d
 | --- | --- |
 | History | Commit graph of every branch, remote branch and tag, with colored lanes. Search by text, `author:`, `path:`, `message:` or `contents:`. Commit details with clickable parents. Diffs unified or side by side, with syntax highlighting, word-level changes and an option to ignore whitespace |
 | Local changes | Stage, unstage and discard by file, hunk or line. Add files to `.gitignore`. Commit composer with length guides, amend and templates (`{branch}`, `{ticket}`, and Git's own `commit.template`). Stashes, also of single files. A banner to continue, skip or abort a merge, rebase, cherry-pick or revert with conflicts |
-| Branches and remotes | Branches in folders with ahead/behind counts. Create, check out, rename, delete, set the upstream. Merge, rebase, cherry-pick, revert, reset and interactive rebase. Tags. Clone, fetch (also in the background), pull, push with `--force-with-lease`, remotes |
+| Branches and remotes | Branches in folders with ahead/behind counts. Create, check out, rename, delete, set the upstream. Merge, rebase, cherry-pick, revert, reset and interactive rebase. Tags. Clone, fetch (also in the background), pull, push with `--force-with-lease`, remotes. Git flow: start and finish features, bugfixes, releases and hotfixes (locally, or through a pull request), and support branches, compatible with the `git flow` command line |
 | Drag and drop | Merge, rebase, cherry-pick, revert, push, fast-forward, set the upstream, stage, stash and apply by dragging, with a label that says what will happen. Files from any commit can be dragged to other apps |
 | Pull requests | GitHub (also Enterprise) and GitLab (also self-hosted) with a personal access token. List with search, filters and CI status. Conversation in Markdown, commits and changes read with your git. Pipelines with progress and jobs by stage. Comment, check out (forks too), merge with the methods the repository allows, close, reopen, create |
 | Everyday use | Tabs restored at launch. Open a repository from the dialog, by dropping its folder or from the command line. Command palette, menu bar and context menus with the same actions. An output panel with every git command. Open in your terminal or editor |
@@ -218,10 +218,11 @@ For a test build without a release, run the workflow by hand (Actions → Releas
 - [x] Pull and merge requests: list, conversation, changes, merge, check out, create
 - [x] Pipelines with progress and jobs by stage
 - [x] Packages for macOS, Windows and Linux on GitHub Releases
+- [x] Git flow, with finish by local merge or pull request
 - [ ] Reviews: approve, request changes, comments on diff lines
 - [ ] Three-way merge tool
 - [ ] Blame, file history and a tree view of the repository
-- [ ] Submodules, worktrees, git flow and custom commands
+- [ ] Submodules, worktrees and custom commands
 
 ## Contributing
 

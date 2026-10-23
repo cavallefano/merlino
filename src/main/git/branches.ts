@@ -5,6 +5,7 @@ import type { Commit, CommandLogEntry, Operation, RebaseStep, RepoCommand } from
 import { LOG_FORMAT, parseLog } from './log'
 import { t } from '../i18n'
 import { GitError, GitRunner } from './runner'
+import { flowFinish, flowInit, flowStart } from './flow'
 import { applyFileChanges, stashFiles } from './working'
 
 const write = { write: true }
@@ -229,6 +230,12 @@ export function runCommand(r: GitRunner, c: RepoCommand, onProgress: Progress, p
       return stashFiles(r, c.paths, c.untracked)
     case 'applyFileChanges':
       return applyFileChanges(r, c.sha, c.path)
+    case 'flowInit':
+      return flowInit(r, c)
+    case 'flowStart':
+      return flowStart(r, c, onProgress)
+    case 'flowFinish':
+      return flowFinish(r, c, onProgress)
     case 'rebaseInteractive':
       return rebaseInteractive(r, c.sha, c.steps)
   }

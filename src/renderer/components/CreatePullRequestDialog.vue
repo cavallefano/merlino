@@ -12,12 +12,12 @@ const dialog = ref<HTMLDialogElement | null>(null)
 const targets = computed(() => prs.withAccount.map((r) => r.name))
 const target = ref(prs.remote && targets.value.includes(prs.remote) ? prs.remote : (targets.value[0] ?? ''))
 const head = ref(prs.creating?.branch || repo.info?.branch || '')
-const base = ref('')
-const title = ref('')
+const base = ref(prs.creating?.base ?? '')
+const title = ref(prs.creating?.title ?? '')
 const body = ref('')
 const draft = ref(false)
 /** L'utente ha scritto titolo o descrizione: non si propongono più. */
-const edited = ref(false)
+const edited = ref(!!prs.creating?.title)
 const failed = ref<string | null>(null)
 
 const remoteNames = computed(() => repo.refs?.remotes.map((r) => r.name) ?? [])
@@ -49,7 +49,9 @@ watch(target, loadBase)
 watch([base, head], propose)
 onMounted(() => {
   dialog.value?.showModal()
-  void loadBase()
+  // Con una destinazione proposta (es. dal Finish di git flow) non si parte dal branch principale del server
+  if (base.value) void propose()
+  else void loadBase()
 })
 
 function close() {

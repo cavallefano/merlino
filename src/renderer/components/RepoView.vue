@@ -4,10 +4,14 @@ import { computed, onMounted } from 'vue'
 import type { MessageKey } from '../../shared/i18n'
 import type { Operation } from '../../shared/types'
 import { push } from '../actions/branches'
+import { flowMenu } from '../actions/flow'
 import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
 import CommitDetail from './CommitDetail.vue'
 import CreatePullRequestDialog from './CreatePullRequestDialog.vue'
+import FlowFinishDialog from './FlowFinishDialog.vue'
+import FlowInitDialog from './FlowInitDialog.vue'
+import FlowStartDialog from './FlowStartDialog.vue'
 import HistoryView from './HistoryView.vue'
 import MergeDialog from './MergeDialog.vue'
 import PullRequestDetail from './PullRequestDetail.vue'
@@ -54,6 +58,7 @@ onMounted(() => {
       <span class="branch" data-testid="repo-branch">{{ head }}</span>
       <span class="spacer" />
       <span v-if="repo.busy && repo.progress" class="progress muted" data-testid="progress">{{ repo.progress }}</span>
+      <button data-testid="flow-button" :disabled="!!repo.busy" @click="flowMenu(repo)">{{ t('flow.button') }}</button>
       <button data-testid="fetch" :disabled="!!repo.busy" @click="repo.git({ kind: 'fetch' })">Fetch</button>
       <button data-testid="pull" :disabled="!!repo.busy" @click="repo.git({ kind: 'pull', mode: 'config' })">
         Pull<span v-if="repo.status?.behind" class="count">↓{{ repo.status.behind }}</span>
@@ -61,7 +66,7 @@ onMounted(() => {
       <button data-testid="push" :disabled="!!repo.busy" @click="push(repo, false)">
         Push<span v-if="repo.status?.ahead" class="count">↑{{ repo.status.ahead }}</span>
       </button>
-      <button :aria-label="t('action.repo.refresh')" @click="repo.refresh()">↻</button>
+      <button data-testid="repo-refresh" :aria-label="t('action.repo.refresh')" @click="repo.refresh()">↻</button>
     </header>
     <p v-if="repo.error" class="error message">{{ repo.error }}</p>
     <div v-if="operation" class="operation" data-testid="operation-banner">
@@ -87,6 +92,9 @@ onMounted(() => {
     <RebaseDialog v-if="repo.rebasePlan" :root="root" />
     <MergeDialog v-if="prs.merging && prs.detail" :root="root" />
     <CreatePullRequestDialog v-if="prs.creating" :root="root" />
+    <FlowInitDialog v-if="repo.flowDialog?.kind === 'init'" :root="root" />
+    <FlowStartDialog v-else-if="repo.flowDialog?.kind === 'start'" :root="root" />
+    <FlowFinishDialog v-else-if="repo.flowDialog?.kind === 'finish'" :root="root" />
   </section>
 </template>
 
