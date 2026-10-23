@@ -536,4 +536,8 @@ export const en = {
   'layout.vertical': 'Vertical (list above details)',
   'action.layout.toggle': 'Toggle Panel Layout',
   'layout.resize': 'Resize panels',
+  'diff.expand': 'Expand diff',
+  'diff.previousFile': 'Previous file',
+  'diff.nextFile': 'Next file',
+  'common.close': 'Close',
 } as const

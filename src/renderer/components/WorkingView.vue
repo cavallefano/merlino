@@ -167,6 +167,7 @@ async function createStash() {
             data-testid="working-file"
             v-bind="fileDragSource(repo, { kind: 'files', area: section.area, files: [f] }, { path: f.path })"
             @click="repo.selectWorkingFile(f, section.area)"
+            @dblclick="repo.diffDialog = 'working'"
           >
             <span class="status" :class="f.status">{{ f.status }}</span>
             <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
@@ -202,6 +203,7 @@ async function createStash() {
       <div class="diff-area">
         <div class="diff-bar">
           <span class="path muted">{{ repo.working.file.path }}</span>
+          <button data-testid="diff-popup" :aria-label="t('diff.expand')" :title="t('diff.expand')" @click="repo.diffDialog = 'working'">⤢</button>
           <label>
             <input type="checkbox" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
             {{ t('diff.ignoreWhitespace') }}
@@ -243,6 +245,7 @@ kbd { opacity: 0.8; margin-left: 4px; }
 .empty { padding: 12px; }
 .diff-bar { display: flex; align-items: center; gap: 10px; padding: 4px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
 .diff-bar .path { flex: 1; }
+.diff-bar button { padding: 1px 8px; font-size: 12px; }
 /* Guida verticale a N colonne nella descrizione (solo visiva) */
 textarea.guided { background-image: linear-gradient(to right, transparent calc(var(--guide) - 1px), var(--border) calc(var(--guide) - 1px), var(--border) var(--guide), transparent var(--guide)); background-repeat: no-repeat; }
 </style>

@@ -12,6 +12,7 @@ import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
 import CommitDetail from './CommitDetail.vue'
 import CreatePullRequestDialog from './CreatePullRequestDialog.vue'
+import DiffDialog from './DiffDialog.vue'
 import FlowFinishDialog from './FlowFinishDialog.vue'
 import FlowInitDialog from './FlowInitDialog.vue'
 import FlowStartDialog from './FlowStartDialog.vue'
@@ -133,6 +134,7 @@ onMounted(() => {
     <FlowInitDialog v-if="repo.flowDialog?.kind === 'init'" :root="root" />
     <FlowStartDialog v-else-if="repo.flowDialog?.kind === 'start'" :root="root" />
     <FlowFinishDialog v-else-if="repo.flowDialog?.kind === 'finish'" :root="root" />
+    <DiffDialog v-if="repo.diffDialog" :root="root" />
   </section>
 </template>
 

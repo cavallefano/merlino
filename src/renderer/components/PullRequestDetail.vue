@@ -152,6 +152,7 @@ function more() {
               :class="{ selected: f.path === prs.file?.path }"
               data-testid="pr-file"
               @click="prs.selectFile(f)"
+              @dblclick="repo.diffDialog = 'pr'"
             >
               <span class="status" :class="f.status">{{ f.status }}</span>
               <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
@@ -170,6 +171,7 @@ function more() {
           <div class="diff-area">
             <div class="diff-bar">
               <span class="path muted">{{ prs.file?.path }}</span>
+              <button data-testid="diff-popup" :aria-label="t('diff.expand')" :title="t('diff.expand')" @click="repo.diffDialog = 'pr'">⤢</button>
               <button @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
               <label>
                 <input type="checkbox" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />

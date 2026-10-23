@@ -538,4 +538,8 @@ export const it: Messages = {
   'layout.vertical': 'Verticale (lista sopra il dettaglio)',
   'action.layout.toggle': 'Cambia layout dei pannelli',
   'layout.resize': 'Ridimensiona i pannelli',
+  'diff.expand': 'Ingrandisci il diff',
+  'diff.previousFile': 'File precedente',
+  'diff.nextFile': 'File successivo',
+  'common.close': 'Chiudi',
 }

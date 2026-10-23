@@ -85,6 +85,8 @@ function define(root: string) {
     const status = shallowRef<WorkingStatus | null>(null)
     const stashes = shallowRef<StashEntry[]>([])
     const working = shallowRef<WorkingSelection | null>(null)
+    /** Popup del diff aperto e cosa mostra; null = chiuso. */
+    const diffDialog = ref<'commit' | 'working' | 'pr' | null>(null)
     const workingDiff = shallowRef<FileDiff | null>(null)
     const selectedLines = shallowRef<ReadonlySet<string>>(new Set())
     let anchor: string | null = null
@@ -438,7 +440,7 @@ function define(root: string) {
       root, info, error, refresh,
       history, query, pagesTick, loadHistory, ensureRows, commitAt, rowAt, fileCountOf, search, move,
       page, view, selected, selectedIndex, detail, selectedFile, diff, diffOptions, select, selectFile, loadDiff, toggleSplit, toggleWhitespace,
-      status, stashes, working, workingDiff, selectedLines, subject, body, amend, changeCount, canCommit,
+      status, stashes, working, workingDiff, diffDialog, selectedLines, subject, body, amend, changeCount, canCommit,
       selectWorking, selectWorkingFile, stage, unstage, discard, stageEverything, unstageEverything, ignore,
       applyLines, toggleLine, clearSelection, setAmend, commitChanges, stashPush, stashAction,
       refs, busy, progress, rebasePlan, run, git, openRebase, flow, flowDialog, openFlow,

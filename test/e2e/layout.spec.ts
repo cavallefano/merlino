@@ -1,5 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
-import { makeRepo } from '../helpers/repo'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { git, makeRepo } from '../helpers/repo'
 import { launch } from './launch'
 
 const mod = process.platform === 'darwin' ? 'Meta' : 'Control'
@@ -67,5 +69,57 @@ test('divisore fra file e diff nel dettaglio del commit', async () => {
   await expect.poll(height).toBe(200)
   await page.getByTestId('split-files').dblclick()
   await expect.poll(height).toBe(140)
+  await app.close()
+})
+
+test('popup del diff: si apre dal pulsante e col doppio clic, ↓ passa al file successivo, Esc chiude', async () => {
+  const repo = makeRepo(0)
+  for (const name of ['a.txt', 'b.txt', 'c.txt']) writeFileSync(join(repo, name), `${name}\n`)
+  git(repo, 'add', '.')
+  git(repo, 'commit', '-q', '-m', 'tre file')
+  const { app, page } = await launch([repo])
+  await expect(page.getByTestId('file-row')).toHaveCount(3)
+  const dialog = page.getByTestId('diff-dialog')
+
+  await page.getByTestId('diff-popup').click()
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByTestId('diff-position')).toHaveText('1/3')
+  await expect(dialog.getByTestId('diff-dialog-path')).toHaveText('a.txt')
+  await page.keyboard.press('ArrowDown')
+  await expect(dialog.getByTestId('diff-position')).toHaveText('2/3')
+  await expect(dialog.getByTestId('diff-line-add')).toContainText('b.txt')
+  // La selezione è quella del pannello
+  await expect(page.getByTestId('file-row').nth(1)).toHaveClass(/selected/)
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+
+  await page.getByTestId('file-row').nth(2).dblclick()
+  await expect(dialog.getByTestId('diff-position')).toHaveText('3/3')
+  await dialog.getByTestId('diff-dialog-close').click()
+  await expect(dialog).toBeHidden()
+  await app.close()
+})
+
+test('popup del diff nelle modifiche locali: stage di un blocco', async () => {
+  const lines = Array.from({ length: 20 }, (_, i) => `riga ${i + 1}`)
+  const repo = makeRepo(0)
+  writeFileSync(join(repo, 'f.txt'), lines.join('\n') + '\n')
+  git(repo, 'add', '.')
+  git(repo, 'commit', '-q', '-m', 'base')
+  const changed = [...lines]
+  changed[1] = 'DUE'
+  changed[17] = 'DICIOTTO'
+  writeFileSync(join(repo, 'f.txt'), changed.join('\n') + '\n')
+
+  const { app, page } = await launch([repo])
+  await page.getByTestId('working-row').click()
+  await page.getByTestId('section-unstaged').getByTestId('working-file').dblclick()
+  const dialog = page.getByTestId('diff-dialog')
+  await expect(dialog.getByTestId('hunk-stage')).toHaveCount(2)
+  await dialog.getByTestId('hunk-stage').first().click()
+  await expect.poll(() => git(repo, 'diff', '--cached')).toContain('+DUE')
+  expect(git(repo, 'diff', '--cached')).not.toContain('DICIOTTO')
+  // Il file resta anche fra quelli non in stage: il popup resta aperto sullo stesso file
+  await expect(dialog.getByTestId('diff-dialog-path')).toHaveText('f.txt')
   await app.close()
 })

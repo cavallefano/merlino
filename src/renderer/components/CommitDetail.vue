@@ -57,6 +57,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           data-testid="file-row"
           v-bind="fileDragSource(repo, { kind: 'commitFile', sha: commit.sha, path: f.path }, { path: f.path, sha: commit.sha })"
           @click="repo.selectFile(f)"
+          @dblclick="repo.diffDialog = 'commit'"
         >
           <span class="status" :class="f.status">{{ f.status }}</span>
           <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
@@ -78,6 +79,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
       <div class="diff-area">
         <div class="diff-bar">
           <span class="path muted">{{ repo.selectedFile?.path }}</span>
+          <button data-testid="diff-popup" :aria-label="t('diff.expand')" :title="t('diff.expand')" @click="repo.diffDialog = 'commit'">⤢</button>
           <button data-testid="diff-split" @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
           <label>
             <input type="checkbox" data-testid="diff-whitespace" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
