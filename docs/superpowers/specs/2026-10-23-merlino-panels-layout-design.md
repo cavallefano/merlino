@@ -43,14 +43,15 @@ Data: 2026-10-23 · Stato: approvato in brainstorming
 - **Trascinamento**: `pointerdown` con `setPointerCapture`, la misura segue il puntatore entro i limiti. Durante il trascinamento la selezione del testo è disattivata.
 - **Doppio clic**: la misura torna alla predefinita.
 - **Tastiera**: `role="separator"`, `aria-orientation`, `tabindex="0"`; le frecce spostano di 16 px (o di 0.02 per le frazioni).
-- **Memoria**: orientamento e misure valgono per tutta l'app (tutte le schede e i repo) e restano dopo il riavvio. Stanno nel `localStorage` alla chiave `merlino.layout`, come la scelta del remote delle PR. Un valore mancante, non numerico o fuori dai limiti torna al predefinito.
+- **Memoria**: le misure valgono per tutta l'app (tutte le schede e i repo) e restano dopo il riavvio. Sono una comodità dell'interfaccia, non un'impostazione: stanno nel `localStorage` alla chiave `merlino.layout`, come la scelta del remote delle PR, quindi sono di ogni utente del computer. Un valore mancante, non numerico o fuori dai limiti torna al predefinito.
 
 ## Layout orizzontale e verticale
 
 - **Orizzontale** (predefinito): come oggi, lista a sinistra e dettaglio a destra.
 - **Verticale**: lista sopra e dettaglio sotto, a tutta larghezza; la sidebar resta a sinistra.
 - Vale per la cronologia (con dettaglio del commit o modifiche locali) e per le pull request.
-- **Comandi**:
+- **Impostazione**: il layout è una preferenza, `panelLayout: 'horizontal' | 'vertical'` (predefinita `horizontal`), salvata in `settings.json` con le altre, quindi di ogni utente. Nelle impostazioni, sezione General → Appearance, c'è la voce "Panel layout" / "Layout dei pannelli" con "Horizontal (list beside details)" e "Vertical (list above details)" / "Orizzontale (lista accanto al dettaglio)" e "Verticale (lista sopra il dettaglio)" (`data-testid="pref-panelLayout"`).
+- **Comandi rapidi**, che cambiano la stessa preferenza:
   - un pulsante nella barra, accanto a ↻ (`data-testid="layout-toggle"`), con un'icona che mostra il layout in cui si passa e un'etichetta accessibile;
   - l'azione `layout.toggle` nel registro, quindi nella palette e nel menu View ("Toggle Panel Layout" / "Cambia layout dei pannelli").
 
@@ -83,13 +84,14 @@ Data: 2026-10-23 · Stato: approvato in brainstorming
 
 - **`src/renderer/layout.ts`**:
   - funzioni pure: `clamp(value, min, max)`, `readLayout(text: string | null): Layout` (lettura tollerante, i valori non validi tornano ai predefiniti), `step(list, current, delta)` (file precedente o successivo, senza giro);
-  - tipo `Layout { orientation: 'horizontal' | 'vertical'; sidebar; list; listVertical; commitFiles; workingFiles; prFiles; dialog: { width; height } | null }`;
-  - uno store Pinia `useLayoutStore` con lo stato reattivo, `toggle()`, `reset(key)` e il salvataggio nel `localStorage` a ogni modifica.
+  - tipo `Layout { sidebar; list; listVertical; commitFiles; workingFiles; prFiles; dialog: { width; height } | null }`;
+  - uno store Pinia `useLayoutStore` con lo stato reattivo, `reset(key)` e il salvataggio nel `localStorage` a ogni modifica.
+- **Preferenza**: `panelLayout` in `Preferences` (`src/shared/types.ts`), `DEFAULT_PREFERENCES`, la validazione in `preferences()` di `src/main/validate.ts` e la select in `GeneralSettings.vue`.
 - **`Splitter.vue`**: props `orientation: 'col' | 'row'`, `modelValue`, `min`, `max`, `defaultValue`, `scale` (1 per i px, oppure la dimensione del contenitore per le frazioni). Emette `update:modelValue`.
 - **`RepoView.vue`**: la griglia (colonne in orizzontale; in verticale due colonne e la colonna destra divisa in righe) si calcola dal layout; i divisori stanno fra le aree.
 - **`CommitDetail.vue`, `WorkingView.vue`, `PullRequestDetail.vue`**: la lista dei file ha l'altezza del layout, poi un divisore; il pulsante ⤢ nella barra del diff; il doppio clic sui file.
 - **`DiffDialog.vue`**: aperto da `repo.diffDialog` (`'commit' | 'working' | 'pr' | null`), montato in `RepoView.vue` come gli altri dialog.
-- **Azione** `layout.toggle` nel registro e nel menu View di `src/main/menu.ts`.
+- **Azione** `layout.toggle` (cambia `panelLayout` con `app.updatePreferences`) nel registro e nel menu View di `src/main/menu.ts`.
 - **Testi** in inglese e in italiano.
 
 ## Test
@@ -98,9 +100,10 @@ Data: 2026-10-23 · Stato: approvato in brainstorming
   - `clamp`;
   - `readLayout` con `null`, JSON non valido, valori mancanti, non numerici o fuori dai limiti;
   - `step` agli estremi e con il file corrente assente.
+- **Unit** (`test/unit/validate.test.ts`): `panelLayout` accetta solo `horizontal` e `vertical`.
 - **E2E** (finestra nascosta, `test/e2e/layout.spec.ts`):
   - trascinare il divisore della sidebar cambia la sua larghezza, e la misura resta dopo il reload; il doppio clic la riporta a 220 px;
-  - con il layout verticale il dettaglio sta sotto la lista, e la scelta resta dopo il reload;
+  - scegliendo il layout verticale nelle impostazioni il dettaglio sta sotto la lista; il pulsante della barra riporta all'orizzontale e la select delle impostazioni lo mostra;
   - il popup si apre dal pulsante ⤢ e con il doppio clic su un file; ↓ passa al file successivo (anche nel pannello); Esc chiude;
   - nelle modifiche locali, lo stage di un blocco dal popup lo sposta in stage.
 
