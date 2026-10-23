@@ -3,10 +3,11 @@ import { computed, onMounted, onUnmounted } from 'vue'
 import type { CiStatus, PullRequestFilter } from '../../shared/types'
 import { formatShortDate } from '../history/format'
 import { t, tn } from '../i18n'
-import { headLabel } from '../pull-requests/model'
+import { headLabel, isActive } from '../pull-requests/model'
 import { useAppStore } from '../stores/app'
 import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
+import CiProgress from './CiProgress.vue'
 
 const props = defineProps<{ root: string }>()
 const prs = usePullRequestStore(props.root)
@@ -14,6 +15,7 @@ const repo = useRepoStore(props.root)
 const app = useAppStore()
 const FILTERS: PullRequestFilter[] = ['open', 'merged', 'closed', 'all']
 const SYMBOL: Record<CiStatus['summary'], string> = { passed: '✓', failed: '✕', running: '●', none: '' }
+const ciOf = (sha: string) => prs.ci.get(sha)
 
 /** Server del remote scelto, se non c'è un account per lui. */
 const missing = computed(() => (prs.current && !prs.current.account ? prs.current.host : null))
@@ -71,14 +73,21 @@ onUnmounted(() => clearInterval(timer))
           <span class="number">#{{ p.number }}</span>
           <span class="title">{{ p.title }}</span>
           <span v-if="p.draft" class="badge">{{ t('pr.draft') }}</span>
-          <span v-if="prs.ci.get(p.head.sha)" class="ci" :class="prs.ci.get(p.head.sha)?.summary" data-testid="pr-ci" :data-state="prs.ci.get(p.head.sha)?.summary">
-            {{ SYMBOL[prs.ci.get(p.head.sha)?.summary ?? 'none'] }}
+          <span v-if="ciOf(p.head.sha)" class="ci" :class="ciOf(p.head.sha)?.summary" data-testid="pr-ci" :data-state="ciOf(p.head.sha)?.summary">
+            {{ SYMBOL[ciOf(p.head.sha)?.summary ?? 'none'] }}
           </span>
         </div>
         <div class="second muted">
           {{ p.author }} · {{ formatShortDate(p.updatedAt) }} · <code>{{ headLabel(p) }} → {{ p.base.branch }}</code>
           <template v-if="p.comments"> · {{ tn('pr.comments', p.comments) }}</template>
         </div>
+        <CiProgress
+          v-if="ciOf(p.head.sha) && isActive(ciOf(p.head.sha)!)"
+          class="third"
+          :status="ciOf(p.head.sha)!"
+          :now="prs.now"
+          @click.stop="prs.select(p.number, 'checks')"
+        />
       </li>
     </ul>
     <p v-if="prs.stale" class="muted stale" data-testid="pr-stale">{{ t('pr.stale') }}</p>
@@ -107,5 +116,6 @@ onUnmounted(() => clearInterval(timer))
 .ci.passed { color: #2da44e; }
 .ci.failed { color: var(--danger); }
 .ci.running { color: #bf8700; }
+.third { margin-top: 4px; cursor: pointer; }
 .stale { margin: 0; padding: 4px 10px; font-size: 12px; border-top: 1px solid var(--border); }
 </style>
