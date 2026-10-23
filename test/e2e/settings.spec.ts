@@ -52,3 +52,37 @@ test('sezione Git: nome ed email finiscono nella config globale (temporanea)', a
   await expect.poll(() => readFileSync(global, 'utf8')).toContain('email = ada@example.com')
   await app.close()
 })
+
+test('Lingua: in italiano cambiano subito interfaccia e menu, poi si torna all\'inglese', async () => {
+  const { app, page } = await launch([makeRepo(1)])
+  await expect(page.getByTestId('working-row')).toContainText('No changes')
+  type Item = { label: string; submenu?: { items: Item[] } | null }
+  const menuLabels = () =>
+    app.evaluate(({ Menu }) => {
+      const labels: string[] = []
+      const walk = (items: Item[]): void => {
+        for (const i of items) {
+          labels.push(i.label)
+          if (i.submenu) walk(i.submenu.items)
+        }
+      }
+      walk(Menu.getApplicationMenu()?.items ?? [])
+      return labels
+    })
+  expect(await menuLabels()).toContain('Settings…')
+
+  await page.keyboard.press(`${mod}+Comma`)
+  await page.getByTestId('pref-language').selectOption('it')
+  await expect(page.getByTestId('settings-general')).toHaveText('Generale')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'it')
+  await expect.poll(menuLabels).toContain('Impostazioni…')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('working-row')).toContainText('Nessuna modifica')
+
+  await page.keyboard.press(`${mod}+Comma`)
+  await page.getByTestId('pref-language').selectOption('en')
+  await expect.poll(menuLabels).toContain('Settings…')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('working-row')).toContainText('No changes')
+  await app.close()
+})
