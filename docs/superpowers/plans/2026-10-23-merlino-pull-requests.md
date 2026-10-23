@@ -4646,3 +4646,21 @@ git commit -m "test: merge request di GitLab nell'E2E; docs: pull request nel RE
 ```
 
 Prova manuale facoltativa, a cura dell'utente: collegare un proprio account nell'app installata (`npm run dist`) e aprire le pull request di un repository vero.
+
+---
+
+## Note di esecuzione
+
+- **Commit**: Task 1 `c940113`, Task 2 `8b96701`, Task 3 `29b68c6`, Task 4 `9c4e851`, Task 5 `02c99dc`, Task 6 `c7bfd9b`, Task 7 `b9af1ee`, Task 8 `6d86107`, Task 9 `cbca92e`, Task 10 `d6f69e9`, Task 11 `5407d91`, Task 12 `bd3f08e`, Task 13 in questo commit.
+- **Scelte prese durante il lavoro**:
+  - Il componente Markdown si chiama `MarkdownView.vue`: il lint di Vue vuole nomi di componenti composti.
+  - Nella pagina Pull requests la sidebar non evidenzia più il commit selezionato nella storia; cliccare un ref o uno stash riporta alla storia.
+  - Gli stili dei campi dei dialog (`.field`, `.check`) stanno in `styles.css`, condivisi da account, merge e nuova pull request; `button.link` pure.
+  - Le chiavi dei testi del Task 7 sono entrate già nel commit del Task 6.
+- **Verifica**:
+  - lint e typecheck puliti;
+  - 184 test unit e di integrazione (1 saltato: le prestazioni, opzionale);
+  - 38 E2E con la finestra nascosta, di cui 8 nuovi sulle pull request (account, lista, dettaglio, checkout, merge, creazione, GitLab, `window.api`);
+  - screenshot nascosti in inglese e in italiano (lista, dettaglio, merge, nuova pull request, Impostazioni → Account) sul repo di prova con nomi fittizi e il server finto;
+  - il token non arriva al renderer (`getSettings` e le risposte di `addAccount` non lo contengono) e non compare nel log dei comandi.
+- **Da provare a mano**: un account vero nell'app installata (`npm run dist`), con un token personale.

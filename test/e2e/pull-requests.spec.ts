@@ -190,3 +190,17 @@ test('nuova pull request dal menu del branch: titolo dal commit, push del branch
   await app.close()
   await server.close()
 })
+
+test('GitLab: lista, dettaglio con le note e modifiche dalla merge request', async () => {
+  const { server, app, page } = await start('gitlab.example.com', (n) => `refs/merge-requests/${n}/head`)
+  await addAccount(page, 'gitlab.example.com', 'gitlab')
+  await page.getByTestId('page-pull-requests').click()
+  await expect(page.getByTestId('pr-row')).toHaveCount(2)
+  await expect(page.getByTestId('pr-row').nth(1).getByTestId('pr-ci')).toHaveAttribute('data-state', 'failed')
+  await page.getByTestId('pr-row').first().click()
+  await expect(page.getByTestId('timeline-comment')).toContainText('Looks good')
+  await page.getByTestId('pr-tab-changes').click()
+  await expect(page.getByTestId('pr-file')).toHaveText([/login\.txt/])
+  await app.close()
+  await server.close()
+})
