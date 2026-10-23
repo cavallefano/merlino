@@ -48,6 +48,9 @@ export interface RepoInfo {
 }
 
 export type ThemePreference = 'system' | 'light' | 'dark'
+
+/** Lista e dettaglio affiancati (horizontal) o la lista sopra il dettaglio (vertical). */
+export type PanelLayout = 'horizontal' | 'vertical'
 export type DiffAlgorithm = 'default' | 'myers' | 'minimal' | 'patience' | 'histogram'
 
 /** Preferenze dell'app, dalla schermata Impostazioni. */
@@ -55,6 +58,7 @@ export interface Preferences {
   /** Lingua dell'interfaccia e dei messaggi. */
   language: Lang
   theme: ThemePreference
+  panelLayout: PanelLayout
   /** 0 = fetch automatico spento. */
   autoFetchMinutes: number
   fetchPrune: boolean

@@ -533,4 +533,8 @@ export const it: Messages = {
   'drop.stage': 'Stage di {files}',
   'drop.unstage': 'Unstage di {files}',
   'clone.inProgress': 'Clone in corso…',
+  'setting.panelLayout': 'Layout dei pannelli',
+  'layout.horizontal': 'Orizzontale (lista accanto al dettaglio)',
+  'layout.vertical': 'Verticale (lista sopra il dettaglio)',
+  'action.layout.toggle': 'Cambia layout dei pannelli',
 }

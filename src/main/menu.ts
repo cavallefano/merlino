@@ -58,6 +58,7 @@ export function buildMenu(run: (actionId: string) => void): void {
       submenu: [
         action('view.history'),
         action('view.pullRequests'),
+        action('layout.toggle'),
         { type: 'separator' },
         action('palette.open'),
         action('history.search'),
