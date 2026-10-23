@@ -1,12 +1,16 @@
-import { BrowserWindow, dialog, ipcMain, Menu, type MenuItemConstructorOptions, shell } from 'electron'
+import { BrowserWindow, dialog, ipcMain, Menu, type MenuItemConstructorOptions, nativeTheme, shell } from 'electron'
 import { statSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { Channels, type Result } from '../shared/ipc'
-import type { CommandLogEntry, GitErrorInfo, PatchMode, RepoInfo, WorkingArea } from '../shared/types'
-import { clone, rebaseRange, runCommand } from './git/branches'
+import type { CommandLogEntry, GitErrorInfo, PatchMode, Preferences, RepoInfo, WorkingArea } from '../shared/types'
+import { AutoFetch } from './auto-fetch'
+import { clone, fetch as gitFetch, rebaseRange, runCommand } from './git/branches'
 import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
+import { readGitCommitTemplate } from './git/commit-template'
 import { readCommitFileDiff } from './git/diff'
+import { readGlobalConfig, setGlobalConfig } from './git/global-config'
 import { readRefs } from './git/refs'
 import { readRepoInfo } from './git/repo-info'
 import { GitError, GitRunner } from './git/runner'
@@ -26,9 +30,27 @@ import {
   unstageAll,
   unstageFiles,
 } from './git/working'
+import { editorLaunch, startApp, terminalLaunch } from './open-app'
 import { RepoSession } from './repo-session'
 import { addRecent, type SettingsStore } from './settings'
-import { diffOptions, fileRequest, gitUrl, int, list, oneOf, relPath, repoCommand, sha, stashRef, str, text, withOldPath } from './validate'
+import {
+  commitTemplates as validateTemplates,
+  diffOptions,
+  fileRequest,
+  gitConfigEntry,
+  gitUrl,
+  int,
+  list,
+  oneOf,
+  preferences as validatePreferences,
+  relPath,
+  repoCommand,
+  sha,
+  stashRef,
+  str,
+  text,
+  withOldPath,
+} from './validate'
 
 const MAX_LOG = 500
 const MAX_PAGE = 5000
@@ -58,6 +80,8 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
     if (log.length > MAX_LOG) log.shift()
     send(Channels.commandLogged, entry)
   }
+  // Per la config globale: una cartella qualsiasi va bene, e le scritture vanno in coda fra loro
+  const globalRunner = new GitRunner(gitPath, homedir(), onLog)
 
   async function open(path: string): Promise<Result<RepoInfo>> {
     try {
@@ -90,18 +114,80 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
     }
   }
 
+  async function attempt<T>(fn: () => Promise<T> | T): Promise<Result<T>> {
+    try {
+      return { ok: true, value: await fn() }
+    } catch (e) {
+      return fail(e)
+    }
+  }
+
+  // In silenzio: nessun avanzamento al renderer, gli errori (es. credenziali) restano nel log dei comandi
+  const autoFetch = new AutoFetch(() => {
+    const prune = settings.get().preferences.fetchPrune
+    for (const s of sessions.values()) gitFetch(s.runner, () => {}, prune).catch(() => {})
+  })
+
+  /** Effetti delle preferenze nel main: il tema (che segue anche il CSS con prefers-color-scheme) e il fetch automatico. */
+  function applyPreferences(p: Preferences): void {
+    nativeTheme.themeSource = p.theme
+    autoFetch.schedule(p.autoFetchMinutes)
+  }
+  applyPreferences(settings.get().preferences)
+
   ipcMain.handle(Channels.getSettings, () => settings.get())
+  ipcMain.handle(Channels.updatePreferences, (_e, patch: unknown) =>
+    attempt(() => {
+      const updated = settings.update({ preferences: validatePreferences(settings.get().preferences, patch) })
+      applyPreferences(updated.preferences)
+      return updated
+    }),
+  )
   ipcMain.handle(Channels.checkGit, () => checkGit(gitPath()))
   ipcMain.handle(Channels.setGitPath, (_e, path: unknown) => {
     settings.update({ gitPath: str(path, 'path') })
     return checkGit(gitPath())
   })
-  ipcMain.handle(Channels.pickRepoFolder, async () => {
-    const options: Electron.OpenDialogOptions = { properties: ['openDirectory', 'createDirectory'] }
+  ipcMain.handle(Channels.pickRepoFolder, async (_e, defaultPath: unknown) => {
+    const options: Electron.OpenDialogOptions = {
+      properties: ['openDirectory', 'createDirectory'],
+      ...(typeof defaultPath === 'string' && isAbsolute(defaultPath) ? { defaultPath } : {}),
+    }
     const w = win()
     const r = w ? await dialog.showOpenDialog(w, options) : await dialog.showOpenDialog(options)
     return r.canceled ? null : (r.filePaths[0] ?? null)
   })
+  ipcMain.handle(Channels.saveCommitTemplates, (_e, value: unknown) =>
+    attempt(() => {
+      const commitTemplates = validateTemplates(value)
+      const ids = new Set(commitTemplates.map((t) => t.id))
+      // I predefiniti dei template eliminati se ne vanno con loro
+      const defaultTemplates = Object.fromEntries(Object.entries(settings.get().defaultTemplates).filter(([, id]) => ids.has(id)))
+      return settings.update({ commitTemplates, defaultTemplates })
+    }),
+  )
+  ipcMain.handle(Channels.setDefaultTemplate, (_e, root: unknown, id: unknown) =>
+    attempt(() => {
+      const repo = str(root, 'root')
+      const { commitTemplates, defaultTemplates } = settings.get()
+      if (id === null) {
+        delete defaultTemplates[repo]
+      } else {
+        const t = str(id, 'id')
+        if (!commitTemplates.some((x) => x.id === t)) throw new TypeError('Template non trovato')
+        defaultTemplates[repo] = t
+      }
+      return settings.update({ defaultTemplates })
+    }),
+  )
+  ipcMain.handle(Channels.gitCommitTemplate, (_e, root: unknown) => withSession(root, (s) => readGitCommitTemplate(s.runner)))
+  ipcMain.handle(Channels.gitGlobalConfig, () => attempt(() => readGlobalConfig(globalRunner)))
+  ipcMain.handle(Channels.setGitGlobalConfig, (_e, key: unknown, value: unknown) =>
+    attempt(() => {
+      const [k, v] = gitConfigEntry(key, value)
+      return setGlobalConfig(globalRunner, k, v)
+    }),
+  )
   ipcMain.handle(Channels.takeInitialPath, () => {
     const path = pendingPath
     pendingPath = null
@@ -194,7 +280,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   const progress = (root: string) => (line: string) => send(Channels.progress, { root, line })
   ipcMain.handle(Channels.refs, (_e, root: unknown) => withSession(root, (s) => readRefs(s.runner)))
   ipcMain.handle(Channels.command, (_e, root: unknown, command: unknown) =>
-    withSession(root, (s) => runCommand(s.runner, repoCommand(command), progress(s.root))),
+    withSession(root, (s) => runCommand(s.runner, repoCommand(command), progress(s.root), settings.get().preferences.fetchPrune)),
   )
   ipcMain.handle(Channels.rebaseRange, (_e, root: unknown, commit: unknown) => withSession(root, (s) => rebaseRange(s.runner, sha(commit))))
   ipcMain.handle(Channels.clone, async (_e, url: unknown, parent: unknown) => {
@@ -208,10 +294,27 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
   })
   ipcMain.handle(Channels.openInEditor, (_e, root: unknown, path: unknown) =>
     withSession(root, async (s) => {
-      const error = await shell.openPath(join(s.root, relPath(path)))
+      const file = join(s.root, relPath(path))
+      const editor = settings.get().preferences.editorApp
+      if (editor) return startApp(editorLaunch(process.platform, editor, file))
+      const error = await shell.openPath(file)
       if (error) throw new Error(error)
     }),
   )
+  ipcMain.handle(Channels.openInTerminal, (_e, root: unknown) =>
+    withSession(root, (s) => startApp(terminalLaunch(process.platform, settings.get().preferences.terminalApp, s.root))),
+  )
+  ipcMain.handle(Channels.pickApp, async () => {
+    const options: Electron.OpenDialogOptions =
+      process.platform === 'darwin'
+        ? { defaultPath: '/Applications', properties: ['openFile'], filters: [{ name: 'Applicazioni', extensions: ['app'] }] }
+        : process.platform === 'win32'
+          ? { properties: ['openFile'], filters: [{ name: 'Programmi', extensions: ['exe'] }] }
+          : { properties: ['openFile'] }
+    const w = win()
+    const r = w ? await dialog.showOpenDialog(w, options) : await dialog.showOpenDialog(options)
+    return r.canceled ? null : (r.filePaths[0] ?? null)
+  })
   ipcMain.handle(Channels.contextMenu, (e, items: unknown) => {
     const entries = Array.isArray(items) ? items.slice(0, 60) : []
     return new Promise<string | null>((resolve) => {
@@ -232,6 +335,7 @@ export function registerIpc(win: () => BrowserWindow | null, settings: SettingsS
 
   return {
     async disposeAll(): Promise<void> {
+      autoFetch.stop()
       await Promise.all([...sessions.values()].map((s) => s.dispose()))
       sessions.clear()
     },

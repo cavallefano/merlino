@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { gitUrl, refName, repoCommand, revision } from '../../src/main/validate'
+import { diffFlags } from '../../src/main/git/diff'
+import { commitTemplates, diffOptions, gitConfigEntry, gitUrl, preferences, refName, repoCommand, revision } from '../../src/main/validate'
+import { DEFAULT_PREFERENCES } from '../../src/shared/preferences'
 
 describe('validazione degli argomenti dal renderer', () => {
   it('nomi di ref: niente opzioni travestite né caratteri non ammessi da git', () => {
@@ -24,5 +26,75 @@ describe('validazione degli argomenti dal renderer', () => {
       sha: 'abc1234',
       steps: [{ sha: 'abc1234', action: 'reword', message: 'x' }],
     })
+  })
+})
+
+describe('preferenze', () => {
+  it('valida il risultato della modifica e scarta i campi sconosciuti', () => {
+    expect(preferences(DEFAULT_PREFERENCES, { theme: 'dark', extra: 1 })).toEqual({ ...DEFAULT_PREFERENCES, theme: 'dark' })
+    expect(preferences(DEFAULT_PREFERENCES, { bodyGuide: 0 }).bodyGuide).toBe(0)
+    expect(preferences(DEFAULT_PREFERENCES, { editorApp: '/Applications/Code.app' }).editorApp).toBe('/Applications/Code.app')
+  })
+
+  it('rifiuta valori fuori intervallo, tipi sbagliati e vincoli fra campi violati', () => {
+    for (const bad of [
+      { theme: 'blu' },
+      { autoFetchMinutes: 61 },
+      { autoFetchMinutes: 1.5 },
+      { diffContext: 0 },
+      { bodyGuide: 20 },
+      { fetchPrune: 'sì' },
+      { diffAlgorithm: 'git' },
+      { editorApp: 'Code.app' },
+      { subjectLimit: 40 }, // sotto subjectWarn (50)
+    ]) expect(() => preferences(DEFAULT_PREFERENCES, bad)).toThrow()
+    expect(() => preferences({ ...DEFAULT_PREFERENCES, subjectLimit: 60 }, { subjectWarn: 70 })).toThrow()
+  })
+})
+
+describe('opzioni del diff', () => {
+  it('default 3 righe e algoritmo di git; valori fuori intervallo rifiutati', () => {
+    expect(diffOptions({ ignoreWhitespace: true })).toEqual({ ignoreWhitespace: true, force: false, context: 3, algorithm: 'default' })
+    expect(() => diffOptions({ context: 0 })).toThrow()
+    expect(() => diffOptions({ algorithm: '--output=x' })).toThrow()
+  })
+
+  it('argomenti per git', () => {
+    expect(diffFlags({ ignoreWhitespace: false, force: false })).toEqual(['-U3'])
+    expect(diffFlags({ ignoreWhitespace: true, force: false, context: 1, algorithm: 'patience' })).toEqual(['-U1', '--diff-algorithm=patience', '-w'])
+  })
+})
+
+describe('config globale di git', () => {
+  it('solo le chiavi gestite, con i valori ammessi', () => {
+    expect(gitConfigEntry('user.name', '  Ada  ')).toEqual(['user.name', 'Ada'])
+    expect(gitConfigEntry('pull.rebase', '')).toEqual(['pull.rebase', ''])
+    expect(gitConfigEntry('gpg.format', 'ssh')).toEqual(['gpg.format', 'ssh'])
+    for (const [k, v] of [
+      ['core.editor', 'vim'],
+      ['user.name', '--global'],
+      ['user.name', 'a\nb'],
+      ['gpg.format', 'pgp'],
+      ['commit.gpgsign', 'yes'],
+      ['init.defaultBranch', 'a b'],
+    ]) expect(() => gitConfigEntry(k, v)).toThrow()
+  })
+})
+
+describe('template di commit', () => {
+  const t = { id: 'a1', name: ' Feature ', subject: 'feat: ', body: '' }
+  it('nome con trim, campi in più scartati, elenco vuoto ammesso', () => {
+    expect(commitTemplates([{ ...t, extra: 1 }])).toEqual([{ id: 'a1', name: 'Feature', subject: 'feat: ', body: '' }])
+    expect(commitTemplates([])).toEqual([])
+  })
+  it('rifiuta id non validi o doppi, nomi vuoti, testi troppo lunghi, troppi template', () => {
+    for (const bad of [
+      [{ ...t, id: 'a b' }],
+      [t, t],
+      [{ ...t, name: '  ' }],
+      [{ ...t, subject: 'x'.repeat(501) }],
+      Array.from({ length: 201 }, (_, i) => ({ ...t, id: `t${i}` })),
+      'nope',
+    ]) expect(() => commitTemplates(bad)).toThrow()
   })
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { registerBranchActions } from './actions/branches'
 import { registerBuiltinActions, registry } from './actions/builtin'
 import { registerHistoryActions } from './actions/history'
@@ -8,6 +8,7 @@ import CommandPalette from './components/CommandPalette.vue'
 import GitMissing from './components/GitMissing.vue'
 import OutputPanel from './components/OutputPanel.vue'
 import PromptDialog from './components/PromptDialog.vue'
+import SettingsView from './components/SettingsView.vue'
 import RepoView from './components/RepoView.vue'
 import TabBar from './components/TabBar.vue'
 import WelcomeScreen from './components/WelcomeScreen.vue'
@@ -18,6 +19,13 @@ registerBuiltinActions()
 registerHistoryActions()
 registerWorkingActions()
 registerBranchActions()
+
+// Carattere e tab del codice nei diff, dalle preferenze
+watchEffect(() => {
+  const root = document.documentElement.style
+  root.setProperty('--code-size', `${app.preferences.codeFontSize}px`)
+  root.setProperty('--tab-size', String(app.preferences.tabSize))
+})
 
 function onKey(e: KeyboardEvent) {
   const action = registry.match(e)
@@ -45,6 +53,7 @@ onUnmounted(() => {
 <template>
   <div class="app" @dragover.prevent @drop.prevent="onDrop">
     <div v-if="!app.git" class="center muted">Avvio…</div>
+    <SettingsView v-else-if="app.settingsSection" />
     <GitMissing v-else-if="!app.git.ok" />
     <template v-else>
       <TabBar />

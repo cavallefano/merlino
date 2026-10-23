@@ -182,3 +182,15 @@ describe('integrazione dei cambiamenti', () => {
     await expect(rebaseInteractive(runnerFor(linear), first, [{ sha: first, action: 'pick' }])).rejects.toThrow(/non corrispondono/)
   })
 })
+
+describe('fetch', () => {
+  it('fetch senza --prune lascia i branch remoti cancellati sul server; con --prune li toglie', async () => {
+    const { bare, clone: repo } = makeRemotePair()
+    git(repo, 'push', '-q', 'origin', 'main:da-cancellare')
+    git(bare, 'branch', '-D', 'da-cancellare')
+    await fetch(runnerFor(repo), () => {}, false)
+    expect(git(repo, 'branch', '-r')).toContain('origin/da-cancellare')
+    await fetch(runnerFor(repo), () => {})
+    expect(git(repo, 'branch', '-r')).not.toContain('origin/da-cancellare')
+  })
+})

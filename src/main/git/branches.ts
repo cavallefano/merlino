@@ -73,7 +73,8 @@ export const pushTag = (r: GitRunner, remote: string, name: string) => run(r, ['
 
 // --- Remote ---
 
-export const fetch = (r: GitRunner, onProgress: Progress) => run(r, ['fetch', '--all', '--prune', '--progress'], onProgress)
+export const fetch = (r: GitRunner, onProgress: Progress, prune = true) =>
+  run(r, ['fetch', '--all', ...(prune ? ['--prune'] : []), '--progress'], onProgress)
 
 /** mode "config" segue pull.rebase della config dell'utente. */
 export async function pull(r: GitRunner, mode: 'config' | 'rebase' | 'merge', onProgress: Progress): Promise<void> {
@@ -154,8 +155,8 @@ export async function rebaseInteractive(r: GitRunner, sha: string, steps: Rebase
   await r.run(['rebase', '-i', root ? '--root' : `${sha}^`], { ...write, env: { GIT_SEQUENCE_EDITOR: `cp '${todoFile}'` } })
 }
 
-/** Esegue un'operazione già validata (vedi validate.ts). */
-export function runCommand(r: GitRunner, c: RepoCommand, onProgress: Progress): Promise<void> {
+/** Esegue un'operazione già validata (vedi validate.ts); prune vale per i fetch. */
+export function runCommand(r: GitRunner, c: RepoCommand, onProgress: Progress, prune = true): Promise<void> {
   switch (c.kind) {
     case 'createBranch':
       return createBranch(r, c.name, c.start, c.checkout)
@@ -192,7 +193,7 @@ export function runCommand(r: GitRunner, c: RepoCommand, onProgress: Progress): 
     case 'pushTag':
       return pushTag(r, c.remote, c.name)
     case 'fetch':
-      return fetch(r, onProgress)
+      return fetch(r, onProgress, prune)
     case 'pull':
       return pull(r, c.mode, onProgress)
     case 'push':

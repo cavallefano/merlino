@@ -77,6 +77,17 @@ dialog::backdrop { background: rgb(0 0 0 / 0.25); }
 dialog h2 { margin: 0 0 12px; font-size: 15px; }
 dialog footer { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 14px; }
 
+/* Moduli delle Impostazioni */
+select { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 4px 6px; }
+.settings-form { display: grid; grid-template-columns: minmax(170px, max-content) minmax(0, 1fr); gap: 10px 16px; align-items: center; max-width: 760px; }
+.settings-form h2 { grid-column: 1 / -1; margin: 18px 0 2px; font-size: 13px; }
+.settings-form h2:first-child { margin-top: 0; }
+.settings-form > label:not(.check) { color: var(--fg-muted); }
+.settings-form .check { display: flex; align-items: center; gap: 6px; }
+.settings-form .row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.settings-form .hint { grid-column: 2; margin: -4px 0 0; font-size: 12px; color: var(--fg-muted); }
+.settings-form input[type='number'] { width: 80px; }
+
 /* Sintassi (classi di highlight.js) */
 .hljs-comment, .hljs-quote { color: var(--syn-comment); font-style: italic; }
 .hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-built_in, .hljs-type { color: var(--syn-keyword); }

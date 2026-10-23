@@ -1,10 +1,14 @@
 import { defineStore, getActivePinia } from 'pinia'
 import { computed, reactive, ref, shallowRef } from 'vue'
+import { expandTemplate, GIT_TEMPLATE_ID, splitMessage } from '../../shared/commit-template'
 import type { Result } from '../../shared/ipc'
 import { buildPatch, lineKey } from '../../shared/patch'
+import { useAppStore } from './app'
 import type {
   Commit,
   CommitDetail,
+  CommitTemplate,
+  DiffOptions,
   FileChange,
   FileDiff,
   GraphRow,
@@ -59,7 +63,14 @@ function define(root: string) {
     const detail = shallowRef<CommitDetail | null>(null)
     const selectedFile = shallowRef<FileChange | null>(null)
     const diff = shallowRef<FileDiff | null>(null)
-    const diffOptions = reactive({ split: false, ignoreWhitespace: false })
+    const prefs = () => useAppStore().preferences
+    const diffOptions = reactive({ split: prefs().diffSplit, ignoreWhitespace: prefs().diffIgnoreWhitespace })
+    const diffOptionsFor = (force: boolean): DiffOptions => ({
+      ignoreWhitespace: diffOptions.ignoreWhitespace,
+      force,
+      context: prefs().diffContext,
+      algorithm: prefs().diffAlgorithm,
+    })
     let detailRequest = 0
     let diffRequest = 0
 
@@ -74,6 +85,39 @@ function define(root: string) {
     const subject = ref('')
     const body = ref('')
     const amend = ref(false)
+
+    // Template di commit
+    const gitTemplate = shallowRef<CommitTemplate | null>(null)
+    const templatePicker = ref<'button' | 'slash' | null>(null)
+    /** Messaggio inserito dalla precompilazione: finché resta identico, Amend lo sostituisce. */
+    let prefilled: string | null = null
+    const currentMessage = () => (body.value.trim() ? `${subject.value}\n\n${body.value}` : subject.value)
+
+    /** Il predefinito del repo: quello scelto nelle Impostazioni, altrimenti il commit.template di git. */
+    const defaultTemplate = computed(() => {
+      const s = useAppStore().settings
+      const id = s?.defaultTemplates[root]
+      return s?.commitTemplates.find((t) => t.id === id) ?? gitTemplate.value
+    })
+
+    async function loadGitTemplate() {
+      const r = await window.api.gitCommitTemplate(root)
+      gitTemplate.value = r.ok && r.value ? { id: GIT_TEMPLATE_ID, name: 'commit.template (git)', ...splitMessage(r.value.text) } : null
+    }
+
+    function applyTemplate(t: CommitTemplate) {
+      const filled = expandTemplate(t, info.value?.branch ?? null)
+      subject.value = filled.subject
+      body.value = filled.body
+      prefilled = null
+    }
+
+    function prefillTemplate() {
+      const t = defaultTemplate.value
+      if (!t || amend.value || subject.value.trim() || body.value.trim()) return
+      applyTemplate(t)
+      prefilled = currentMessage()
+    }
 
     // Branch, tag e remote
     const refs = shallowRef<RefsSnapshot | null>(null)
@@ -90,7 +134,7 @@ function define(root: string) {
     const canCommit = computed(() => subject.value.trim() !== '' && (amend.value || (status.value?.staged.length ?? 0) > 0))
 
     async function refresh() {
-      const [r] = await Promise.all([window.api.repoInfo(root), loadStatus(), loadStashes(), loadRefs(), loadHistory()])
+      const [r] = await Promise.all([window.api.repoInfo(root), loadStatus(), loadStashes(), loadRefs(), loadHistory(), loadGitTemplate()])
       if (r.ok) info.value = r.value
       else error.value = r.error.message
       if (view.value === 'working') await loadWorkingDiff()
@@ -209,7 +253,7 @@ function define(root: string) {
         return
       }
       const target = file.oldPath ? { path: file.path, oldPath: file.oldPath } : { path: file.path }
-      const r = await window.api.commitFileDiff(root, sha, target, { ignoreWhitespace: diffOptions.ignoreWhitespace, force })
+      const r = await window.api.commitFileDiff(root, sha, target, diffOptionsFor(force))
       if (request !== diffRequest) return
       if (r.ok) diff.value = r.value
       else error.value = r.error.message
@@ -242,6 +286,8 @@ function define(root: string) {
     async function selectWorking() {
       view.value = 'working'
       if (!working.value && status.value) working.value = firstWorking(status.value)
+      await loadGitTemplate()
+      prefillTemplate()
       await loadWorkingDiff()
     }
 
@@ -267,7 +313,7 @@ function define(root: string) {
         return
       }
       const target = w.file.oldPath ? { path: w.file.path, oldPath: w.file.oldPath } : { path: w.file.path }
-      const r = await window.api.workingDiff(root, target, w.area, { ignoreWhitespace: diffOptions.ignoreWhitespace, force: false })
+      const r = await window.api.workingDiff(root, target, w.area, diffOptionsFor(false))
       if (request !== workingRequest) return
       if (r.ok) workingDiff.value = r.value
       else error.value = r.error.message
@@ -324,12 +370,15 @@ function define(root: string) {
 
     async function setAmend(value: boolean) {
       amend.value = value
-      if (!value || subject.value.trim()) return
+      // Il template precompilato e non toccato si sostituisce come un composer vuoto
+      const untouched = prefilled !== null && currentMessage() === prefilled
+      if (!value || (subject.value.trim() && !untouched)) return
       const r = await window.api.lastCommitMessage(root)
       if (!r.ok) return
       const [first = '', ...rest] = r.value.split('\n')
       subject.value = first
       body.value = rest.join('\n').trim()
+      prefilled = null
     }
 
     async function commitChanges() {
@@ -339,6 +388,8 @@ function define(root: string) {
         subject.value = ''
         body.value = ''
         amend.value = false
+        prefilled = null
+        prefillTemplate()
       }
     }
 
@@ -371,6 +422,7 @@ function define(root: string) {
       selectWorking, selectWorkingFile, stage, unstage, discard, stageEverything, unstageEverything, ignore,
       applyLines, toggleLine, clearSelection, setAmend, commitChanges, stashPush, stashAction,
       refs, busy, progress, rebasePlan, run, git, openRebase,
+      gitTemplate, defaultTemplate, templatePicker, applyTemplate, prefillTemplate,
     }
   })
 }

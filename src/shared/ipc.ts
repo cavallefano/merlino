@@ -3,14 +3,17 @@ import type {
   CommandLogEntry,
   Commit,
   CommitDetail,
+  CommitTemplate,
   DiffOptions,
   FileDiff,
   GitCheck,
+  GitConfigKey,
   GitErrorInfo,
   HistoryPage,
   HistorySummary,
   MenuItem,
   PatchMode,
+  Preferences,
   RefsSnapshot,
   RepoCommand,
   RepoInfo,
@@ -23,6 +26,14 @@ export type Result<T> = { ok: true; value: T } | { ok: false; error: GitErrorInf
 
 export const Channels = {
   getSettings: 'settings:get',
+  updatePreferences: 'settings:update-preferences',
+  gitGlobalConfig: 'git:global-config',
+  pickApp: 'app:pick-app',
+  saveCommitTemplates: 'settings:save-templates',
+  setDefaultTemplate: 'settings:set-default-template',
+  gitCommitTemplate: 'repo:git-commit-template',
+  openInTerminal: 'repo:open-in-terminal',
+  setGitGlobalConfig: 'git:set-global-config',
   checkGit: 'git:check',
   setGitPath: 'git:set-path',
   pickRepoFolder: 'repo:pick-folder',
@@ -70,10 +81,22 @@ export const Channels = {
 export interface Api {
   platform: string
   getSettings(): Promise<AppSettings>
+  /** Salva le preferenze (validate nel main) e ne applica gli effetti; restituisce le impostazioni aggiornate. */
+  updatePreferences(patch: Partial<Preferences>): Promise<Result<AppSettings>>
+  /** Salva la libreria dei template (validata nel main); i predefiniti dei template eliminati se ne vanno. */
+  saveCommitTemplates(templates: CommitTemplate[]): Promise<Result<AppSettings>>
+  /** Template predefinito di un repo; null lo toglie. */
+  setDefaultTemplate(root: string, id: string | null): Promise<Result<AppSettings>>
+  /** Il commit.template di git del repo (o globale); null se non c'è. */
+  gitCommitTemplate(root: string): Promise<Result<{ path: string; text: string } | null>>
+  /** Chiavi della config globale di git gestite dalle Impostazioni; '' = non impostata. */
+  gitGlobalConfig(): Promise<Result<Record<GitConfigKey, string>>>
+  /** '' toglie la chiave. */
+  setGitGlobalConfig(key: GitConfigKey, value: string): Promise<Result<void>>
   checkGit(): Promise<GitCheck>
   setGitPath(path: string): Promise<GitCheck>
   /** Dialog di scelta cartella; null se annullato. */
-  pickRepoFolder(): Promise<string | null>
+  pickRepoFolder(defaultPath?: string): Promise<string | null>
   /** Cartella passata da riga di comando all'avvio; la restituisce una volta sola. */
   takeInitialPath(): Promise<string | null>
   openRepo(path: string): Promise<Result<RepoInfo>>
@@ -113,6 +136,10 @@ export interface Api {
   clone(url: string, parent: string): Promise<Result<string>>
   /** Apre un file del repo con l'applicazione predefinita del sistema. */
   openInEditor(root: string, path: string): Promise<Result<void>>
+  /** Dialog di scelta di un'applicazione (.app su macOS, .exe su Windows); null se annullato. */
+  pickApp(): Promise<string | null>
+  /** Apre il terminale scelto nelle Impostazioni (o quello predefinito) nella cartella del repo. */
+  openInTerminal(root: string): Promise<Result<void>>
   /** Menu contestuale nativo; restituisce l'id della voce scelta o null. */
   contextMenu(items: MenuItem[]): Promise<string | null>
   onProgress(cb: (event: { root: string; line: string }) => void): () => void
