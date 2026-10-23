@@ -19,7 +19,7 @@ Data: 2026-10-23 · Stato: approvato in brainstorming
 
 ## Approccio
 
-- **Divisori**: un componente `Splitter.vue` fatto in casa, con pointer events, che aggiorna le misure della griglia o delle altezze. Nessuna dipendenza nuova.
+- **Divisori**: un componente `PaneSplitter.vue` fatto in casa, con pointer events, che aggiorna le misure della griglia o delle altezze. Nessuna dipendenza nuova.
 - **Popup**: un `<dialog>` modale come gli altri dialog di Merlino, ridimensionabile con `resize: both`.
 - **Scartati**:
   - la libreria `splitpanes`: porta markup e CSS suoi da adattare a griglia e vista verticale, una dipendenza per poco codice;
@@ -87,7 +87,7 @@ Data: 2026-10-23 · Stato: approvato in brainstorming
   - tipo `Layout { sidebar; list; listVertical; commitFiles; workingFiles; prFiles; dialog: { width; height } | null }`;
   - `useLayout()`: un oggetto reattivo condiviso, salvato nel `localStorage` a ogni modifica (il doppio clic sul divisore rimette il predefinito).
 - **Preferenza**: `panelLayout` in `Preferences` (`src/shared/types.ts`), `DEFAULT_PREFERENCES`, la validazione in `preferences()` di `src/main/validate.ts` e la select in `GeneralSettings.vue`.
-- **`Splitter.vue`**: props `orientation: 'col' | 'row'`, `modelValue`, `min`, `max`, `defaultValue`, `scale` (1 per i px, oppure la dimensione del contenitore per le frazioni). Emette `update:modelValue`.
+- **`PaneSplitter.vue`**: props `orientation: 'col' | 'row'`, `modelValue`, `min`, `max`, `defaultValue`, `scale` (1 per i px, oppure la dimensione del contenitore per le frazioni). Emette `update:modelValue`.
 - **`RepoView.vue`**: la griglia (colonne in orizzontale; in verticale due colonne e la colonna destra divisa in righe) si calcola dal layout; i divisori stanno fra le aree.
 - **`CommitDetail.vue`, `WorkingView.vue`, `PullRequestDetail.vue`**: la lista dei file ha l'altezza del layout, poi un divisore; il pulsante ⤢ nella barra del diff; il doppio clic sui file.
 - **`DiffDialog.vue`**: aperto da `repo.diffDialog` (`'commit' | 'working' | 'pr' | null`), montato in `RepoView.vue` come gli altri dialog.

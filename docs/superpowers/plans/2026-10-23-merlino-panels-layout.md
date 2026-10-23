@@ -6,7 +6,7 @@
 
 **Architecture:**
 - `src/renderer/layout.ts` tiene le misure dei pannelli (reattive, salvate nel `localStorage`), con funzioni pure testate.
-- `Splitter.vue` è il divisore: legge le misure dei due elementi accanto e aggiorna un `v-model` in px o in frazione.
+- `PaneSplitter.vue` è il divisore: legge le misure dei due elementi accanto e aggiorna un `v-model` in px o in frazione.
 - `RepoView.vue` costruisce la griglia: sidebar | divisore | area principale. L'area principale è una seconda griglia, con colonne o righe secondo la preferenza `panelLayout`.
 - `DiffDialog.vue` è un `<dialog>` modale con `resize: both`. Usa la stessa selezione dei pannelli, tramite gli store `repo` e `pull-requests`.
 
@@ -46,7 +46,7 @@ Spec: `docs/superpowers/specs/2026-10-23-merlino-panels-layout-design.md`. Branc
 | `test/unit/validate.test.ts` | validazione di `panelLayout` |
 | `src/renderer/components/settings/GeneralSettings.vue` | select "Panel layout" |
 | `src/renderer/actions/builtin.ts`, `src/main/menu.ts` | azione `layout.toggle` e voce nel menu View |
-| `src/renderer/components/Splitter.vue` (nuovo) | il divisore |
+| `src/renderer/components/PaneSplitter.vue` (nuovo) | il divisore |
 | `src/renderer/components/RepoView.vue` | griglia dal layout, divisori, pulsante del layout, `DiffDialog` |
 | `HistoryView.vue`, `PullRequestList.vue`, `RepoSidebar.vue` | tolto il bordo destro (lo disegna il divisore) |
 | `CommitDetail.vue`, `WorkingView.vue`, `PullRequestDetail.vue` | divisore fra file e diff, pulsante ⤢, doppio clic sui file |
@@ -377,7 +377,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ### Task 3: divisore e griglia della vista del repo
 
 **Files:**
-- Create: `src/renderer/components/Splitter.vue`
+- Create: `src/renderer/components/PaneSplitter.vue`
 - Modify: `src/renderer/components/RepoView.vue`
 - Modify: `src/renderer/components/HistoryView.vue` (`.history`), `PullRequestList.vue` (`.prs`), `RepoSidebar.vue` (`.sidebar`): togliere `border-right: 1px solid var(--border);`
 - Modify: `src/shared/i18n/en.ts`, `it.ts`
@@ -385,7 +385,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `useLayout`, `SIZES`, `clamp` (Task 1); `preferences.panelLayout`, azione `layout.toggle` (Task 2).
-- Produces: `Splitter.vue` con props `orientation: 'col' | 'row'`, `modelValue: number`, `defaultValue: number`, `fraction?: boolean`, `min: number`, `minAfter: number`, `max?: number`, `label: string`; evento `update:modelValue`. Il divisore misura `previousElementSibling` e `nextElementSibling`: va messo fra i due pannelli che divide, come fratelli.
+- Produces: `PaneSplitter.vue` con props `orientation: 'col' | 'row'`, `modelValue: number`, `defaultValue: number`, `fraction?: boolean`, `min: number`, `minAfter: number`, `max?: number`, `label: string`; evento `update:modelValue`. Il divisore misura `previousElementSibling` e `nextElementSibling`: va messo fra i due pannelli che divide, come fratelli.
 
 - [ ] **Step 1: E2E che fallisce**
 
@@ -461,7 +461,7 @@ Expected: FAIL, `split-sidebar` e `layout-toggle` non esistono.
 `en.ts`, dopo `'action.layout.toggle'`: `  'layout.resize': 'Resize panels',`
 `it.ts`, dopo `'action.layout.toggle'`: `  'layout.resize': 'Ridimensiona i pannelli',`
 
-- [ ] **Step 4: `Splitter.vue`**
+- [ ] **Step 4: `PaneSplitter.vue`**
 
 ```vue
 <script setup lang="ts">
@@ -563,7 +563,7 @@ Script, nuovi import:
 import { registry } from '../actions/builtin'
 import { SIZES, useLayout } from '../layout'
 import { useAppStore } from '../stores/app'
-import Splitter from './Splitter.vue'
+import PaneSplitter from './PaneSplitter.vue'
 ```
 
 e dopo `const prs = usePullRequestStore(props.root)`:
@@ -597,7 +597,7 @@ e `<div class="panes">…</div>` diventa:
 ```html
     <div class="panes" :style="{ gridTemplateColumns: `${layout.sidebar}px 5px minmax(0, 1fr)` }">
       <RepoSidebar :root="root" />
-      <Splitter
+      <PaneSplitter
         v-model="layout.sidebar"
         orientation="col"
         :default-value="SIZES.sidebar.default"
@@ -610,7 +610,7 @@ e `<div class="panes">…</div>` diventa:
       <div class="main" :class="{ vertical }" :style="mainStyle">
         <PullRequestList v-if="repo.page === 'pullRequests'" :root="root" />
         <HistoryView v-else :root="root" />
-        <Splitter
+        <PaneSplitter
           v-model="layout[listKey]"
           :orientation="vertical ? 'row' : 'col'"
           fraction
@@ -663,8 +663,8 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Test: `test/e2e/layout.spec.ts`
 
 **Interfaces:**
-- Consumes: `Splitter.vue` (Task 3), `useLayout`, `SIZES` (Task 1).
-- Produces: in ognuno dei tre pannelli, la lista dei file seguita da `Splitter` (`data-testid="split-files"`) e da `<div class="diff-area">` con la barra del diff e il diff. Il Task 5 aggiunge il pulsante ⤢ in quella barra.
+- Consumes: `PaneSplitter.vue` (Task 3), `useLayout`, `SIZES` (Task 1).
+- Produces: in ognuno dei tre pannelli, la lista dei file seguita da `PaneSplitter` (`data-testid="split-files"`) e da `<div class="diff-area">` con la barra del diff e il diff. Il Task 5 aggiunge il pulsante ⤢ in quella barra.
 
 - [ ] **Step 1: E2E che fallisce**
 
@@ -697,7 +697,7 @@ Script:
 
 ```ts
 import { SIZES, useLayout } from '../layout'
-import Splitter from './Splitter.vue'
+import PaneSplitter from './PaneSplitter.vue'
 ```
 
 e dopo `const repo = useRepoStore(props.root)`: `const layout = useLayout()`.
@@ -707,7 +707,7 @@ Template:
 - dopo `</ul>`:
 
 ```html
-      <Splitter
+      <PaneSplitter
         v-model="layout.commitFiles"
         orientation="row"
         :default-value="SIZES.commitFiles.default"
@@ -735,7 +735,7 @@ Template:
 
 ```html
     <template v-if="repo.working && repo.workingDiff">
-      <Splitter
+      <PaneSplitter
         v-model="layout.workingFiles"
         orientation="row"
         :default-value="SIZES.workingFiles.default"
@@ -761,11 +761,11 @@ Stile: `.files` diventa `.files { flex: 0 1 auto; min-height: 48px; overflow: au
 
 - [ ] **Step 5: `PullRequestDetail.vue`**
 
-Stessi import (`SIZES`, `useLayout`, `Splitter`), più `const layout = useLayout()`.
+Stessi import (`SIZES`, `useLayout`, `PaneSplitter`), più `const layout = useLayout()`.
 
 Nella scheda Changes:
 - `<ul class="files">` diventa `<ul class="files" :style="{ height: `${layout.prFiles}px` }">`;
-- dopo `</ul>`, `Splitter` con `v-model="layout.prFiles"`, `:default-value="SIZES.prFiles.default"`, `:min="SIZES.prFiles.min"` e gli stessi `orientation`, `min-after`, `label` e `data-testid` del passo 3;
+- dopo `</ul>`, `PaneSplitter` con `v-model="layout.prFiles"`, `:default-value="SIZES.prFiles.default"`, `:min="SIZES.prFiles.min"` e gli stessi `orientation`, `min-after`, `label` e `data-testid` del passo 3;
 - `diff-bar` e `DiffView` vanno dentro `<div class="diff-area">…</div>`.
 
 Stile:

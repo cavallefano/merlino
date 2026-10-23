@@ -535,4 +535,5 @@ export const en = {
   'layout.horizontal': 'Horizontal (list beside details)',
   'layout.vertical': 'Vertical (list above details)',
   'action.layout.toggle': 'Toggle Panel Layout',
+  'layout.resize': 'Resize panels',
 } as const

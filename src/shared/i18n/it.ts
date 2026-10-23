@@ -537,4 +537,5 @@ export const it: Messages = {
   'layout.horizontal': 'Orizzontale (lista accanto al dettaglio)',
   'layout.vertical': 'Verticale (lista sopra il dettaglio)',
   'action.layout.toggle': 'Cambia layout dei pannelli',
+  'layout.resize': 'Ridimensiona i pannelli',
 }
