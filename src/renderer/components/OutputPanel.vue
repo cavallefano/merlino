@@ -28,9 +28,9 @@ watch(
     <ol ref="list">
       <li v-for="e in app.log" :key="e.id" :class="{ failed: !e.ok }">
         <span class="muted">{{ time(e.startedAt) }}</span>
-        <code>{{ e.args.length ? `git ${e.args.join(' ')}` : t('output.uiError') }}</code>
+        <code>{{ e.http ? e.args.join(' ') : e.args.length ? `git ${e.args.join(' ')}` : t('output.uiError') }}</code>
         <span class="muted">{{ e.durationMs }} ms</span>
-        <span v-if="!e.ok && e.exitCode !== null" class="error">exit {{ e.exitCode }}</span>
+        <span v-if="!e.ok && e.exitCode !== null" class="error">{{ e.http ? `HTTP ${e.exitCode}` : `exit ${e.exitCode}` }}</span>
         <pre v-if="!e.ok && e.stderr">{{ e.stderr }}</pre>
       </li>
     </ol>
