@@ -540,4 +540,6 @@ export const en = {
   'diff.previousFile': 'Previous file',
   'diff.nextFile': 'Next file',
   'common.close': 'Close',
+  'sidebar.workspace': 'Workspace',
+  'page.localChanges': 'Local Changes',
 } as const

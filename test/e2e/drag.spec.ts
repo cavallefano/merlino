@@ -23,7 +23,9 @@ async function internalFileDrags(app: Awaited<ReturnType<typeof launch>>['app'])
 
 const subjects = (repo: string) => git(repo, 'log', '--format=%s').trim().split('\n')
 // Testo esatto: "a" non deve prendere anche "main" o "rebase-qui"
-const branchItem = (page: Page, name: string) => page.getByTestId('branch-item').filter({ hasText: new RegExp(`^${name}$`) })
+// Sul nome esatto: il testo della riga contiene anche HEAD e ↑/↓
+const branchItem = (page: Page, name: string) =>
+  page.getByTestId('branch-item').filter({ has: page.locator('.name', { hasText: new RegExp(`^${name}$`) }) })
 
 test('branch sul corrente: merge; con ⌥ rebase', async () => {
   const repo = makeRepo(1)
@@ -54,6 +56,7 @@ test('commit sul tag: nuovo tag; commit sul corrente: cherry-pick', async () => 
   await row.dragTo(page.getByTestId('tags-header'))
   await page.getByTestId('prompt-field-name').fill('v-drag')
   await page.getByTestId('prompt-ok').click()
+  await page.getByTestId('tags-header').click()
   await expect(page.getByTestId('tag-item')).toHaveText('v-drag')
 
   await row.dragTo(branchItem(page, 'main'))
