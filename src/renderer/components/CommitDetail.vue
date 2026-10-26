@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { t } from '../i18n'
 import { computed } from 'vue'
+import type { FileChange } from '../../shared/types'
+import { commitFileTarget, fileMenu, openBlame, selectedFileTarget } from '../actions/files'
 import { formatDate } from '../history/format'
 import { useRepoStore } from '../stores/repo'
 import { fileDragSource } from '../drag/drag'
@@ -20,6 +22,13 @@ const showCommitter = computed(
   () => commit.value && (commit.value.committer !== commit.value.author || commit.value.commitTime !== commit.value.authorTime),
 )
 const copy = (text: string) => navigator.clipboard.writeText(text)
+const target = computed(() => selectedFileTarget(repo))
+
+function menu(f: FileChange) {
+  if (!commit.value) return
+  void repo.selectFile(f)
+  void fileMenu(repo, commitFileTarget(commit.value.sha, f))
+}
 </script>
 
 <template>
@@ -68,6 +77,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           v-bind="fileDragSource(repo, { kind: 'commitFile', sha: commit.sha, path: f.path }, { path: f.path, sha: commit.sha })"
           @click="repo.selectFile(f)"
           @dblclick="repo.diffDialog = 'commit'"
+          @contextmenu.prevent="menu(f)"
         >
           <span class="status" :class="f.status">{{ f.status }}</span>
           <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
@@ -91,6 +101,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
         <div class="diff-bar">
           <span class="path muted">{{ repo.selectedFile?.path }}</span>
           <button data-testid="diff-popup" :aria-label="t('diff.expand')" :title="t('diff.expand')" @click="repo.diffDialog = 'commit'">⤢</button>
+          <button data-testid="file-blame" :disabled="!target?.blame" @click="openBlame(repo, target)">Blame</button>
           <button data-testid="diff-split" @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
           <label>
             <input type="checkbox" data-testid="diff-whitespace" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
@@ -103,6 +114,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
         <template v-if="repo.treeFile && repo.fileContent">
           <div class="diff-bar">
             <span class="path muted">{{ repo.treeFile.path }}</span>
+            <button data-testid="file-blame" :disabled="!target?.blame" @click="openBlame(repo, target)">Blame</button>
           </div>
           <FileContentView :path="repo.treeFile.path" :content="repo.fileContent" @force="repo.loadFileContent(true)" />
         </template>

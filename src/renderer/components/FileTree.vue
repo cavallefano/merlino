@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TreeEntry } from '../../shared/types'
+import { fileMenu, treeFileTarget } from '../actions/files'
 import { t } from '../i18n'
 import { useRepoStore } from '../stores/repo'
 import AppIcon from './AppIcon.vue'
@@ -28,6 +29,12 @@ function click(entry: TreeEntry) {
   if (entry.kind === 'folder') void repo.toggleTreeDir(entry.path)
   else void repo.selectTreeFile(entry)
 }
+
+function menu(entry: TreeEntry) {
+  if (entry.kind === 'folder' || !repo.selected) return
+  void repo.selectTreeFile(entry)
+  void fileMenu(repo, treeFileTarget(repo.selected, entry))
+}
 </script>
 
 <template>
@@ -41,6 +48,7 @@ function click(entry: TreeEntry) {
       :title="entry.path"
       data-testid="tree-row"
       @click="click(entry)"
+      @contextmenu.prevent="menu(entry)"
     >
       <span class="slot"><AppIcon v-if="entry.kind === 'folder'" name="chevron" class="chevron" :class="{ open: repo.treeOpen.has(entry.path) }" /></span>
       <AppIcon :name="entry.kind !== 'folder' ? 'file' : repo.treeOpen.has(entry.path) ? 'folderOpen' : 'folder'" class="kind" />

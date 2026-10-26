@@ -3,6 +3,7 @@ import { computed, reactive, ref, shallowRef } from 'vue'
 import { expandTemplate, GIT_TEMPLATE_ID, splitMessage } from '../../shared/commit-template'
 import type { Result } from '../../shared/ipc'
 import { buildPatch, lineKey } from '../../shared/patch'
+import { matchesPath, searchArgs } from '../../shared/search'
 import { useAppStore } from './app'
 import type {
   Commit,
@@ -33,6 +34,12 @@ const storeId = (root: string) => `repo:${root}`
 /** Dialog di git flow aperto; init può avere un dialog da aprire dopo (prima azione su un repo non inizializzato). */
 export type FlowDialog = { kind: 'init'; then?: FlowDialog } | { kind: 'start'; type: FlowType } | { kind: 'finish'; branch: string }
 export const PAGE_SIZE = 500
+
+/** Il file del popup del blame: a un commit, o sul disco con sha null. */
+export interface BlameTarget {
+  sha: string | null
+  path: string
+}
 
 interface WorkingSelection {
   file: WorkingFile
@@ -94,6 +101,8 @@ function define(root: string) {
     const fileContent = shallowRef<FileContent | null>(null)
     let treeRequest = 0
     let contentRequest = 0
+    /** Il file nel popup del blame; null = chiuso. */
+    const blame = shallowRef<BlameTarget | null>(null)
 
     // Modifiche locali
     const status = shallowRef<WorkingStatus | null>(null)
@@ -272,7 +281,9 @@ function define(root: string) {
         return
       }
       detail.value = r.value
-      selectedFile.value = r.value.files[0] ?? null
+      // Con i filtri path: della ricerca (anche nella storia di un file) il primo file che ci rientra
+      const paths = searchArgs(query.value).paths
+      selectedFile.value = r.value.files.find((f) => matchesPath(f.path, paths)) ?? r.value.files[0] ?? null
       await (detailMode.value === 'tree' ? loadTree() : loadDiff())
     }
 
@@ -350,6 +361,14 @@ function define(root: string) {
     async function search(text: string) {
       query.value = text.trim()
       await loadHistory()
+    }
+
+    /** La storia di un file: la ricerca path:, con il suo commit più recente. */
+    async function showFileHistory(path: string) {
+      page.value = 'history'
+      await search(`path:"${path}"`)
+      const first = commitAt(0)
+      if (first) await select(first.sha, 0)
     }
 
     function toggleSplit() {
@@ -507,6 +526,7 @@ function define(root: string) {
       history, query, pagesTick, loadHistory, ensureRows, commitAt, rowAt, fileCountOf, search, move,
       page, view, selected, selectedIndex, detail, selectedFile, diff, diffOptions, select, selectFile, loadDiff, toggleSplit, toggleWhitespace,
       detailMode, treeDirs, treeOpen, treeFile, fileContent, setDetailMode, toggleTreeDir, selectTreeFile, loadFileContent,
+      blame, showFileHistory,
       status, stashes, working, workingDiff, diffDialog, selectedLines, subject, body, amend, changeCount, canCommit,
       selectWorking, selectWorkingFile, stage, unstage, discard, stageEverything, unstageEverything, ignore,
       applyLines, toggleLine, clearSelection, setAmend, commitChanges, stashPush, stashAction,
