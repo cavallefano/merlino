@@ -544,4 +544,8 @@ export const it: Messages = {
   'common.close': 'Chiudi',
   'sidebar.workspace': 'Area di lavoro',
   'page.localChanges': 'Modifiche locali',
+  'detail.changes': 'Modifiche',
+  'detail.allFiles': 'Tutti i file',
+  'tree.empty': 'Nessun file',
+  'file.tooLarge': 'File troppo grande.',
 }

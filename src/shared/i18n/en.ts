@@ -542,4 +542,8 @@ export const en = {
   'common.close': 'Close',
   'sidebar.workspace': 'Workspace',
   'page.localChanges': 'Local Changes',
+  'detail.changes': 'Changes',
+  'detail.allFiles': 'All Files',
+  'tree.empty': 'No files',
+  'file.tooLarge': 'File too large.',
 } as const

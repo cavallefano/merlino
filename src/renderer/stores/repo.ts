@@ -10,6 +10,7 @@ import type {
   CommitTemplate,
   DiffOptions,
   FileChange,
+  FileContent,
   FileDiff,
   FlowConfig,
   FlowType,
@@ -21,6 +22,7 @@ import type {
   RepoCommand,
   RepoInfo,
   StashEntry,
+  TreeEntry,
   WorkingArea,
   WorkingFile,
   WorkingStatus,
@@ -80,6 +82,18 @@ function define(root: string) {
     })
     let detailRequest = 0
     let diffRequest = 0
+
+    // Dettaglio del commit: i file cambiati o l'albero di tutti i file (la scelta resta cambiando commit)
+    const detailMode = ref<'changes' | 'tree'>('changes')
+    /** Cartelle dell'albero caricate per il commit selezionato: dal percorso ('' la radice) alle voci. */
+    const treeDirs = shallowRef(new Map<string, TreeEntry[]>())
+    /** Cartelle aperte: restano aperte cambiando commit. */
+    const treeOpen = reactive(new Set<string>())
+    const treeFile = shallowRef<TreeEntry | null>(null)
+    /** null anche quando il file scelto non c'è nel commit selezionato. */
+    const fileContent = shallowRef<FileContent | null>(null)
+    let treeRequest = 0
+    let contentRequest = 0
 
     // Modifiche locali
     const status = shallowRef<WorkingStatus | null>(null)
@@ -258,7 +272,8 @@ function define(root: string) {
         return
       }
       detail.value = r.value
-      await selectFile(r.value.files[0] ?? null)
+      selectedFile.value = r.value.files[0] ?? null
+      await (detailMode.value === 'tree' ? loadTree() : loadDiff())
     }
 
     async function selectFile(file: FileChange | null) {
@@ -278,6 +293,57 @@ function define(root: string) {
       const r = await window.api.commitFileDiff(root, sha, target, diffOptionsFor(force))
       if (request !== diffRequest) return
       if (r.ok) diff.value = r.value
+      else error.value = r.error.message
+    }
+
+    async function setDetailMode(mode: 'changes' | 'tree') {
+      detailMode.value = mode
+      await (mode === 'tree' ? loadTree() : loadDiff())
+    }
+
+    /** La radice e le cartelle aperte del commit selezionato, poi il contenuto del file scelto. */
+    async function loadTree() {
+      const sha = selected.value
+      const request = ++treeRequest
+      if (!sha) return
+      const dirs = ['', ...treeOpen]
+      const results = await Promise.all(dirs.map((dir) => window.api.treeList(root, sha, dir)))
+      if (request !== treeRequest) return
+      const loaded = new Map<string, TreeEntry[]>()
+      results.forEach((r, i) => {
+        if (r.ok) loaded.set(dirs[i], r.value)
+        else error.value = r.error.message
+      })
+      treeDirs.value = loaded
+      await loadFileContent()
+    }
+
+    async function toggleTreeDir(dir: string) {
+      if (treeOpen.delete(dir)) return
+      treeOpen.add(dir)
+      const sha = selected.value
+      if (!sha || treeDirs.value.has(dir)) return
+      const r = await window.api.treeList(root, sha, dir)
+      if (!r.ok) error.value = r.error.message
+      else if (sha === selected.value) treeDirs.value = new Map(treeDirs.value).set(dir, r.value)
+    }
+
+    async function selectTreeFile(entry: TreeEntry) {
+      treeFile.value = entry
+      await loadFileContent()
+    }
+
+    async function loadFileContent(force = false) {
+      const entry = treeFile.value
+      const sha = selected.value
+      const request = ++contentRequest
+      if (!entry || !sha) {
+        fileContent.value = null
+        return
+      }
+      const r = await window.api.fileContent(root, sha, entry.path, force)
+      if (request !== contentRequest) return
+      if (r.ok) fileContent.value = r.value
       else error.value = r.error.message
     }
 
@@ -440,6 +506,7 @@ function define(root: string) {
       root, info, error, refresh,
       history, query, pagesTick, loadHistory, ensureRows, commitAt, rowAt, fileCountOf, search, move,
       page, view, selected, selectedIndex, detail, selectedFile, diff, diffOptions, select, selectFile, loadDiff, toggleSplit, toggleWhitespace,
+      detailMode, treeDirs, treeOpen, treeFile, fileContent, setDetailMode, toggleTreeDir, selectTreeFile, loadFileContent,
       status, stashes, working, workingDiff, diffDialog, selectedLines, subject, body, amend, changeCount, canCommit,
       selectWorking, selectWorkingFile, stage, unstage, discard, stageEverything, unstageEverything, ignore,
       applyLines, toggleLine, clearSelection, setAmend, commitChanges, stashPush, stashAction,
