@@ -1,11 +1,13 @@
 import type {
   AppSettings,
+  BlameResult,
   CiStatus,
   CommandLogEntry,
   Commit,
   CommitDetail,
   CommitTemplate,
   DiffOptions,
+  FileContent,
   FileDiff,
   FlowConfig,
   FlowFinishInfo,
@@ -31,6 +33,7 @@ import type {
   RepoCommand,
   RepoInfo,
   StashEntry,
+  TreeEntry,
   WorkingArea,
   WorkingStatus,
 } from './types'
@@ -63,6 +66,9 @@ export const Channels = {
   historyFileCounts: 'history:file-counts',
   commitDetail: 'commit:detail',
   commitFileDiff: 'commit:file-diff',
+  blame: 'file:blame',
+  treeList: 'file:tree',
+  fileContent: 'file:content',
   workingStatus: 'working:status',
   workingDiff: 'working:diff',
   stage: 'working:stage',
@@ -145,6 +151,12 @@ export interface Api {
   historyFileCounts(root: string, start: number, count: number): Promise<Result<Record<string, number>>>
   commitDetail(root: string, sha: string): Promise<Result<CommitDetail>>
   commitFileDiff(root: string, sha: string, file: { path: string; oldPath?: string }, options: DiffOptions): Promise<Result<FileDiff>>
+  /** Blame di un file a un commit; sha null: il file sul disco. */
+  blame(root: string, sha: string | null, path: string, ignoreWhitespace: boolean): Promise<Result<BlameResult>>
+  /** Voci di una cartella a un commit; dir '' è la radice. */
+  treeList(root: string, sha: string, dir: string): Promise<Result<TreeEntry[]>>
+  /** Contenuto di un file a un commit; null se lì non c'è. */
+  fileContent(root: string, sha: string, path: string, force: boolean): Promise<Result<FileContent | null>>
   workingStatus(root: string): Promise<Result<WorkingStatus>>
   workingDiff(root: string, file: { path: string; oldPath?: string }, area: WorkingArea, options: DiffOptions): Promise<Result<FileDiff>>
   stage(root: string, paths: string[]): Promise<Result<void>>

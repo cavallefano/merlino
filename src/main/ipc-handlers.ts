@@ -7,6 +7,7 @@ import type { CommandLogEntry, GitErrorInfo, PatchMode, Preferences, RepoInfo, W
 import { AutoFetch } from './auto-fetch'
 import { dragFile } from './drag-file'
 import { clone, fetch as gitFetch, rebaseRange, runCommand } from './git/branches'
+import { readBlame } from './git/blame'
 import { checkGit } from './git/check'
 import { readCommitDetail } from './git/commit'
 import { readGitCommitTemplate } from './git/commit-template'
@@ -18,6 +19,7 @@ import { readRefs } from './git/refs'
 import { readRepoInfo } from './git/repo-info'
 import { GitError, GitRunner } from './git/runner'
 import { readStatus } from './git/status'
+import { readFileContent, readTree } from './git/tree'
 import {
   addToGitignore,
   applyPatch,
@@ -383,6 +385,17 @@ export function registerIpc(
   })
   ipcMain.handle(Channels.commitFileDiff, (_e, root: unknown, commit: unknown, file: unknown, options: unknown) =>
     withSession(root, (s) => readCommitFileDiff(s.runner, sha(commit), fileRequest(file), diffOptions(options))),
+  )
+
+  // --- Blame e albero dei file ---
+  ipcMain.handle(Channels.blame, (_e, root: unknown, commit: unknown, path: unknown, ignoreWhitespace: unknown) =>
+    withSession(root, (s) => readBlame(s.runner, commit === null ? null : sha(commit), relPath(path), ignoreWhitespace === true)),
+  )
+  ipcMain.handle(Channels.treeList, (_e, root: unknown, commit: unknown, dir: unknown) =>
+    withSession(root, (s) => readTree(s.runner, sha(commit), dir === '' ? '' : relPath(dir))),
+  )
+  ipcMain.handle(Channels.fileContent, (_e, root: unknown, commit: unknown, path: unknown, force: unknown) =>
+    withSession(root, (s) => readFileContent(s.runner, sha(commit), relPath(path), force === true)),
   )
 
   // --- Account e pull request: il token resta qui, il renderer passa solo root, remote, numeri, SHA e testi ---
