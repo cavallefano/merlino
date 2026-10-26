@@ -219,6 +219,22 @@ export interface BlameResult {
   lines: { sha: string; text: string }[]
 }
 
+/** Una voce dell'albero dei file di un commit. */
+export interface TreeEntry {
+  name: string
+  /** Dalla radice del repo. */
+  path: string
+  kind: 'folder' | 'file' | 'submodule'
+}
+
+/** Contenuto di un file a un commit. */
+export interface FileContent {
+  binary: boolean
+  /** Oltre i limiti: text vuoto finché non si chiede force. */
+  tooLarge: boolean
+  text: string
+}
+
 export interface DiffOptions {
   ignoreWhitespace: boolean
   /** Mostra anche se supera i limiti. */
