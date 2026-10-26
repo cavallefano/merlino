@@ -199,6 +199,26 @@ export interface FileDiff {
   hunks: Hunk[]
 }
 
+export interface BlameCommit {
+  sha: string
+  author: string
+  authorEmail: string
+  /** Secondi dall'epoch. */
+  authorTime: number
+  summary: string
+  /** Il commit precedente e il percorso che il file aveva lì; manca nel commit che ha creato il file. */
+  previous?: { sha: string; path: string }
+}
+
+/** Le righe di un file con il commit che le ha scritte; lo SHA di zeri è per le righe non ancora nel commit. */
+export interface BlameResult {
+  path: string
+  binary: boolean
+  commits: Record<string, BlameCommit>
+  /** Nell'ordine del file: la riga n è lines[n - 1]. */
+  lines: { sha: string; text: string }[]
+}
+
 export interface DiffOptions {
   ignoreWhitespace: boolean
   /** Mostra anche se supera i limiti. */
