@@ -377,7 +377,7 @@ import { parseTree } from '../../src/main/git/tree'
 
 describe('parseTree', () => {
   it('cartelle prima, poi file e submodule in ordine alfabetico; il nome è dopo il primo TAB', () => {
-    const out = '100644 blob aaa\tsrc/b.txt\0040000 tree bbb\tsrc/lib\0160000 commit ccc\tsrc/mod\0100644 blob ddd\tsrc/A\tx.txt\0'
+    const out = '100644 blob aaa\tsrc/b.txt\x00040000 tree bbb\tsrc/lib\x00160000 commit ccc\tsrc/mod\x00100644 blob ddd\tsrc/A\tx.txt\x00'
     expect(parseTree(out)).toEqual([
       { name: 'lib', path: 'src/lib', kind: 'folder' },
       { name: 'A\tx.txt', path: 'src/A\tx.txt', kind: 'file' },
@@ -434,8 +434,11 @@ describe('readFileContent', () => {
     mkdirSync(join(repo, 'src'))
     writeFileSync(join(repo, 'src/bin.dat'), Buffer.from([0, 1, 2]))
     writeFileSync(join(repo, 'big.txt'), 'x\n'.repeat(20_001))
+    git(repo, 'add', '-A')
+    // Un submodule senza cartella: dopo add -A, che altrimenti lo toglierebbe
     git(repo, 'update-index', '--add', '--cacheinfo', `160000,${first},modulo`)
-    const sha = commitAll(repo, 'file vari')
+    git(repo, 'commit', '-q', '-m', 'file vari')
+    const sha = git(repo, 'rev-parse', 'HEAD').trim()
     const runner = new GitRunner(() => 'git', repo)
     expect(await readFileContent(runner, sha, 'file1.txt', false)).toEqual({ binary: false, tooLarge: false, text: '1\n' })
     expect(await readFileContent(runner, sha, 'src/bin.dat', false)).toEqual({ binary: true, tooLarge: false, text: '' })
@@ -1595,3 +1598,10 @@ git commit -m "docs: blame, storia del file e albero dei file nel README
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
+
+---
+
+## Note di esecuzione
+
+- Task 3, test unit: i separatori NUL seguiti da cifre vanno scritti `\x00` (con `\0` TypeScript li legge come escape ottali).
+- Task 3, test di integrazione: il submodule finto (`update-index --cacheinfo 160000,…`) va aggiunto dopo `git add -A`, che altrimenti lo toglie dall'index perché sul disco non c'è.
