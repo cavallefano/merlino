@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { t } from '../i18n'
 import { computed } from 'vue'
+import type { FileChange } from '../../shared/types'
+import { commitFileTarget, fileMenu, openBlame, selectedFileTarget } from '../actions/files'
 import { formatDate } from '../history/format'
 import { useRepoStore } from '../stores/repo'
 import { fileDragSource } from '../drag/drag'
 import { SIZES, useLayout } from '../layout'
 import DiffView from './DiffView.vue'
+import FileContentView from './FileContentView.vue'
+import FileTree from './FileTree.vue'
 import PaneSplitter from './PaneSplitter.vue'
 
 const props = defineProps<{ root: string }>()
@@ -18,6 +22,13 @@ const showCommitter = computed(
   () => commit.value && (commit.value.committer !== commit.value.author || commit.value.commitTime !== commit.value.authorTime),
 )
 const copy = (text: string) => navigator.clipboard.writeText(text)
+const target = computed(() => selectedFileTarget(repo))
+
+function menu(f: FileChange) {
+  if (!commit.value) return
+  void repo.selectFile(f)
+  void fileMenu(repo, commitFileTarget(commit.value.sha, f))
+}
 </script>
 
 <template>
@@ -49,7 +60,15 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           </template>
         </dl>
       </header>
-      <ul class="files" :style="{ height: `${layout.commitFiles}px` }">
+      <div class="mode">
+        <button :aria-pressed="repo.detailMode === 'changes'" data-testid="detail-changes" @click="repo.setDetailMode('changes')">
+          {{ t('detail.changes') }}
+        </button>
+        <button :aria-pressed="repo.detailMode === 'tree'" data-testid="detail-tree" @click="repo.setDetailMode('tree')">
+          {{ t('detail.allFiles') }}
+        </button>
+      </div>
+      <ul v-if="repo.detailMode === 'changes'" class="files" :style="{ height: `${layout.commitFiles}px` }">
         <li
           v-for="f in repo.detail.files"
           :key="f.path"
@@ -58,6 +77,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           v-bind="fileDragSource(repo, { kind: 'commitFile', sha: commit.sha, path: f.path }, { path: f.path, sha: commit.sha })"
           @click="repo.selectFile(f)"
           @dblclick="repo.diffDialog = 'commit'"
+          @contextmenu.prevent="menu(f)"
         >
           <span class="status" :class="f.status">{{ f.status }}</span>
           <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
@@ -67,6 +87,7 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           </span>
         </li>
       </ul>
+      <FileTree v-else :root="root" class="files" :style="{ height: `${layout.commitFiles}px` }" />
       <PaneSplitter
         v-model="layout.commitFiles"
         orientation="row"
@@ -76,10 +97,11 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
         :label="t('layout.resize')"
         data-testid="split-files"
       />
-      <div class="diff-area">
+      <div v-if="repo.detailMode === 'changes'" class="diff-area">
         <div class="diff-bar">
           <span class="path muted">{{ repo.selectedFile?.path }}</span>
           <button data-testid="diff-popup" :aria-label="t('diff.expand')" :title="t('diff.expand')" @click="repo.diffDialog = 'commit'">⤢</button>
+          <button data-testid="file-blame" :disabled="!target?.blame" @click="openBlame(repo, target)">Blame</button>
           <button data-testid="diff-split" @click="repo.toggleSplit()">{{ repo.diffOptions.split ? t('diff.unified') : t('diff.split') }}</button>
           <label>
             <input type="checkbox" data-testid="diff-whitespace" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
@@ -87,6 +109,15 @@ const copy = (text: string) => navigator.clipboard.writeText(text)
           </label>
         </div>
         <DiffView v-if="repo.diff" :diff="repo.diff" :split="repo.diffOptions.split" @force="repo.loadDiff(true)" />
+      </div>
+      <div v-else class="diff-area">
+        <template v-if="repo.treeFile && repo.fileContent">
+          <div class="diff-bar">
+            <span class="path muted">{{ repo.treeFile.path }}</span>
+            <button data-testid="file-blame" :disabled="!target?.blame" @click="openBlame(repo, target)">Blame</button>
+          </div>
+          <FileContentView :path="repo.treeFile.path" :content="repo.fileContent" @force="repo.loadFileContent(true)" />
+        </template>
       </div>
     </template>
   </section>
@@ -101,6 +132,11 @@ dt { color: var(--fg-muted); }
 dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .small { padding: 0 6px; font-size: 11px; }
 .parent { margin-right: 8px; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+.mode { display: flex; padding: 6px 12px 2px; }
+.mode button { padding: 1px 10px; font-size: 12px; border-radius: 0; }
+.mode button:first-child { border-radius: 5px 0 0 5px; }
+.mode button:last-child { border-radius: 0 5px 5px 0; border-left: 0; }
+.mode button[aria-pressed='true'] { background: var(--selected-bg); font-weight: 600; }
 .files { flex: 0 1 auto; min-height: 48px; margin: 0; padding: 4px 0; overflow: auto; list-style: none; }
 .diff-area { flex: 1 1 0; min-height: 120px; display: flex; flex-direction: column; }
 .files li { display: flex; align-items: center; gap: 8px; padding: 2px 12px; cursor: default; }

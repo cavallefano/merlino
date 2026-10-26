@@ -4,6 +4,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { shortcuts } from '../../shared/shortcuts'
 import type { CommitTemplate, WorkingArea, WorkingFile } from '../../shared/types'
 import { registry } from '../actions/builtin'
+import { fileMenu, openBlame, workingFileTarget } from '../actions/files'
 import { dropTarget, fileDragSource } from '../drag/drag'
 import { SIZES, useLayout } from '../layout'
 import { useAppStore } from '../stores/app'
@@ -66,6 +67,11 @@ const sections = computed(() => {
 })
 
 const isSelected = (file: WorkingFile, area: WorkingArea) => repo.working?.area === area && repo.working.file.path === file.path
+
+function menu(file: WorkingFile, area: WorkingArea) {
+  void repo.selectWorkingFile(file, area)
+  void fileMenu(repo, workingFileTarget(file))
+}
 
 async function openFile(file: WorkingFile) {
   const r = await window.api.openInEditor(props.root, file.path)
@@ -168,6 +174,7 @@ async function createStash() {
             v-bind="fileDragSource(repo, { kind: 'files', area: section.area, files: [f] }, { path: f.path })"
             @click="repo.selectWorkingFile(f, section.area)"
             @dblclick="repo.diffDialog = 'working'"
+            @contextmenu.prevent="menu(f, section.area)"
           >
             <span class="status" :class="f.status">{{ f.status }}</span>
             <span class="path">{{ f.oldPath ? `${f.oldPath} → ${f.path}` : f.path }}</span>
@@ -204,6 +211,11 @@ async function createStash() {
         <div class="diff-bar">
           <span class="path muted">{{ repo.working.file.path }}</span>
           <button data-testid="diff-popup" :aria-label="t('diff.expand')" :title="t('diff.expand')" @click="repo.diffDialog = 'working'">⤢</button>
+          <button
+            data-testid="file-blame"
+            :disabled="!workingFileTarget(repo.working.file).blame"
+            @click="openBlame(repo, workingFileTarget(repo.working.file))"
+          >Blame</button>
           <label>
             <input type="checkbox" :checked="repo.diffOptions.ignoreWhitespace" @change="repo.toggleWhitespace()" />
             {{ t('diff.ignoreWhitespace') }}

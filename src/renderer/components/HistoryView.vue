@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { t, tn } from '../i18n'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRepoStore } from '../stores/repo'
 import CommitList from './CommitList.vue'
 
 const props = defineProps<{ root: string }>()
 const repo = useRepoStore(props.root)
 const text = ref(repo.query)
+// La ricerca può cambiare anche da fuori (Storia del file)
+watch(() => repo.query, (q) => (text.value = q))
 
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Enter') {

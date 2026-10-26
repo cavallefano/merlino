@@ -3,7 +3,7 @@ import type { Commit, GraphRow, HistoryPage, HistorySummary } from '../shared/ty
 import { layoutGraph } from './git/graph'
 import { LOG_FORMAT, parseFileCounts, parseLog } from './git/log'
 import type { GitRunner } from './git/runner'
-import { searchArgs } from './git/search'
+import { searchArgs } from '../shared/search'
 
 /** Storia del repo in memoria (commit + grafo), ricalcolata solo quando cambiano ref, HEAD o ricerca. */
 export class History {

@@ -10,6 +10,7 @@ import { SIZES, useLayout } from '../layout'
 import { useAppStore } from '../stores/app'
 import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
+import BlameDialog from './BlameDialog.vue'
 import CommitDetail from './CommitDetail.vue'
 import CreatePullRequestDialog from './CreatePullRequestDialog.vue'
 import DiffDialog from './DiffDialog.vue'
@@ -135,6 +136,7 @@ onMounted(() => {
     <FlowStartDialog v-else-if="repo.flowDialog?.kind === 'start'" :root="root" />
     <FlowFinishDialog v-else-if="repo.flowDialog?.kind === 'finish'" :root="root" />
     <DiffDialog v-if="repo.diffDialog" :root="root" />
+    <BlameDialog v-if="repo.blame" :root="root" />
   </section>
 </template>
 

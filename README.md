@@ -61,7 +61,7 @@ Git clients tend to trade speed for depth. Merlino keeps both for the work you d
 
 | Area | Included today |
 | --- | --- |
-| History | Commit graph of every branch, remote branch and tag, with colored lanes. Search by text, `author:`, `path:`, `message:` or `contents:`. Commit details with clickable parents. Diffs unified or side by side, with syntax highlighting, word-level changes and an option to ignore whitespace |
+| History | Commit graph of every branch, remote branch and tag, with colored lanes. Search by text, `author:`, `path:`, `message:` or `contents:`. Commit details with clickable parents. Diffs unified or side by side, with syntax highlighting, word-level changes and an option to ignore whitespace. Blame of any file, at a commit or on disk, with the commit of each block and blame before a change. File history from any file. The tree of all files at any commit, with their content |
 | Local changes | Stage, unstage and discard by file, hunk or line. Add files to `.gitignore`. Commit composer with length guides, amend and templates (`{branch}`, `{ticket}`, and Git's own `commit.template`). Stashes, also of single files. A banner to continue, skip or abort a merge, rebase, cherry-pick or revert with conflicts |
 | Branches and remotes | Branches in folders with ahead/behind counts. Create, check out, rename, delete, set the upstream. Merge, rebase, cherry-pick, revert, reset and interactive rebase. Tags. Clone, fetch (also in the background), pull, push with `--force-with-lease`, remotes. Git flow: start and finish features, bugfixes, releases and hotfixes (locally, or through a pull request), and support branches, compatible with the `git flow` command line |
 | Drag and drop | Merge, rebase, cherry-pick, revert, push, fast-forward, set the upstream, stage, stash and apply by dragging, with a label that says what will happen. Files from any commit can be dragged to other apps |
@@ -221,7 +221,7 @@ For a test build without a release, run the workflow by hand (Actions → Releas
 - [x] Git flow, with finish by local merge or pull request
 - [ ] Reviews: approve, request changes, comments on diff lines
 - [ ] Three-way merge tool
-- [ ] Blame, file history and a tree view of the repository
+- [x] Blame, file history and a tree view of the repository
 - [ ] Submodules, worktrees and custom commands
 
 ## Contributing

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { searchArgs } from '../../src/main/git/search'
+import { matchesPath, searchArgs } from '../../src/shared/search'
 
 const FLAGS = ['--all-match', '-i', '-F']
 
@@ -21,5 +21,15 @@ describe('searchArgs', () => {
 
   it('solo percorsi: nessuna opzione di ricerca', () => {
     expect(searchArgs('path:a path:b')).toEqual({ args: [], paths: ['a', 'b'] })
+  })
+})
+
+describe('matchesPath', () => {
+  it('lo stesso percorso o un file dentro la cartella; nessun filtro, nessun file', () => {
+    expect(matchesPath('src/app.ts', ['src/app.ts'])).toBe(true)
+    expect(matchesPath('src/lib/util.ts', ['src'])).toBe(true)
+    expect(matchesPath('src/lib/util.ts', ['src/'])).toBe(true)
+    expect(matchesPath('src/application.ts', ['src/app'])).toBe(false)
+    expect(matchesPath('src/app.ts', [])).toBe(false)
   })
 })

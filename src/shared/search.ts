@@ -23,3 +23,8 @@ export function searchArgs(query: string): { args: string[]; paths: string[] } {
 }
 
 const unquote = (s: string) => s.replace(/^"(.*)"$/s, '$1')
+
+/** Il file rientra in un filtro path: (lo stesso percorso o un file dentro la cartella). */
+export function matchesPath(path: string, filters: string[]): boolean {
+  return filters.some((f) => path === f || path.startsWith(f.endsWith('/') ? f : `${f}/`))
+}
