@@ -3,9 +3,6 @@ import { t, tn } from '../i18n'
 import { computed, onMounted } from 'vue'
 import type { MessageKey } from '../../shared/i18n'
 import type { Operation } from '../../shared/types'
-import { push } from '../actions/branches'
-import { registry } from '../actions/builtin'
-import { flowMenu } from '../actions/flow'
 import { SIZES, useLayout } from '../layout'
 import { useAppStore } from '../stores/app'
 import { usePullRequestStore } from '../stores/pull-requests'
@@ -48,12 +45,6 @@ const OPERATIONS: Record<Operation, MessageKey> = {
   revert: 'operation.revert',
 }
 
-const head = computed(() => {
-  const info = repo.info
-  if (!info) return ''
-  if (info.branch) return info.branch
-  return info.headSha ? t('repo.detachedHead', { sha: info.headSha.slice(0, 7) }) : t('repo.noCommits')
-})
 const operation = computed(() => repo.status?.operation ?? null)
 const conflicts = computed(() => repo.status?.conflicted.length ?? 0)
 
@@ -70,27 +61,6 @@ onMounted(() => {
 
 <template>
   <section class="repo">
-    <header class="toolbar">
-      <strong>{{ repo.info?.name }}</strong>
-      <span class="branch" data-testid="repo-branch">{{ head }}</span>
-      <span class="spacer" />
-      <span v-if="repo.busy && repo.progress" class="progress muted" data-testid="progress">{{ repo.progress }}</span>
-      <button data-testid="flow-button" :disabled="!!repo.busy" @click="flowMenu(repo)">{{ t('flow.button') }}</button>
-      <button data-testid="fetch" :disabled="!!repo.busy" @click="repo.git({ kind: 'fetch' })">Fetch</button>
-      <button data-testid="pull" :disabled="!!repo.busy" @click="repo.git({ kind: 'pull', mode: 'config' })">
-        Pull<span v-if="repo.status?.behind" class="count">↓{{ repo.status.behind }}</span>
-      </button>
-      <button data-testid="push" :disabled="!!repo.busy" @click="push(repo, false)">
-        Push<span v-if="repo.status?.ahead" class="count">↑{{ repo.status.ahead }}</span>
-      </button>
-      <button
-        data-testid="layout-toggle"
-        :aria-label="t('action.layout.toggle')"
-        :title="t('action.layout.toggle')"
-        @click="registry.run('layout.toggle')"
-      >{{ vertical ? '◫' : '⊟' }}</button>
-      <button data-testid="repo-refresh" :aria-label="t('action.repo.refresh')" @click="repo.refresh()">↻</button>
-    </header>
     <p v-if="repo.error" class="band" data-testid="repo-error">
       <AppIcon name="warning" />
       <span>{{ repo.error }}</span>
@@ -147,11 +117,6 @@ onMounted(() => {
 
 <style scoped>
 .repo { display: flex; flex-direction: column; height: 100%; }
-.toolbar { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border); }
-.toolbar button { padding: 2px 10px; }
-.branch { padding: 1px 8px; border-radius: 10px; background: var(--bg-hover); font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; }
-.progress { max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.count { margin-left: 4px; font-variant-numeric: tabular-nums; }
 .band { display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px; background: var(--danger-bg); color: var(--danger); border-bottom: 1px solid var(--border); }
 .band span { flex: 1; }
 .band button { padding: 0 6px; border: 0; background: transparent; color: inherit; }

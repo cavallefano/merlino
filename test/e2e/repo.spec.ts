@@ -8,7 +8,9 @@ test('apre il repo passato da riga di comando e segue il branch', async () => {
   const repo = makeRepo(1)
   const { app, page } = await launch([repo])
   await expect(page.getByTestId('repo-branch')).toHaveText('main')
-  await expect(page.getByTestId('tab')).toHaveText(/merlino-/)
+  await expect(page.getByTestId('repo-name')).toHaveText(/merlino-/)
+  // Con un solo repository la barra delle tab non c'è
+  await expect(page.getByTestId('tab')).toHaveCount(0)
   git(repo, 'switch', '-q', '-c', 'feature/prova')
   await expect(page.getByTestId('repo-branch')).toHaveText('feature/prova')
   await app.close()

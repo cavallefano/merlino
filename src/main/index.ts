@@ -41,6 +41,9 @@ function createWindow(): BrowserWindow {
     minHeight: 500,
     show: false,
     title: 'Merlino',
+    // macOS: la toolbar fa da barra del titolo e i semafori stanno dentro, come in Tower.
+    // y centra i semafori nella toolbar alta 52px (AppToolbar.vue): se cambia l'altezza va ritoccata
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden' as const, trafficLightPosition: { x: 18, y: 19 } } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,

@@ -34,6 +34,8 @@ test('palette, output, menu e scorciatoie delle tab', async () => {
   await expect(page.getByTestId('output-panel')).toBeHidden()
 
   await page.keyboard.press(`${mod}+W`)
-  await expect(page.getByTestId('tab')).toHaveCount(1)
+  // Resta un repository: la barra delle tab sparisce e il nome è nella toolbar
+  await expect(page.getByTestId('tab')).toHaveCount(0)
+  await expect(page.getByTestId('repo-name')).toHaveText(basename(a))
   await app.close()
 })

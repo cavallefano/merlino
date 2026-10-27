@@ -130,7 +130,6 @@ export const en = {
   'errorDialog.title': 'Operation failed',
   'errorDialog.showOutput': 'Show Output',
   'app.starting': 'Starting…',
-  'tabs.commands': 'Commands',
   'welcome.dropHint': 'Or drop a repository folder here.',
   'welcome.allCommands': 'All commands:',
   'welcome.recent': 'Recent',

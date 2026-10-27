@@ -8,6 +8,7 @@ import { registerFlowActions } from './actions/flow'
 import { registerHistoryActions } from './actions/history'
 import { registerPullRequestActions } from './actions/pull-requests'
 import { registerWorkingActions } from './actions/working'
+import AppToolbar from './components/AppToolbar.vue'
 import CommandPalette from './components/CommandPalette.vue'
 import DropHint from './components/DropHint.vue'
 import ErrorDialog from './components/ErrorDialog.vue'
@@ -81,17 +82,20 @@ onUnmounted(() => {
 
 <template>
   <div class="app" @dragover="onDragOver" @drop.prevent="onDrop">
-    <div v-if="!app.git" class="center muted">{{ t('app.starting') }}</div>
-    <SettingsView v-else-if="app.settingsSection" />
-    <GitMissing v-else-if="!app.git.ok" />
-    <template v-else>
-      <TabBar />
-      <div v-if="app.cloneProgress" class="clone-bar muted" data-testid="clone-progress">{{ app.cloneProgress }}</div>
-      <main class="main">
-        <RepoView v-if="app.active" :key="app.active" :root="app.active" />
-        <WelcomeScreen v-else />
-      </main>
-    </template>
+    <AppToolbar />
+    <div class="screen">
+      <div v-if="!app.git" class="center muted">{{ t('app.starting') }}</div>
+      <SettingsView v-else-if="app.settingsSection" />
+      <GitMissing v-else-if="!app.git.ok" />
+      <template v-else>
+        <TabBar v-if="app.tabs.length > 1" />
+        <div v-if="app.cloneProgress" class="clone-bar muted" data-testid="clone-progress">{{ app.cloneProgress }}</div>
+        <main class="main">
+          <RepoView v-if="app.active" :key="app.active" :root="app.active" />
+          <WelcomeScreen v-else />
+        </main>
+      </template>
+    </div>
     <OutputPanel v-if="app.outputOpen" />
     <CommandPalette v-if="app.paletteOpen" />
     <PromptDialog v-if="app.promptRequest" :request="app.promptRequest" />
@@ -102,6 +106,8 @@ onUnmounted(() => {
 
 <style scoped>
 .app { display: flex; flex-direction: column; height: 100%; }
+/* Sotto la toolbar, la schermata attiva prende lo spazio che resta */
+.screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .main { flex: 1; min-height: 0; overflow: hidden; }
 .clone-bar { padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

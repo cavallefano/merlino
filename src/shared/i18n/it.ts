@@ -132,7 +132,6 @@ export const it: Messages = {
   'errorDialog.title': 'Operazione non riuscita',
   'errorDialog.showOutput': 'Mostra output',
   'app.starting': 'Avvio…',
-  'tabs.commands': 'Comandi',
   'welcome.dropHint': 'Oppure trascina qui la cartella di un repository.',
   'welcome.allCommands': 'Tutti i comandi:',
   'welcome.recent': 'Recenti',
