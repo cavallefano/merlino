@@ -45,9 +45,9 @@ Un componente `AppToolbar.vue` in `App.vue`, sempre presente dopo il controllo d
 | destra | Layout | `layout-toggle` | `layout.toggle` | sempre |
 | destra | Aggiorna | `repo-refresh` | `repo.refresh` | un repository attivo |
 
-- I gruppi 2–4 compaiono solo con un repository attivo e fuori dalle impostazioni; senza repository resta solo la bacchetta.
+- Tutti i gruppi tranne la bacchetta compaiono solo con un repository attivo e fuori dalle impostazioni.
 - Lo stato "attivo" viene dal `when` delle azioni: il registro espone `available(id)`, così pulsante, palette e scorciatoie non divergono.
-- Il badge è un numerino in alto a destra dell'icona, nel colore d'accento; manca se il numero è 0.
+- Il badge è un numerino (senza freccia: la dà l'icona) in alto a destra dell'icona, nel colore d'accento; manca se il numero è 0.
 - **Non ci sono**: Merge (Merlino non ha un dialog per scegliere il branch), avanti/indietro, il `>>` per l'overflow (alla larghezza minima, 800px, i pulsanti ci stanno).
 
 ## Tab
@@ -82,20 +82,20 @@ Prende il posto della riga rossa sotto i tab e di quella nella pagina delle impo
 
 - Gli errori dentro i dialog: crea pull request, Git Flow, rebase, account.
 - La banda delle pull request con "Aggiorna token".
-- Il dialog "Crea pull request" mostra il push fallito al suo interno: prende il messaggio da `app.error` e lo azzera, così non si apre un dialog sopra l'altro.
+- Il push fallito dal dialog "Crea pull request" apre il dialog degli errori sopra di esso; chiuso quello, il dialog Crea resta aperto con i suoi campi. Al suo interno restano solo gli errori del servizio (`prs.error`).
 
 Titolo per singola operazione ("Push non riuscito"): rimandato, servirebbero 27 messaggi per lingua.
 
 ## Testi
 
-Nuove chiavi in `src/shared/i18n` (italiano e inglese): titolo del dialog, "Mostra output", nomi dei pulsanti che non hanno già un'azione con titolo. Gli altri nomi vengono dai titoli delle azioni.
+Nuove chiavi in `src/shared/i18n` (italiano e inglese): `errorDialog.title` e `errorDialog.showOutput`. I nomi dei pulsanti vengono dai titoli delle azioni e da `flow.button`. `tabs.commands` non serve più e si toglie.
 
 ## Test
 
 - **e2e**:
   - con un solo repository la barra dei tab non c'è; aprendone un secondo compare;
   - un push verso un remote che lo rifiuta apre il dialog con il messaggio di git; "Mostra output" apre il pannello;
-  - i test che usano `palette-button`, `fetch`, `pull`, `push`, `flow-button`, `layout-toggle`, `repo-refresh`, `repo-branch` passano senza modifiche;
+  - i test che usano `palette-button`, `fetch`, `flow-button`, `layout-toggle`, `repo-refresh`, `repo-branch` passano senza modifiche; quelli che leggono `↑1` e `↓1` su Push e Pull leggono il badge (`push-badge`, `pull-badge`);
   - quelli che si aspettano un tab con un solo repository (`repo.spec.ts`, `branches.spec.ts`, `actions.spec.ts`) controllano il nome nella toolbar o il numero di tab da due in su.
 - **unit**: `available(id)` del registro.
 - Gli screenshot del README si rigenerano con `readme-screenshots.spec.ts`.
