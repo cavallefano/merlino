@@ -36,6 +36,16 @@ export class ActionRegistry {
     return [...this.actions.values()].filter(isEnabled)
   }
 
+  get(id: string): Action | undefined {
+    return this.actions.get(id)
+  }
+
+  /** true se l'azione esiste e il suo when lo permette: così i pulsanti della toolbar si disattivano come la palette. */
+  available(id: string): boolean {
+    const action = this.actions.get(id)
+    return action !== undefined && isEnabled(action)
+  }
+
   run(id: string): boolean {
     const action = this.actions.get(id)
     if (!action || !isEnabled(action)) return false
