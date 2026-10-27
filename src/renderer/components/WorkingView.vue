@@ -75,7 +75,7 @@ function menu(file: WorkingFile, area: WorkingArea) {
 
 async function openFile(file: WorkingFile) {
   const r = await window.api.openInEditor(props.root, file.path)
-  if (!r.ok) repo.error = r.error.message
+  if (!r.ok) app.error = r.error.message
 }
 
 function discard(file: WorkingFile, area: WorkingArea) {

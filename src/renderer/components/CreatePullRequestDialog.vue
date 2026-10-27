@@ -66,7 +66,7 @@ async function submit() {
     needsPush.value ? { remote: headRemote.value, branch: head.value, remoteBranch: headBranch.value } : null,
   )
   if (ok) close()
-  else failed.value = prs.error?.message ?? repo.error
+  else failed.value = prs.error?.message ?? null
 }
 </script>
 

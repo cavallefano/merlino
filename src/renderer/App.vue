@@ -10,6 +10,7 @@ import { registerPullRequestActions } from './actions/pull-requests'
 import { registerWorkingActions } from './actions/working'
 import CommandPalette from './components/CommandPalette.vue'
 import DropHint from './components/DropHint.vue'
+import ErrorDialog from './components/ErrorDialog.vue'
 import GitMissing from './components/GitMissing.vue'
 import OutputPanel from './components/OutputPanel.vue'
 import PromptDialog from './components/PromptDialog.vue'
@@ -86,10 +87,6 @@ onUnmounted(() => {
     <template v-else>
       <TabBar />
       <div v-if="app.cloneProgress" class="clone-bar muted" data-testid="clone-progress">{{ app.cloneProgress }}</div>
-      <div v-if="app.error" class="error-bar">
-        <span>{{ app.error }}</span>
-        <button :aria-label="t('common.closeError')" @click="app.error = null">×</button>
-      </div>
       <main class="main">
         <RepoView v-if="app.active" :key="app.active" :root="app.active" />
         <WelcomeScreen v-else />
@@ -98,6 +95,7 @@ onUnmounted(() => {
     <OutputPanel v-if="app.outputOpen" />
     <CommandPalette v-if="app.paletteOpen" />
     <PromptDialog v-if="app.promptRequest" :request="app.promptRequest" />
+    <ErrorDialog v-if="app.error" />
     <DropHint />
   </div>
 </template>
@@ -105,7 +103,5 @@ onUnmounted(() => {
 <style scoped>
 .app { display: flex; flex-direction: column; height: 100%; }
 .main { flex: 1; min-height: 0; overflow: hidden; }
-.error-bar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--danger-bg); color: var(--danger); border-bottom: 1px solid var(--border); }
-.error-bar span { flex: 1; }
 .clone-bar { padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

@@ -46,10 +46,6 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
         <h2>{{ current && t(current.title) }}</h2>
         <button class="close" :aria-label="t('settings.close')" data-testid="settings-close" @click="app.settingsSection = null">×</button>
       </header>
-      <p v-if="app.error" class="error message">
-        <span>{{ app.error }}</span>
-        <button :aria-label="t('common.closeError')" @click="app.error = null">×</button>
-      </p>
       <component :is="current?.component" />
     </div>
   </section>
@@ -66,7 +62,4 @@ nav button.active { background: var(--selected-bg); font-weight: 600; }
 header { display: flex; align-items: center; margin-bottom: 16px; }
 header h2 { flex: 1; margin: 0; font-size: 18px; }
 .close { border: 0; background: transparent; font-size: 18px; padding: 2px 8px; }
-.message { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 6px 10px; background: var(--danger-bg); border-radius: 5px; }
-.message span { flex: 1; }
-.message button { border: 0; background: transparent; }
 </style>

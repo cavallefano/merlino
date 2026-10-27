@@ -30,6 +30,9 @@ test('branch dal menu del commit, checkout dalla sidebar, merge con conflitto ri
   commitFile(repo, 'file1.txt', 'feature\n', 'modifica su feature')
   await chooseNextMenuItem(app, 'Merge into Current Branch')
   await page.getByTestId('branch-item').filter({ hasText: 'main' }).click({ button: 'right' })
+  // Il dialog degli errori spiega i conflitti; il banner resta per continuare
+  await expect(page.getByTestId('error-message')).toContainText('There are conflicts')
+  await page.getByTestId('error-ok').click()
   const banner = page.getByTestId('operation-banner')
   await expect(banner).toContainText('Merge in progress')
   await expect(page.getByTestId('op-continue')).toBeDisabled()
@@ -62,6 +65,23 @@ test('push su un remote bare e pull dei commit pushati da un secondo clone', asy
   await page.getByTestId('pull').click()
   await expect(page.getByTestId('commit-row').first()).toContainText('dal collega')
   await expect(page.getByTestId('pull')).not.toContainText('↓')
+  await app.close()
+})
+
+test("un push rifiutato apre il dialog degli errori, che porta all'output", async () => {
+  const { bare, clone } = makeRemotePair()
+  const other = cloneOf(bare)
+  commitFile(other, 'remoto.txt', 'y\n', 'dal collega')
+  git(other, 'push', '-q')
+  commitFile(clone, 'locale.txt', 'x\n', 'da pushare')
+  const { app, page } = await launch([clone])
+  // Stato e remote caricati: il push sa dove andare
+  await expect(page.getByTestId('push')).toContainText('↑1')
+  await page.getByTestId('push').click()
+  await expect(page.getByTestId('error-message')).toContainText('Push rejected')
+  await page.getByTestId('error-output').click()
+  await expect(page.getByTestId('error-dialog')).toBeHidden()
+  await expect(page.getByTestId('output-panel')).toContainText('git push')
   await app.close()
 })
 

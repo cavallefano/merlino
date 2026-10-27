@@ -10,6 +10,7 @@ import { SIZES, useLayout } from '../layout'
 import { useAppStore } from '../stores/app'
 import { usePullRequestStore } from '../stores/pull-requests'
 import { useRepoStore } from '../stores/repo'
+import AppIcon from './AppIcon.vue'
 import BlameDialog from './BlameDialog.vue'
 import CommitDetail from './CommitDetail.vue'
 import CreatePullRequestDialog from './CreatePullRequestDialog.vue'
@@ -90,7 +91,11 @@ onMounted(() => {
       >{{ vertical ? '◫' : '⊟' }}</button>
       <button data-testid="repo-refresh" :aria-label="t('action.repo.refresh')" @click="repo.refresh()">↻</button>
     </header>
-    <p v-if="repo.error" class="error message">{{ repo.error }}</p>
+    <p v-if="repo.error" class="band" data-testid="repo-error">
+      <AppIcon name="warning" />
+      <span>{{ repo.error }}</span>
+      <button :aria-label="t('common.closeError')" @click="repo.error = null">×</button>
+    </p>
     <div v-if="operation" class="operation" data-testid="operation-banner">
       <strong>{{ t(OPERATIONS[operation]) }}</strong>
       <span v-if="conflicts" class="muted">{{ tn('operation.conflicts', conflicts) }}</span>
@@ -147,7 +152,9 @@ onMounted(() => {
 .branch { padding: 1px 8px; border-radius: 10px; background: var(--bg-hover); font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; }
 .progress { max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .count { margin-left: 4px; font-variant-numeric: tabular-nums; }
-.message { margin: 0; padding: 6px 12px; border-bottom: 1px solid var(--border); }
+.band { display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px; background: var(--danger-bg); color: var(--danger); border-bottom: 1px solid var(--border); }
+.band span { flex: 1; }
+.band button { padding: 0 6px; border: 0; background: transparent; color: inherit; }
 .operation { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border); box-shadow: inset 3px 0 #bf8700; }
 .operation button { padding: 2px 10px; }
 .panes { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); }
