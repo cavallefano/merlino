@@ -66,6 +66,18 @@ describe('ActionRegistry', () => {
     expect(new ActionRegistry(true).keyLabel({ key: 'Enter', mod: true })).toBe('⌘↩')
     expect(new ActionRegistry(false).keyLabel({ key: 'Enter', mod: true })).toBe('Ctrl+Enter')
   })
+
+  it('get e available leggono una singola azione, col suo when', () => {
+    const r = new ActionRegistry(true)
+    let on = false
+    r.register({ id: 'x', title: 'X', when: () => on, run: noop })
+    expect(r.get('x')?.title).toBe('X')
+    expect(r.available('x')).toBe(false)
+    on = true
+    expect(r.available('x')).toBe(true)
+    expect(r.get('manca')).toBeUndefined()
+    expect(r.available('manca')).toBe(false)
+  })
 })
 
 describe('fuzzy', () => {

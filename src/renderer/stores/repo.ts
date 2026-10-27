@@ -426,11 +426,11 @@ function define(root: string) {
       else error.value = r.error.message
     }
 
-    /** Esegue un'operazione, mostra l'eventuale errore e ricarica lo stato da git. */
+    /** Esegue un'operazione chiesta dall'utente: l'eventuale errore apre il dialog degli errori; poi ricarica lo stato da git. */
     async function run(op: Promise<Result<unknown>>): Promise<boolean> {
       error.value = null
       const r = await op
-      if (!r.ok) error.value = r.error.message
+      if (!r.ok) useAppStore().error = r.error.message
       await refresh()
       return r.ok
     }

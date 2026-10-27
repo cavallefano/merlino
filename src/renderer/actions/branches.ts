@@ -98,7 +98,7 @@ async function reset(repo: Repo, sha: string, mode: 'soft' | 'mixed' | 'hard') {
 export async function push(repo: Repo, force: boolean) {
   const remote = defaultRemote(repo)
   if (!remote) {
-    repo.error = t('push.noRemote')
+    useAppStore().error = t('push.noRemote')
     return
   }
   if (!force || window.confirm(t('push.confirmForce'))) await repo.git({ kind: 'push', remote, force })

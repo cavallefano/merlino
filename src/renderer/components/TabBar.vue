@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { t } from '../i18n'
-import { shortcuts } from '../../shared/shortcuts'
-import { registry } from '../actions/builtin'
 import { useAppStore } from '../stores/app'
 import { useRepoStore } from '../stores/repo'
 
 const app = useAppStore()
 const name = (root: string) => useRepoStore(root).info?.name ?? root
-const paletteKeys = registry.keyLabel(shortcuts['palette.open'])
 </script>
 
 <template>
@@ -25,10 +22,6 @@ const paletteKeys = registry.keyLabel(shortcuts['palette.open'])
       <button class="close" :aria-label="t('action.tab.close')" @click.stop="app.close(root)">×</button>
     </div>
     <button class="add" :aria-label="t('action.repo.open')" @click="app.pickAndOpen()">+</button>
-    <span class="spacer" />
-    <button class="palette" data-testid="palette-button" @click="app.paletteOpen = true">
-      {{ t('tabs.commands') }} <kbd>{{ paletteKeys }}</kbd>
-    </button>
   </nav>
 </template>
 
@@ -38,6 +31,4 @@ const paletteKeys = registry.keyLabel(shortcuts['palette.open'])
 .tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tab.active { background: var(--bg); box-shadow: inset 0 -2px var(--accent); }
 .close, .add { border: 0; background: transparent; padding: 2px 6px; }
-.palette { align-self: center; margin: 0 8px; padding: 2px 8px; }
-.palette kbd { color: var(--fg-muted); }
 </style>
